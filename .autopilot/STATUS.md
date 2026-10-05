@@ -1,26 +1,67 @@
 # Otonom calisma gunlugu
 
-## 2026-10-05 — Further homepage service exploration started, local only
+## 2026-10-05 — Homepage service explorer accepted locally, not published
 
-- Owner-directed one bounded task MANUAL-20261005-HOMEPAGE-SERVICE-EXPLORER;
-  clean branch `codex/homepage-service-explorer-20261005` at6071932, reused
-  managed worktree. Dirty primary checkout remains untouched.
+- One bounded owner task MANUAL-20261005-HOMEPAGE-SERVICE-EXPLORER; clean
+  branch `codex/homepage-service-explorer-20261005`, immutable source
+  `6b2ecf126124c8934cc72a641be62b15ddbc266f`, base60719327. Reused managed
+  worktree; dirty primary owner checkout remains untouched. No push/deploy.
 - Read AGENTS, applicable skill/references, all constitution files, project,
-  current tasks/status, roadmap/inbox/history and recent Git/source changes.
-  OS controller/config/CLI absent; manual local engineering only, no fictional
-  unattended doctor/claim/validation receipt.
-- Read-only independent audit and /services source substantiate four existing
-  families. In-place filters improve current six-card/secondary-route hierarchy;
-  no duplicate navigator, fitchecker, hero redesign or extra section.
-- Preserve default first HTML/link/schema/credit copy, all existing features,
-  motion preference and auth behavior. All12 new copy plus full validation and
-  EN/DE/TR/ZH responsive/keyboard/browser checks required. No release authorized.
-- Early core i18n rejected newly-visible short source-identical loanword labels
-  in several languages. Replaced only category controls with more precise,
-  fully translated phrases; original service tags/copy remain unchanged and
-  no invariant/allowlist/guard was widened. Core final check passes2485/2485
-  reviewed rows per non-English locale, zero fallback. Eight new catalog rows
-  and the actual-component acceptance test are now frozen for full gates.
+  tasks/status/roadmap/inbox/history and recent Git/source changes. OS controller,
+  config and CLI absent; manual engineering only, no fictional lifecycle receipt.
+  Independent discovery audit and /services source substantiate four existing
+  families; this is not a duplicate navigator, fitchecker or extra section.
+- Changed HomepageExperience, homepage-scoped globals.css, eight scoped catalog
+  rows and one actual-component acceptance test. Native category buttons filter
+  the same six cards: All6 / Performance1 / Diesel3 / Gearbox1 / Diagnostic1;
+  related routes retain comparison/Stage2/Stage3, ECU File Check and common hub
+  as appropriate. Compact cards retain original credits/descriptions/tags/links.
+  Default SSR, full Service schema, hero, vehicle/datalog, preparation tools,
+  pricing/workflow/FAQ/footer and auth/session behavior are preserved.
+- Buttons have44px minimum height, native Enter/Space/Tab, persistent focus,
+  aria-pressed/group/controls and localized polite status. No timers, network,
+  storage, quote, eligibility, account or firmware action added by filtering.
+  Finite220ms result arrival inherits unchanged reduced-motion CSS. Section
+  height intentionally follows the selected card count; no fixed-height claim.
+- Early core i18n rejected short source-identical loanword category labels.
+  Replaced only controls with precise fully translated phrases, preserving
+  original tags; no invariant/allowlist/guard weakened. Final full prebuild
+  check:i18n passes37/37 plus2485/2485 reviewed rows per non-English locale,
+  zero clean English fallback and24 dynamic occurrences/21 signatures.
+- All final frozen-source gates exit0: actual explorer/hero/i18n targeted41/41,
+  full npm test1884/1884, lint, full web+desktop typecheck, fresh Webpack build
+  282/282 pages. Build ID `_kx7mr-g9gruk1OY5x63F`; unchanged strict postbuild
+  validates43 assets,5 report fonts,30 PDFKit/8 sharp files, compiled anonymous
+  Auth401, validPNG/PDF and0 external fetches. Diff check passes.
+- Same-artifact performance gate passes3 checked initial chunks15.7KB gzip
+  against80KB, no forbidden initial runtime; all locale payload budgets and
+  139 prerendered document languages pass. These are bounded asset checks,
+  not whole-site byte totals, field performance or Production verification.
+- Local GET-only initial HTML12/12: correct document lang, all5 native controls,
+  All-selected6 cards and5 related routes, all8 new localized phrases, genuine
+  existing route mapping, canonical/alternates and retained vehicle/tools.
+  Initial QA script incorrectly assumed every service has a prefixed route;
+  corrected that fixture to actual unchanged localizeHomepageHref mapping,
+  keeping the red log. No application route or test gate was changed for it.
+  Raw HTML is not a complete JavaScript-disabled interactive browser journey.
+- Actual CUA browser EN/DE/TR/ZH at1366x768 and390x844:40 unique family cases,
+  correct card/route membership and reset,44px controls, singleton<=42rem on
+  laptop, no horizontal/child overflow. Five real Enter/Space/Tab cases retain
+  visible focus; four actual menu language switches pass; console warn/error0.
+  Real Chinese Stage1 link/Back returns All6; native TR mobile menu reaches
+  Services then Diesel3. Temporary post-navigation CUA stale-node errors were
+  resolved by reading refreshed UI before targeting again, not app changes.
+  Twenty-one unique screenshots and browser/HTML/journey JSONs are in ignored
+  runtime `homepage-explorer-qa-20261005/`; gate logs share homepage-explorer prefix.
+- Immutable independent final GO on6b2ecf1: no P0/P1/P2 within this scope.
+  Shared fixed availability/language overlays unchanged; reduced motion is
+  source/helper-tested, NOT browser preference-emulated. No global no-defect,
+  customer acquisition or real account/payment outcome claim is made.
+- OS-only synthetic local child env with .invalid backend; no dotenv/secret,
+  real customer/firmware, auth/email/payment/Ads/database operation. Public quote
+  intentionally unavailable in isolation. Known next-start standalone advisory
+  remains; artifact check not weakened. No dependency/schema/business/legal change.
+  Task moved Done locally only; preview remains on3190 and viewport is restored.
 
 ## 2026-10-05 — Homepage interaction layer accepted locally, not published
 

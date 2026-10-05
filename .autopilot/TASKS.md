@@ -24,30 +24,6 @@ Receipt: `docs/production-release-2026-10-01-address.md`.
 
 ## In Progress
 
-### MANUAL-20261005-HOMEPAGE-SERVICE-EXPLORER [P2] Category-aware service exploration within the existing homepage
-
-Fingerprint: `public-homepage|service-discovery|flat-six-card-grid-and-secondary-route-hierarchy|in-place-family-filtered-service-exploration`
-
-Owner asks for a further, more advanced homepage. Current source renders six
-static service cards and five secondary routes (HomepageExperience:73-122,
-675-713); /services already defines Performance, Diesel, Diagnostics and
-Transmission families. Independent read-only audit confirms this is distinct
-from historic situation fit-checkers, anchor navigation and SEO route maps.
-Replace the same grid with a native-button category explorer and compact card
-hierarchy; no extra homepage section or repeated hero/motion redesign.
-Default SSR All retains all six cards and five secondary routes. Families show
-6/1/3/1/1 deterministic cards; Performance retains Stage 2/3/comparison and
-Diagnostic retains ECU File Check. All existing credits/copy/real links remain.
-Eight new category/control/help strings cover all12 locales. Preserve tools, session,
-schemas, reduced motion, keyboard, focus, loading/error and mobile behavior.
-Allowed files: HomepageExperience.tsx, globals.css, scoped homepage translation
-rows, one targeted actual-component test and TASKS/STATUS/HISTORY receipts.
-Acceptance: SSR/link parity; actual filter/reset and native keyboard behavior;
-complete all12 copy; EN/DE/TR/ZH mobile/laptop plus full required gates and
-immutable independent review. No dependency/schema/price/legal/auth/Ads change,
-external operation, push, Preview or Production. Value scores B3/U4/A1/S3/C5,
-effort2/risk1; local GREEN code-only implementation, not release permission.
-
 ### MANUAL-20260919-AUTH-SESSION-RECOVERY [P1] Prevent stale checks from ending a newer browser session
 
 Fingerprint: `auth|browser-session|stale-response-and-global-logout|session-bound-recovery`
@@ -295,6 +271,28 @@ Remediation: Batch with a future documentation/source-comment maintenance pass a
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
+
+### MANUAL-20261005-HOMEPAGE-SERVICE-EXPLORER [P2] Category-aware service exploration within the existing homepage
+
+Fingerprint: `public-homepage|service-discovery|flat-six-card-grid-and-secondary-route-hierarchy|in-place-family-filtered-service-exploration`
+
+Done locally, not published. Owner-directed improvement uses families already
+defined in /services, distinct from past fitcheckers/navigators/SEO route maps.
+Replaces only the existing six-card/secondary-route area with compact native
+category exploration; no extra section. Default SSR All retains six cards and
+five links; family counts6/1/3/1/1 and related routes preserve comparison,
+Stage2/3, ECU File Check and hub. All credit facts/copy/schema/session/tools stay.
+Eight new rows cover all12 locales without fallback/guard exception. Finite
+result motion inherits reduced-motion CSS; native44px buttons have persistent
+focus, selected state and localized polite count. No network or business action.
+Frozen source6b2ecf126124c8934cc72a641be62b15ddbc266f passes targeted41/41,
+full1884/1884, i18n37/37, lint, full types, Webpack282/282 and unchanged strict
+artifact/performance gates. Local initial HTML12/12; actual browser40 family
+cases EN/DE/TR/ZH laptop/mobile,5 keyboard cases,4 language switches, console0,
+no overflow; real service-link roundtrip and mobile menu navigation verified.
+Independent immutable final GO, no scopedP0/P1/P2. STATUS documents early red
+fixture/copy corrections and limits. No push/Preview/Production/real-backend proof.
+Value B3/U4/A1/S3/C5, effort2/risk1; source/test/style plus task/status/history only.
 
 ### MANUAL-20261005-HOMEPAGE-MOTION [P1] More engaging homepage with a user-controlled request illustration
 
