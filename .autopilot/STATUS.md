@@ -1,5 +1,51 @@
 # Otonom calisma gunlugu
 
+## 2026-10-05 — Homepage hero polish accepted locally, not published
+
+- Task: MANUAL-20261005-HOMEPAGE-HERO-POLISH. Clean branch
+  `codex/homepage-polish-20261005`; baseline `5e6213b3fa9e`, immutable UI candidate
+  `6263cf1341ee`. Dirty primary owner checkout remains untouched.
+- Changed source: HomepageExperience, both scoped homepage catalogs and removal
+  of the obsolete exact `Portal online` i18n exception. Hero typography/gaps are
+  compact; a labelled synthetic request/status/file/PDF illustration replaces
+  the generic workflow card. Existing features, routes, SEO and session behavior
+  remain. Two focused test files cover rendered first-paint copy for all12,
+  retained sections/anchors and static-preview accessibility/no fake actions.
+- Reviewer caught one Stage1 heading outside the scoped catalog; repaired using
+  its existing all12 reviewed core translation and added actual SSR coverage.
+  Final gates were rerun after this correction: targeted27/27, full1870/1870,
+  i18n37/37 (2474 reviewed rows per non-English locale, zero clean English
+  fallback), lint and full web/desktop typecheck all exit0.
+- Fresh Webpack production build:282/282 pages, unchanged strict artifact check
+  passes (43 required assets,5 report fonts,30 PDFKit and8 sharp files, compiled
+  anonymous Auth401, valid PNG/PDF, external fetch0 in that checker). Performance
+  passes: checked3 initial chunks15.7KB gzip/80KB budget, locale bundle limits and
+  139 prerendered routes with correct language. This is not total-site JS size.
+- Local raw HTTP12/12: correct initial language,17 expected preview strings each,
+  canonical/alternates and preserved vehicle/datalog anchors. Browser EN/DE/TR/ZH
+  at1366x768 and390x844: no horizontal or preview-child text overflow. At1366 the
+  hero bottom is690px; bothCTAs and full preview fit. Additional DE1024x720 and
+  DE/RU/SQ320px checks pass horizontal wrapping. German1024 hero ends750px,
+  requiring ordinary vertical scrolling rather than a first-screen-fit promise.
+- Actual language selector ZH→EN→DE→TR→ZH updates route, document language and
+  preview; TR workflow link, Back and vehicle anchor work. Visible keyboard focus
+  verified on the preview link; captured browser warning/error log is empty.
+  Thirteen screenshots and JSON receipts are in ignored
+  `.autopilot/runtime/homepage-hero-qa-20261005/`.
+- Immutable independent reviewer: GO, no P0/P1/P2 blocker; inspected source,
+  screenshots, initialHTML and final test/i18n logs. Narrow RU/SQ word breaks are
+  readable but a future typography polish opportunity. Existing shared floating
+  availability/language controls can cover proof text at320px and are unchanged.
+- Tests/build/server use OS-only child environment and synthetic `.invalid`
+  backend; no dotenv contents, inherited secrets, real account/customer/firmware,
+  payment/email/conversion or database verification. The public quote intentionally
+  reports unavailable in this isolated environment. Local `next start` emits the
+  known standalone advisory; no actual Production runtime acceptance is claimed.
+- Moved this one task to Done local-only. No dependency, migration, auth, legal,
+  pricing, Ads/service configuration, push, Preview or Production operation.
+  Normal browser viewport restored; local preview remains available on3190.
+  Full receipt: `docs/homepage-hero-polish-2026-10-05.md`.
+
 ## 2026-10-05 — Owner-requested homepage hero polish started, local only
 
 - Reused clean attached acquisition worktree at5e6213b; isolated branch

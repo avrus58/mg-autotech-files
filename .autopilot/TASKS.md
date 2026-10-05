@@ -24,26 +24,6 @@ Receipt: `docs/production-release-2026-10-01-address.md`.
 
 ## In Progress
 
-### MANUAL-20261005-HOMEPAGE-HERO-POLISH [P1] Compact first screen with an illustrative request preview
-
-Fingerprint: `public-homepage|first-screen|oversized-laptop-hero-and-generic-workflow-card|compact-truthful-product-preview`
-
-Owner said `hadi basla` after selecting first-screen density and a product
-preview. Current homepage source and public visual review show the large
-6.5rem title and a generic four-cell workflow with a static `Portal online`
-badge. Improve only this hero, preserving the black/red identity, all sections,
-links, services, catalogue/datalog tools and existing session behavior.
-
-Acceptance: compact readable mobile/laptop heading; no horizontal overflow;
-clearly labelled illustrative completed request with no real data, invented
-performance or fake download actions; all 12 locales translated on first paint;
-existing CTA and public sections retained; i18n, lint, full types/tests,
-production build and EN/DE/TR/ZH browser review pass.
-
-Local implementation only. No dependency, migration, pricing, legal, auth,
-customer-data, third-party service, push, Preview or Production change.
-Scope: HomepageExperience, scoped homepage translations and focused tests.
-
 ### MANUAL-20260919-AUTH-SESSION-RECOVERY [P1] Prevent stale checks from ending a newer browser session
 
 Fingerprint: `auth|browser-session|stale-response-and-global-logout|session-bound-recovery`
@@ -291,6 +271,24 @@ Remediation: Batch with a future documentation/source-comment maintenance pass a
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
+
+### MANUAL-20261005-HOMEPAGE-HERO-POLISH [P1] Compact first screen with an illustrative request preview
+
+Fingerprint: `public-homepage|first-screen|oversized-laptop-hero-and-generic-workflow-card|compact-truthful-product-preview`
+
+Status: **Done locally, not published.** Immutable source `6263cf1341ee`
+compacts the hero and replaces the generic workflow/static online badge with a
+clearly labelled example request, status, completed-file and PDF report preview.
+Black/red identity, existing CTAs, services, vehicle/datalog tools, metadata and
+session behavior are preserved. All 12 locales use reviewed first-paint copy.
+Final tests 1,870/1,870; targeted 27/27; i18n 37/37; lint; full web/desktop types;
+Webpack production build 282/282 and unchanged performance/artifact gates pass.
+Local raw HTTP HTML 12/12 and EN/DE/TR/ZH mobile/laptop browser checks pass;
+320px DE/RU/SQ and 1024px DE have no horizontal or preview-text overflow.
+Independent immutable review: GO, no P0/P1/P2 blocker. Narrow RU/SQ word breaks
+and existing shared floating overlays are documented, not claimed fixed.
+No dependency, schema, business rule, customer/service mutation, push or deploy.
+Receipt: `docs/homepage-hero-polish-2026-10-05.md`.
 
 ### MANUAL-20261005-REGISTRATION-LOCALE-STORAGE [P1] Keep optional language preferences from blocking signup
 
