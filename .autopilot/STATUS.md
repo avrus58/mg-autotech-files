@@ -1,5 +1,59 @@
 # Otonom calisma gunlugu
 
+## 2026-10-05 — Homepage interaction layer accepted locally, not published
+
+- One bounded task MANUAL-20261005-HOMEPAGE-MOTION. Clean feature branch
+  `codex/homepage-motion-20261005`, source `803b11aec92b`, base `7f6ea77`. Dirty
+  primary owner checkout remains untouched. No push, Preview or Production.
+- Changed UI: HomepageExperience, homepage-scoped globals.css and a 36-line
+  optional reveal helper; scoped homepage catalog has four new rows in all 12
+  locales. Manual three-stage example shows upload/review/delivery explanations,
+  with roving tabs, Arrow/Home/End, native Enter/Space and a focusable panel.
+  Existing compact design, black/red identity, features, routes, SEO/session
+  behavior and real service actions are preserved. No heavy motion dependency,
+  timers, autoplay, fake customer activity, download or file submission added.
+- Finite 650/850ms arrival, 600ms reveal, 220ms scene and hover/focus transitions;
+  scoped reduced-motion CSS removes motion. Actual helper tests cover missing
+  APIs/SSR, preference changes, cleanup and queued stale-callback fencing.
+  Static content does not depend on observer/JavaScript to become visible.
+- Final frozen-source gates all exit0: focused actual-handler/reveal acceptance
+  31/31; root motion/i18n targeted 36/36; full npm test 1879/1879; lint; full web
+  and desktop types; prebuild npm run check:i18n 37/37, 2478 reviewed rows per
+  non-English locale and zero clean English fallbacks. The initial test regex
+  falsely matched the overflow-hidden CSS class; it was corrected to actual
+  hidden attributes before the final pass, not removed or relabelled green.
+- Fresh npm run build -- --webpack: 282/282 pages, Build ID
+  `NAIt2Qch8U9WBuWqkylCE`; unchanged strict postbuild passes with 43 required
+  assets, 5 report fonts, 30 PDFKit and 8 sharp files, compiled anonymous Auth 401,
+  valid PNG/PDF and zero external fetches in that checker. Performance passes:
+  checked 3 initial chunks 15.7KB gzip against 80KB, no forbidden initial runtime;
+  localization payload budgets and 139 prerendered-route languages pass.
+  These are bounded checks, not total-site bytes or actual Production proof.
+- Local GET-only initial HTML 12/12: 19 expected localized preview strings,
+  completed default, three manual tabs, labelled panel, correct document lang,
+  canonical/alternates and retained vehicle/datalog anchors. Raw HTML proves
+  initial response, not an entire JavaScript-disabled interactive journey.
+- Actual browser EN/DE/TR/ZH at 1366x768 and 390x844: 24 unique stage cases,
+  one selected tab, correct visible copy, stable per-group card height and no
+  horizontal/preview-child overflow. Six real keyboard cases pass; four actual
+  language menu switches ZH->EN->DE->TR->ZH pass. 10.7s idle remains at same
+  chosen stage. Ordinary services anchor triggers one finite reveal while other
+  sections remain visible. Captured console warn/error: 0. Seventeen screenshots
+  and JSON receipts are in ignored runtime `homepage-motion-qa-20261005/`.
+- Immutable independent reviewer: final scoped GO, no P0/P1/P2. German 390px
+  long download word wraps its final letter: readable/usable P3, not fixed.
+  Shared fixed availability/language overlays are unchanged. Browser exposes
+  viewport/visibility only; reduced motion is CSS/helper-tested, NOT browser
+  preference-emulated. No wider no-defect or conversion claim is made.
+- Tests/build/server use OS-only synthetic child env and `.invalid` backend,
+  no dotenv/secret/customer/firmware contents or actual auth/email/payment/Ads/
+  database operation. Public quote intentionally unavailable in this isolation.
+  Local next start emits the known standalone advisory; build artifact checks
+  were not weakened. Viewport restored; preview remains available on 3190.
+- Moved only this task to Done, local-only. No package, migration, business rule,
+  legal text, service configuration or Production data change. No OS lifecycle
+  receipt invented because this checkout has no controller/doctor CLI.
+
 ## 2026-10-05 — Owner-requested homepage interaction layer started, local only
 
 - One bounded task MANUAL-20261005-HOMEPAGE-MOTION, clean branch

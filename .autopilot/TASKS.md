@@ -24,20 +24,6 @@ Receipt: `docs/production-release-2026-10-01-address.md`.
 
 ## In Progress
 
-### MANUAL-20261005-HOMEPAGE-MOTION [P1] More engaging homepage with a user-controlled request illustration
-
-Fingerprint: `public-homepage|static-presentation|owner-requested-modern-interaction|progressive-motion-and-manual-request-demo`
-
-Owner requests a more modern, lively homepage after accepting compact hero
-layout. This is a distinct interaction layer, not another density redesign.
-Preserve all features, black/red identity, first HTML, all12 locales, SEO and
-auth/session behavior. Add bounded CSS entrance/hover/focus motion and manual
-three-step illustrative request exploration; no autoplay, real file action or
-fabricated customer activity. Content stays visible without JS/observer and
-motion-disabled users retain all functionality. Verify keyboard/responsive
-behavior, i18n, lint, full types/tests, production build and independent review.
-No dependency, price/legal/schema/service/Ads change, push or deployment.
-
 ### MANUAL-20260919-AUTH-SESSION-RECOVERY [P1] Prevent stale checks from ending a newer browser session
 
 Fingerprint: `auth|browser-session|stale-response-and-global-logout|session-bound-recovery`
@@ -285,6 +271,26 @@ Remediation: Batch with a future documentation/source-comment maintenance pass a
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
+
+### MANUAL-20261005-HOMEPAGE-MOTION [P1] More engaging homepage with a user-controlled request illustration
+
+Fingerprint: `public-homepage|static-presentation|owner-requested-modern-interaction|progressive-motion-and-manual-request-demo`
+
+Status: **Done locally, not published.** Immutable source `803b11aec92b`
+adds finite homepage-only entrance/reveal/hover/focus motion and a manual,
+keyboard-accessible three-stage example. No autoplay or pretend real action.
+The compact layout, black/red identity, features, routes, SEO and auth behavior
+remain. Four new strings are complete in all12 locales; content is SSR-visible.
+Final full tests1879/1879; targeted36/36; prebuild i18n37/37; lint; web/desktop
+types; Webpack282/282; unchanged strict artifact and performance gates pass.
+Raw initial HTML12/12 and EN/DE/TR/ZH laptop/mobile24 stage cases pass, with
+six actual keyboard cases, four menu language switches, stable heights, no
+horizontal/preview text overflow and zero captured console warn/error.
+Independent immutable review: GO, no P0/P1/P2. German mobile word wrapping is
+P3; shared fixed overlays are unchanged. Reduced motion is CSS/helper-tested,
+not browser-emulated; raw HTML is not a full JavaScript-disabled journey.
+No dependency, schema, business/service/customer change, push or deployment.
+Receipt: STATUS entry and ignored runtime `homepage-motion-qa-20261005/`.
 
 ### MANUAL-20261005-HOMEPAGE-HERO-POLISH [P1] Compact first screen with an illustrative request preview
 
