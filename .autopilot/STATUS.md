@@ -1,5 +1,27 @@
 # Otonom calisma gunlugu
 
+## 2026-10-05 — Further homepage service exploration started, local only
+
+- Owner-directed one bounded task MANUAL-20261005-HOMEPAGE-SERVICE-EXPLORER;
+  clean branch `codex/homepage-service-explorer-20261005` at6071932, reused
+  managed worktree. Dirty primary checkout remains untouched.
+- Read AGENTS, applicable skill/references, all constitution files, project,
+  current tasks/status, roadmap/inbox/history and recent Git/source changes.
+  OS controller/config/CLI absent; manual local engineering only, no fictional
+  unattended doctor/claim/validation receipt.
+- Read-only independent audit and /services source substantiate four existing
+  families. In-place filters improve current six-card/secondary-route hierarchy;
+  no duplicate navigator, fitchecker, hero redesign or extra section.
+- Preserve default first HTML/link/schema/credit copy, all existing features,
+  motion preference and auth behavior. All12 new copy plus full validation and
+  EN/DE/TR/ZH responsive/keyboard/browser checks required. No release authorized.
+- Early core i18n rejected newly-visible short source-identical loanword labels
+  in several languages. Replaced only category controls with more precise,
+  fully translated phrases; original service tags/copy remain unchanged and
+  no invariant/allowlist/guard was widened. Core final check passes2485/2485
+  reviewed rows per non-English locale, zero fallback. Eight new catalog rows
+  and the actual-component acceptance test are now frozen for full gates.
+
 ## 2026-10-05 — Homepage interaction layer accepted locally, not published
 
 - One bounded task MANUAL-20261005-HOMEPAGE-MOTION. Clean feature branch

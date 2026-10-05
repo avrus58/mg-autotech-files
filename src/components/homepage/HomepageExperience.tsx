@@ -77,6 +77,7 @@ const services = [
     credits: "10 Credits",
     href: "/services/stage-1",
     tag: "Performance",
+    category: "performance",
     icon: Gauge,
   },
   {
@@ -85,6 +86,7 @@ const services = [
     credits: "6 Credits",
     href: "/services/dpf-off",
     tag: "Diesel",
+    category: "diesel",
     icon: FileCode2,
   },
   {
@@ -93,6 +95,7 @@ const services = [
     credits: "6 Credits",
     href: "/services/egr-off",
     tag: "Airflow",
+    category: "diesel",
     icon: Wrench,
   },
   {
@@ -101,6 +104,7 @@ const services = [
     credits: "11 Credits",
     href: "/services/adblue-off",
     tag: "SCR",
+    category: "diesel",
     icon: ShieldCheck,
   },
   {
@@ -109,6 +113,7 @@ const services = [
     credits: "4 Credits",
     href: "/services/dtc-off",
     tag: "Diagnostic",
+    category: "diagnostic",
     icon: FileCheck2,
   },
   {
@@ -117,16 +122,25 @@ const services = [
     credits: "Manual",
     href: "/services/tcu-tuning",
     tag: "Gearbox",
+    category: "gearbox",
     icon: Cpu,
   },
 ] as const;
 
 const serviceDiscoveryLinks = [
-  { label: "Compare Stage 1–3", href: "/file-service#stage-comparison" },
-  { label: "Stage 2 File Service", href: "/services/stage-2" },
-  { label: "Stage 3 Custom Calibration", href: "/services/stage-3" },
-  { label: "ECU File Check", href: "/services/ecu-file-check" },
-  { label: "File Service Hub", href: "/file-service" },
+  { label: "Compare Stage 1–3", href: "/file-service#stage-comparison", category: "performance" },
+  { label: "Stage 2 File Service", href: "/services/stage-2", category: "performance" },
+  { label: "Stage 3 Custom Calibration", href: "/services/stage-3", category: "performance" },
+  { label: "ECU File Check", href: "/services/ecu-file-check", category: "diagnostic" },
+  { label: "File Service Hub", href: "/file-service", category: "all" },
+] as const;
+
+const serviceCategories = [
+  { id: "all", label: "All services", icon: LayoutDashboard },
+  { id: "performance", label: "Performance tuning", icon: Gauge },
+  { id: "diesel", label: "Diesel systems", icon: Wrench },
+  { id: "gearbox", label: "Gearbox tuning", icon: Cpu },
+  { id: "diagnostic", label: "Diagnostics & checks", icon: FileCheck2 },
 ] as const;
 
 const workflowSteps = [
@@ -681,36 +695,7 @@ export function HomepageExperience({
                 action={{ label: "Services Overview", href: "/services" }}
               />
 
-              <div className="mt-9 grid gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 sm:grid-cols-2 lg:grid-cols-3">
-                {services.map((service) => {
-                  const Icon = service.icon;
-                  return (
-                    <Link key={service.title} href={service.href} className="mg-homepage-card group relative min-h-48 bg-[#0a0a0c] p-5 transition hover:bg-[#101013] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-red-400 sm:p-6">
-                      <div className="flex items-start justify-between gap-4">
-                        <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/[0.08] text-red-400">
-                          <Icon className="h-5 w-5" />
-                        </span>
-                        <span className="rounded-full border border-white/10 px-2.5 py-1 text-[0.62rem] font-black uppercase tracking-[0.14em] text-zinc-400">{service.tag}</span>
-                      </div>
-                      <h3 className="mt-5 text-xl font-black tracking-tight">{service.title}</h3>
-                      <p className="mt-2 max-w-sm text-sm leading-6 text-zinc-400">{service.text}</p>
-                      <div className="mt-5 flex items-center justify-between gap-3 text-xs font-black">
-                        <span className="text-zinc-400">{service.credits}</span>
-                        <span className="inline-flex items-center text-red-400 transition group-hover:translate-x-1">View service <ArrowRight className="ml-1.5 h-3.5 w-3.5" /></span>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <span className="mr-1 text-xs font-bold text-zinc-400">More routes</span>
-                {serviceDiscoveryLinks.map((item) => (
-                  <Link key={item.href} href={item.href} className="rounded-full border border-white/10 bg-white/[0.025] px-3 py-2 text-xs font-bold text-zinc-400 transition hover:border-red-500/30 hover:text-white">
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
+              <HomepageServiceExplorer locale={locale} />
 
               <div className="mt-10 grid gap-3 lg:grid-cols-3">
                 {preparationTools.map((tool) => {
@@ -1016,6 +1001,87 @@ function HomepageHeader({
         </details>
       </div>
       </header>
+    </LocalizedHomepageTree>
+  );
+}
+
+function HomepageServiceExplorer({ locale }: { locale: LocaleCode }) {
+  // A local view of the existing catalog, not service eligibility or a quote.
+  const [activeCategory, setActiveCategory] = useState<(typeof serviceCategories)[number]["id"]>("all");
+  const visibleServices = services.filter((service) => activeCategory === "all" || service.category === activeCategory);
+  const relatedRoutes = serviceDiscoveryLinks.filter((route) => activeCategory === "all" || route.category === "all" || route.category === activeCategory);
+  const formatCount = (count: number) => new Intl.NumberFormat(intlLocaleByCode[locale]).format(count);
+
+  return (
+    <LocalizedHomepageTree>
+      <div data-homepage-service-explorer className="mt-7 min-w-0">
+        <div className="rounded-2xl border border-white/10 bg-[#0b0b0d] p-3 sm:p-4">
+          <div role="group" aria-label="Filter services" className="flex flex-wrap gap-2">
+            {serviceCategories.map((category) => {
+              const Icon = category.icon;
+              const count = category.id === "all" ? services.length : services.filter((service) => service.category === category.id).length;
+              return (
+                <button
+                  key={category.id}
+                  type="button"
+                  data-service-filter={category.id}
+                  aria-pressed={activeCategory === category.id}
+                  aria-controls="homepage-service-results"
+                  onClick={() => setActiveCategory(category.id)}
+                  className="mg-homepage-service-filter inline-flex min-h-11 max-w-full items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-left text-xs font-bold text-zinc-400 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400"
+                >
+                  <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span className="min-w-0 [overflow-wrap:anywhere]">{category.label}</span>
+                  <span className="ml-1 rounded-md bg-white/[0.055] px-1.5 py-0.5 text-[10px] tabular-nums">{formatCount(count)}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.07] pt-3 text-xs leading-5 text-zinc-400">
+            <p>Select a category to focus the services and related routes.</p>
+            <p role="status" aria-live="polite" aria-atomic="true" className="flex shrink-0 items-center gap-2">
+              <span>Matching services</span>
+              <span className="rounded-md bg-white/[0.055] px-2 font-bold tabular-nums text-zinc-200">{formatCount(visibleServices.length)}</span>
+            </p>
+          </div>
+        </div>
+
+        <div id="homepage-service-results" className="mt-3">
+          <ul key={activeCategory} data-service-count={visibleServices.length} className="mg-homepage-service-grid grid list-none gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {visibleServices.map((service) => {
+              const Icon = service.icon;
+              return (
+                <li key={service.href} className="min-w-0">
+                  <Link data-homepage-service={service.href} href={service.href} className="mg-homepage-card group flex h-full min-h-44 min-w-0 flex-col rounded-xl border border-white/[0.08] bg-[#0a0a0c] p-4 transition hover:border-red-500/35 hover:bg-[#101013] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400 sm:p-5">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/[0.08] text-red-400">
+                        <Icon className="h-4 w-4" aria-hidden="true" />
+                      </span>
+                      <div className="min-w-0">
+                        <h3 className="text-base font-black tracking-tight [overflow-wrap:anywhere]">{service.title}</h3>
+                        <span className="mt-0.5 block text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-400">{service.tag}</span>
+                      </div>
+                    </div>
+                    <p className="mb-4 mt-3 text-[13px] leading-6 text-zinc-400">{service.text}</p>
+                    <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.07] pt-3 text-xs font-bold">
+                      <span className="text-zinc-400">{service.credits}</span>
+                      <span className="inline-flex items-center text-red-400">View service <ArrowRight className="ml-1.5 h-3.5 w-3.5 transition group-hover:translate-x-1" aria-hidden="true" /></span>
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <span className="mr-1 text-xs font-bold text-zinc-400">More routes</span>
+            {relatedRoutes.map((item) => (
+              <Link key={item.href} data-homepage-related-route={item.href} href={item.href} className="inline-flex min-h-10 items-center rounded-full border border-white/10 bg-white/[0.025] px-3 py-2 text-xs font-bold text-zinc-400 transition hover:border-red-500/30 hover:text-white focus-visible:outline-2 focus-visible:outline-red-400">
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
     </LocalizedHomepageTree>
   );
 }

@@ -356,6 +356,22 @@ body {
 .mg-homepage .mg-homepage-preview-scene {
   animation: mg-homepage-reveal 220ms ease-out 1;
 }
+.mg-homepage .mg-homepage-service-grid {
+  animation: mg-homepage-reveal 220ms ease-out 1;
+}
+.mg-homepage .mg-homepage-service-grid[data-service-count="1"] {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 42rem;
+}
+.mg-homepage .mg-homepage-service-filter:hover {
+  color: #fff;
+  border-color: rgb(177 18 27 / 0.3);
+}
+.mg-homepage .mg-homepage-service-filter[aria-pressed="true"] {
+  color: #fff;
+  border-color: rgb(177 18 27 / 0.45);
+  background: rgb(177 18 27 / 0.14);
+}
 .mg-homepage .mg-homepage-card {
   transition: transform 200ms ease, background-color 200ms ease, border-color 200ms ease;
 }

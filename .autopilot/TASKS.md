@@ -24,6 +24,30 @@ Receipt: `docs/production-release-2026-10-01-address.md`.
 
 ## In Progress
 
+### MANUAL-20261005-HOMEPAGE-SERVICE-EXPLORER [P2] Category-aware service exploration within the existing homepage
+
+Fingerprint: `public-homepage|service-discovery|flat-six-card-grid-and-secondary-route-hierarchy|in-place-family-filtered-service-exploration`
+
+Owner asks for a further, more advanced homepage. Current source renders six
+static service cards and five secondary routes (HomepageExperience:73-122,
+675-713); /services already defines Performance, Diesel, Diagnostics and
+Transmission families. Independent read-only audit confirms this is distinct
+from historic situation fit-checkers, anchor navigation and SEO route maps.
+Replace the same grid with a native-button category explorer and compact card
+hierarchy; no extra homepage section or repeated hero/motion redesign.
+Default SSR All retains all six cards and five secondary routes. Families show
+6/1/3/1/1 deterministic cards; Performance retains Stage 2/3/comparison and
+Diagnostic retains ECU File Check. All existing credits/copy/real links remain.
+Eight new category/control/help strings cover all12 locales. Preserve tools, session,
+schemas, reduced motion, keyboard, focus, loading/error and mobile behavior.
+Allowed files: HomepageExperience.tsx, globals.css, scoped homepage translation
+rows, one targeted actual-component test and TASKS/STATUS/HISTORY receipts.
+Acceptance: SSR/link parity; actual filter/reset and native keyboard behavior;
+complete all12 copy; EN/DE/TR/ZH mobile/laptop plus full required gates and
+immutable independent review. No dependency/schema/price/legal/auth/Ads change,
+external operation, push, Preview or Production. Value scores B3/U4/A1/S3/C5,
+effort2/risk1; local GREEN code-only implementation, not release permission.
+
 ### MANUAL-20260919-AUTH-SESSION-RECOVERY [P1] Prevent stale checks from ending a newer browser session
 
 Fingerprint: `auth|browser-session|stale-response-and-global-logout|session-bound-recovery`
