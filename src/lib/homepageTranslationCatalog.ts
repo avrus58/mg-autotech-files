@@ -32,6 +32,11 @@ export function buildHomepageTranslationCatalog(
       ...homepageExperienceExactTranslations[locale],
       [homepageHeroIntroSource]: homeSeo[locale].intro,
       "Custom ECU & TCU": heroCopy.customTitle,
+      "Stage 1 Tuning": publicSurfaceExactT(
+        locale,
+        "Stage 1 Tuning",
+        publicCoreTranslations,
+      ),
       "EGR / AGR OFF": publicSurfaceExactT(
         locale,
         "EGR / AGR OFF",

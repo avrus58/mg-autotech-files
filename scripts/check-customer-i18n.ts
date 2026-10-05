@@ -443,7 +443,6 @@ const reviewedLocaleSpecificSourceIdenticalRows: ReadonlyArray<
   ["per credit", ["nl"]],
   ["Platform", ["nl", "tr"]],
   ["Popular", ["es", "pt"]],
-  ["Portal online", ["de", "pl", "pt"]],
   ["Possible", ["fr"]],
   ["Postcode", ["nl"]],
   ["Processor", ["nl"]],

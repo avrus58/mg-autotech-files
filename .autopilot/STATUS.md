@@ -1,5 +1,19 @@
 # Otonom calisma gunlugu
 
+## 2026-10-05 — Owner-requested homepage hero polish started, local only
+
+- Reused clean attached acquisition worktree at5e6213b; isolated branch
+  codex/homepage-polish-20261005. Dirty primary owner checkout untouched.
+- One bounded manual task: compact the first screen and replace the generic
+  hero workflow with a clearly labelled synthetic request/delivery/PDF preview.
+- Read project/tasks/status, constitution and deduplicated roadmap/inbox/history.
+  This checkout has no Autopilot OS policy/CLI; no unattended lifecycle command
+  is invented. Manual owner-directed engineering and independent review apply.
+- All12 locale copy and mobile/laptop visual verification are required.
+  No gate has passed for the new candidate yet; task is In Progress.
+- No push, Preview/Production, dependency, environment, database, pricing,
+  payment, customer-data or legal change is authorized by this start request.
+
 ## 2026-10-05 — Owner-approved registration locale correction published
 
 - Owner answered `evet` to the named prepared registration-only Production

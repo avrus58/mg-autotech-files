@@ -183,6 +183,7 @@ test("the refreshed homepage has reviewed exact copy for every visible journey s
     "The important answers, without another wall of cards.",
     "Put the next request into one clear workflow.",
     "Secure request workspace",
+    "Illustrative preview. No customer data.",
     "Loading current credit prices",
   ] as const;
 
@@ -256,7 +257,7 @@ test("deferred homepage modules stay inside the locale translation observer", ()
 
 test("localized hero and navigation stay readable on phones and compact laptops", () => {
   assert.match(rootHomepage, /locale === "en"/u);
-  assert.match(rootHomepage, /text-\[clamp\(2\.8rem,7vw,6\.5rem\)\]/u);
+  assert.match(rootHomepage, /text-\[clamp\(2\.6rem,4\.6vw,4\.4rem\)\]/u);
   assert.match(rootHomepage, /aria-label="Open navigation"/u);
   assert.match(rootHomepage, /className="hidden items-center gap-1 lg:flex"/u);
   assert.match(rootHomepage, /w-\[min\(20rem,calc\(100vw-2rem\)\)\]/u);

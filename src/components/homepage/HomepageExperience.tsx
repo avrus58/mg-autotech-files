@@ -600,33 +600,33 @@ export function HomepageExperience({
           />
 
           <main>
-          <section className="relative isolate overflow-hidden border-b border-white/[0.07]">
+          <section data-homepage-hero className="relative isolate overflow-hidden border-b border-white/[0.07]">
             <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_72%_14%,rgba(177,18,27,0.24),transparent_26rem),radial-gradient(circle_at_8%_28%,rgba(59,130,246,0.07),transparent_23rem),linear-gradient(180deg,#08080a,#050506)]" />
             <div className="pointer-events-none absolute inset-0 -z-10 opacity-[0.18] [background-image:linear-gradient(rgba(255,255,255,.06)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.06)_1px,transparent_1px)] [background-size:64px_64px] [mask-image:linear-gradient(to_bottom,black,transparent_92%)]" />
 
-            <div className="mx-auto grid max-w-[86rem] gap-10 px-4 pb-12 pt-14 sm:px-6 sm:pb-16 sm:pt-20 lg:grid-cols-[1.02fr_.98fr] lg:items-center lg:pb-20 lg:pt-24">
-              <div className="max-w-3xl">
-                <div className="inline-flex items-center gap-2 rounded-full border border-red-500/25 bg-red-500/[0.08] px-3 py-1.5 text-[0.68rem] font-black uppercase tracking-[0.18em] text-red-200">
-                  <CircleDot className="h-3.5 w-3.5 text-red-500" /> Professional online file service platform
+            <div className="mx-auto grid max-w-[86rem] gap-8 px-4 py-10 sm:px-6 sm:py-12 lg:grid-cols-[1.06fr_.94fr] lg:items-center lg:gap-8 xl:gap-12">
+              <div className="min-w-0 max-w-3xl">
+                <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-red-500/25 bg-red-500/[0.08] px-3 py-1.5 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-red-200">
+                  <CircleDot className="h-3.5 w-3.5 shrink-0 text-red-500" aria-hidden="true" /> Professional online file service platform
                 </div>
-                <h1 className="mt-6 text-[clamp(2.8rem,7vw,6.5rem)] font-black leading-[0.87] tracking-[-0.065em]">
+                <h1 className="mt-5 text-[clamp(2.6rem,4.6vw,4.4rem)] font-black leading-[1.03] tracking-[-0.045em] [overflow-wrap:anywhere]">
                   <span className="block">{"Custom ECU & TCU"}</span>
                   {" "}
                   <span className="block bg-gradient-to-r from-white via-zinc-200 to-red-500 bg-clip-text text-transparent">Tuning Files</span>
                 </h1>
-                <p className="mt-6 max-w-2xl text-base leading-7 text-zinc-400 sm:text-lg">
+                <p className="mt-5 max-w-xl text-sm leading-6 text-zinc-400 sm:text-base sm:leading-7">
                   Upload original ECU/TCU files, select your service, track your order and download the completed file directly through the secure MG AutoTech customer portal.
                 </p>
-                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                  <Link href="/new-request" className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#b1121b] px-6 text-sm font-black text-white shadow-[0_18px_55px_rgba(177,18,27,.22)] transition hover:-translate-y-0.5 hover:bg-[#ce1722] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400">
+                <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                  <Link href="/new-request" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-bold text-white shadow-[0_12px_35px_rgba(177,18,27,.18)] transition hover:bg-[#ce1722] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#08080a]">
                     {isLoggedIn ? "Create File Request" : "Start File Request"}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
-                  <Link href="#vehicle-data" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/12 bg-white/[0.035] px-6 text-sm font-black text-white transition hover:border-white/25 hover:bg-white/[0.07]">
+                  <Link href="#vehicle-data" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/12 bg-white/[0.035] px-5 py-3 text-sm font-bold text-white transition hover:border-white/25 hover:bg-white/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#08080a]">
                     <Search className="mr-2 h-4 w-4 text-red-400" /> Check vehicle data
                   </Link>
                 </div>
-                <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-xs font-bold text-zinc-400">
+                <div className="mt-5 flex flex-wrap gap-x-4 gap-y-2 text-xs font-medium leading-5 text-zinc-400">
                   {[
                     "Private customer portal",
                     "Published vehicle data",
@@ -1007,53 +1007,77 @@ function HomepageHeader({
 
 function HeroProductPreview() {
   const previewSteps = [
-    { label: "Vehicle & ECU", meta: "Request context", state: "Ready", icon: Cpu },
-    { label: "Original file", meta: "Private upload", state: "Secure", icon: Upload },
-    { label: "Status & messages", meta: "Customer workspace", state: "Tracked", icon: MessageCircle },
-    { label: "Completed file", meta: "Account delivery", state: "Download", icon: Download },
+    "File uploaded",
+    "File reviewed",
+    "Ready for download",
   ];
 
   return (
     <LocalizedHomepageTree>
-      <div className="relative mx-auto w-full max-w-[39rem] lg:mx-0 lg:ml-auto">
-      <div className="absolute -inset-8 -z-10 rounded-full bg-red-600/10 blur-3xl" />
-      <div className="overflow-hidden rounded-[1.75rem] border border-white/12 bg-[#0b0b0e]/95 shadow-[0_34px_100px_rgba(0,0,0,.55)]">
-        <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-          <div>
-            <div className="text-xs font-black">Secure request workspace</div>
-            <div className="mt-1 text-[0.65rem] text-zinc-400">One workflow from upload to delivery</div>
+      <aside data-homepage-product-preview aria-label="Example preview" className="relative mx-auto w-full min-w-0 max-w-[36rem] [overflow-wrap:anywhere] lg:mx-0 lg:ml-auto">
+        <div aria-hidden="true" className="pointer-events-none absolute -inset-6 -z-10 rounded-full bg-red-600/[0.08] blur-3xl" />
+        <div className="overflow-hidden rounded-2xl border border-white/12 bg-[#0b0b0e] shadow-[0_24px_80px_rgba(0,0,0,.4)]">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.08] px-4 py-3.5 sm:px-5">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/[0.08] text-red-400"><LayoutDashboard className="h-4 w-4" aria-hidden="true" /></span>
+              <div className="min-w-0">
+                <div className="text-sm font-bold">Customer workspace</div>
+                <div className="mt-0.5 text-xs text-zinc-400">Secure request workspace</div>
+              </div>
+            </div>
+            <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs font-medium text-zinc-300">Example preview</span>
           </div>
-          <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/[0.07] px-2.5 py-1 text-[0.6rem] font-black uppercase tracking-[0.12em] text-emerald-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Portal online</span>
-        </div>
-        <div className="p-4 sm:p-5">
-          <div className="grid gap-2 sm:grid-cols-2">
-            {previewSteps.map((item, index) => {
-              const Icon = item.icon;
-              return (
-                <div key={item.label} className="rounded-xl border border-white/8 bg-white/[0.025] p-3.5">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/[0.08] text-red-400"><Icon className="h-4 w-4" /></span>
-                    <span className="text-[0.58rem] font-black text-zinc-700">0{index + 1}</span>
-                  </div>
-                  <div className="mt-3 text-xs font-black">{item.label}</div>
-                  <div className="mt-1 flex items-center justify-between gap-2 text-[0.62rem]">
-                    <span className="text-zinc-400">{item.meta}</span>
-                    <span className="font-black text-emerald-400">{item.state}</span>
-                  </div>
+          <div className="space-y-4 p-4 sm:p-5">
+            <div className="rounded-xl border border-white/10 bg-white/[0.025] p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <div className="text-xs text-zinc-400">Example request</div>
+                  <div className="mt-1 text-base font-bold tracking-tight">Stage 1 Tuning</div>
                 </div>
-              );
-            })}
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/[0.08] px-2.5 py-1 text-xs font-semibold text-emerald-300"><Check className="h-3.5 w-3.5" aria-hidden="true" />Completed</span>
+              </div>
+              <ol className="mt-4 grid grid-cols-3 gap-3 border-t border-white/[0.07] pt-3">
+                {previewSteps.map((label) => (
+                  <li key={label} className="min-w-0 text-xs leading-5 text-zinc-300">
+                    <span className="mb-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400"><Check className="h-3 w-3" aria-hidden="true" /></span>
+                    {label}
+                  </li>
+                ))}
+              </ol>
+            </div>
+            <div className="flex items-start gap-3 px-1">
+              <MessageCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" aria-hidden="true" />
+              <div className="min-w-0 text-xs leading-5">
+                <div className="font-semibold text-zinc-200">Status & messages</div>
+                <p className="mt-0.5 text-zinc-400">Your completed file is ready in your account.</p>
+              </div>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div className="flex min-w-0 items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.025] p-3">
+                <FileCode2 className="mt-0.5 h-4 w-4 shrink-0 text-red-400" aria-hidden="true" />
+                <div className="min-w-0 text-xs leading-5">
+                  <div className="font-semibold text-zinc-200">Completed file</div>
+                  <div className="text-zinc-400">Account delivery</div>
+                </div>
+                <Download className="ml-auto mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-500" aria-hidden="true" />
+              </div>
+              <div className="flex min-w-0 items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.025] p-3">
+                <BookOpen className="mt-0.5 h-4 w-4 shrink-0 text-red-400" aria-hidden="true" />
+                <div className="min-w-0 text-xs leading-5">
+                  <div className="font-semibold text-zinc-200">Service report</div>
+                  <div className="text-zinc-400">PDF after completion</div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-red-500/20 bg-red-500/[0.06] px-4 py-3">
-            <span className="min-w-0">
-              <span className="block truncate text-xs font-black">Files stay with the customer request</span>
-              <span className="mt-0.5 block text-[0.62rem] text-zinc-400">Status, messages, revisions and delivery</span>
-            </span>
-            <LockKeyhole className="h-4 w-4 shrink-0 text-red-400" />
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.08] bg-white/[0.015] px-4 py-2.5 sm:px-5">
+            <p className="text-xs leading-5 text-zinc-400">Illustrative preview. No customer data.</p>
+            <Link href="/how-it-works" className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-1 text-xs font-semibold text-red-300 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400">
+              How It Works <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </Link>
           </div>
         </div>
-      </div>
-      </div>
+      </aside>
     </LocalizedHomepageTree>
   );
 }
@@ -1061,7 +1085,7 @@ function HeroProductPreview() {
 function HeroProof({ icon: Icon, label, value }: { icon: typeof ShieldCheck; label: string; value: string }) {
   return (
     <LocalizedHomepageTree>
-      <div className="flex items-center gap-3 py-4 sm:px-5 sm:first:pl-0">
+      <div className="flex min-w-0 items-center gap-3 py-3 sm:px-5 sm:first:pl-0">
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.04] text-red-400"><Icon className="h-4 w-4" /></span>
       <span>
         <span className="block text-[0.6rem] font-black uppercase tracking-[0.14em] text-zinc-400">{label}</span>

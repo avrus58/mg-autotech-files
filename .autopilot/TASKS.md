@@ -24,6 +24,26 @@ Receipt: `docs/production-release-2026-10-01-address.md`.
 
 ## In Progress
 
+### MANUAL-20261005-HOMEPAGE-HERO-POLISH [P1] Compact first screen with an illustrative request preview
+
+Fingerprint: `public-homepage|first-screen|oversized-laptop-hero-and-generic-workflow-card|compact-truthful-product-preview`
+
+Owner said `hadi basla` after selecting first-screen density and a product
+preview. Current homepage source and public visual review show the large
+6.5rem title and a generic four-cell workflow with a static `Portal online`
+badge. Improve only this hero, preserving the black/red identity, all sections,
+links, services, catalogue/datalog tools and existing session behavior.
+
+Acceptance: compact readable mobile/laptop heading; no horizontal overflow;
+clearly labelled illustrative completed request with no real data, invented
+performance or fake download actions; all 12 locales translated on first paint;
+existing CTA and public sections retained; i18n, lint, full types/tests,
+production build and EN/DE/TR/ZH browser review pass.
+
+Local implementation only. No dependency, migration, pricing, legal, auth,
+customer-data, third-party service, push, Preview or Production change.
+Scope: HomepageExperience, scoped homepage translations and focused tests.
+
 ### MANUAL-20260919-AUTH-SESSION-RECOVERY [P1] Prevent stale checks from ending a newer browser session
 
 Fingerprint: `auth|browser-session|stale-response-and-global-logout|session-bound-recovery`
