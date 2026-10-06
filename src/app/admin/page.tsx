@@ -46,6 +46,15 @@ import {
 import { countCompletedToday } from "@/lib/adminDashboardMetrics";
 import { hasAdminSnapshotRegression } from "@/lib/adminDataStability";
 import {
+  acceptAdminCustomerSubmittedFields,
+  cloneAdminCustomerDraftFields,
+  createAdminCustomerDraft,
+  editAdminCustomerDraft,
+  isAdminCustomerDraftIdentity,
+  reconcileAdminCustomerDraftFields,
+  type AdminCustomerDraft,
+} from "@/lib/adminCustomerDraft";
+import {
   FILE_VERSION_LABEL_MAX_LENGTH,
   buildFileVersionPathSegment,
   formatFileVersionLabel,
@@ -242,6 +251,19 @@ type CustomerForm = {
   global_custom_unit_price_eur: string;
   effective_custom_unit_price_eur: string;
 };
+
+const customerProfileFormKeys = [
+  "full_name", "account_type", "company_name", "phone", "street", "postal_code",
+  "city", "country", "vat_id", "invoice_email", "preferred_contact",
+  "allow_negative_credits", "negative_credit_limit", "account_status", "customer_tags",
+  "internal_admin_note",
+] as const satisfies readonly (keyof CustomerForm)[];
+
+const customerPricingFormKeys = [
+  "commercial_package_price_overrides_eur", "commercial_custom_unit_price_override_eur",
+  "payment_stripe", "payment_bank", "commercial_internal_note", "global_package_prices_eur",
+  "effective_package_prices_eur", "global_custom_unit_price_eur", "effective_custom_unit_price_eur",
+] as const satisfies readonly (keyof CustomerForm)[];
 
 const statusOptions = [
   "all",
@@ -522,6 +544,14 @@ function makeCustomerForm(customer: Profile): CustomerForm {
   };
 }
 
+function mergeCustomerSnapshot(current: Profile, incoming: Profile, preserveProfileFields: boolean): Profile {
+  if (!preserveProfileFields) return incoming;
+  return {
+    ...incoming,
+    ...Object.fromEntries(customerProfileFormKeys.map((key) => [key, current[key]])),
+  };
+}
+
 function formatCreditUnitAmount(value: number) {
   return value.toLocaleString("de-DE", {
     minimumFractionDigits: 2,
@@ -641,7 +671,19 @@ export default function AdminPage() {
   const [emailDeliveryIssues, setEmailDeliveryIssues] = useState<AdminEmailDeliveryIssue[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<Profile | null>(null);
-  const [customerForm, setCustomerForm] = useState<CustomerForm | null>(null);
+  const [customerEditor, setCustomerEditor] = useState<AdminCustomerDraft<CustomerForm> | null>(null);
+  const customerForm = customerEditor?.draft ?? null;
+  const setCustomerForm: React.Dispatch<React.SetStateAction<CustomerForm | null>> = (action) => {
+    const identity = customerEditor && {
+      customerId: customerEditor.customerId,
+      instanceId: customerEditor.instanceId,
+    };
+    setCustomerEditor((current) => {
+      if (!identity || !isAdminCustomerDraftIdentity(current, identity)) return current;
+      const next = typeof action === "function" ? action(current.draft) : action;
+      return next === null ? null : editAdminCustomerDraft(current, next);
+    });
+  };
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [search, setSearch] = useState("");
   const [customerSearch, setCustomerSearch] = useState("");
@@ -684,6 +726,9 @@ export default function AdminPage() {
   const creditAdjustmentGuardRef = useRef(new StaffCreditAdjustmentOperationGuard());
   const customerPricingLoadRequestRef = useRef(0);
   const customerPricingSaveRequestRef = useRef(0);
+  const customerProfileSaveRequestRef = useRef(0);
+  const customerProfileSnapshotRevisionRef = useRef(0);
+  const customerEditorInstanceRef = useRef(0);
   const selectedCustomerIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -802,6 +847,11 @@ export default function AdminPage() {
     }
 
     const loadSequence = ++adminLoadSequenceRef.current;
+    const editorIdentity = {
+      customerId: selectedCustomerIdRef.current ?? "",
+      instanceId: customerEditorInstanceRef.current,
+    };
+    const profileSnapshotRevision = customerProfileSnapshotRevisionRef.current;
     const hasVerifiedSnapshot = hasLoadedAdminDataRef.current;
     const silent = Boolean(options?.silent || options?.automatic || hasVerifiedSnapshot);
     adminRefreshInFlightRef.current = true;
@@ -926,15 +976,31 @@ export default function AdminPage() {
       resetAdminRetryBudget();
 
       setOrders(nextOrders);
-      setCustomers(nextCustomers);
+      const preserveProfileFields = profileSnapshotRevision !== customerProfileSnapshotRevisionRef.current;
+      setCustomers((current) => {
+        const currentById = new Map(current.map((customer) => [customer.id, customer]));
+        return nextCustomers.map((customer) => {
+          const previous = currentById.get(customer.id);
+          return previous
+            ? mergeCustomerSnapshot(previous, customer, preserveProfileFields)
+            : customer;
+        });
+      });
       setEmailDeliveryIssues(nextEmailIssues);
       setSelectedOrder((current) => (current ? nextOrders.find((order) => order.id === current.id) ?? current : null));
       setSelectedCustomer((current) => {
         if (!current) return null;
-        const updated = nextCustomers.find((customer) => customer.id === current.id) ?? current;
-        setCustomerForm(makeCustomerForm(updated));
-        return updated;
+        const incoming = nextCustomers.find((customer) => customer.id === current.id);
+        return incoming
+          ? mergeCustomerSnapshot(current, incoming, preserveProfileFields)
+          : current;
       });
+      const editorCustomer = nextCustomers.find((customer) => customer.id === editorIdentity.customerId);
+      if (editorCustomer && profileSnapshotRevision === customerProfileSnapshotRevisionRef.current) {
+        setCustomerEditor((current) => current
+          ? reconcileAdminCustomerDraftFields(current, editorIdentity, makeCustomerForm(editorCustomer), customerProfileFormKeys)
+          : current);
+      }
       setAdminLoadError("");
       setAdminSyncIssue(null);
       setAdminDataReady(true);
@@ -1190,7 +1256,11 @@ export default function AdminPage() {
   });
 
   async function loadCustomerPricing(customerId: string) {
+    const instanceId = customerEditorInstanceRef.current;
+    const editorIdentity = { customerId, instanceId };
+    if (selectedCustomerIdRef.current !== customerId) return;
     const requestId = ++customerPricingLoadRequestRef.current;
+    const pricingSaveRequestId = customerPricingSaveRequestRef.current;
     setCustomerPricingLoadState("loading");
     setCustomerPricingError("");
     setCustomerPricingMessage("");
@@ -1211,7 +1281,9 @@ export default function AdminPage() {
 
       if (
         customerPricingLoadRequestRef.current !== requestId ||
-        selectedCustomerIdRef.current !== customerId
+        customerPricingSaveRequestRef.current !== pricingSaveRequestId ||
+        selectedCustomerIdRef.current !== customerId ||
+        customerEditorInstanceRef.current !== instanceId
       ) return;
       if (
         !response.ok ||
@@ -1235,8 +1307,13 @@ export default function AdminPage() {
         throw new Error("Customer pricing revision could not be verified. Reload before making changes.");
       }
 
-      setCustomerForm((current) => current
-        ? applyCustomerPricingPayload(current, payload.policy as CustomerCommercialPolicyPayload, payload.effectiveQuote)
+      setCustomerEditor((current) => current
+        ? reconcileAdminCustomerDraftFields(
+          current,
+          editorIdentity,
+          applyCustomerPricingPayload(current.draft, payload.policy as CustomerCommercialPolicyPayload, payload.effectiveQuote),
+          customerPricingFormKeys,
+        )
         : current);
       setCustomerPricingUpdatedAt(
         typeof payload.policy.updated_at === "string" ? payload.policy.updated_at : null,
@@ -1246,7 +1323,9 @@ export default function AdminPage() {
     } catch (error) {
       if (
         customerPricingLoadRequestRef.current !== requestId ||
-        selectedCustomerIdRef.current !== customerId
+        customerPricingSaveRequestRef.current !== pricingSaveRequestId ||
+        selectedCustomerIdRef.current !== customerId ||
+        customerEditorInstanceRef.current !== instanceId
       ) return;
       setCustomerPricingLoadState("error");
       setCustomerPricingWritesEnabled(false);
@@ -1259,12 +1338,32 @@ export default function AdminPage() {
   }
 
   function openCustomer(customer: Profile) {
+    const instanceId = ++customerEditorInstanceRef.current;
+    customerProfileSaveRequestRef.current += 1;
     customerPricingSaveRequestRef.current += 1;
     selectedCustomerIdRef.current = customer.id;
+    setCustomerSavingId(null);
     setCustomerPricingSavingId(null);
     setSelectedCustomer(customer);
-    setCustomerForm(makeCustomerForm(customer));
+    setCustomerEditor(createAdminCustomerDraft({ customerId: customer.id, instanceId }, makeCustomerForm(customer)));
     void loadCustomerPricing(customer.id);
+  }
+
+  function closeCustomer() {
+    customerEditorInstanceRef.current += 1;
+    customerProfileSaveRequestRef.current += 1;
+    customerPricingLoadRequestRef.current += 1;
+    customerPricingSaveRequestRef.current += 1;
+    selectedCustomerIdRef.current = null;
+    setSelectedCustomer(null);
+    setCustomerEditor(null);
+    setCustomerSavingId(null);
+    setCustomerPricingLoadState("idle");
+    setCustomerPricingError("");
+    setCustomerPricingMessage("");
+    setCustomerPricingUpdatedAt(null);
+    setCustomerPricingWritesEnabled(false);
+    setCustomerPricingSavingId(null);
   }
 
   async function saveCustomerPricing() {
@@ -1278,12 +1377,16 @@ export default function AdminPage() {
       setCustomerPricingError("The selected customer changed. Reopen the customer before saving pricing.");
       return;
     }
+    const instanceId = customerEditorInstanceRef.current;
+    const editorIdentity = { customerId: selectedCustomer.id, instanceId };
+    if (!isAdminCustomerDraftIdentity(customerEditor, editorIdentity)) return;
     if (customerPricingLoadState !== "ready") {
       setCustomerPricingError("Load the current customer pricing policy before saving.");
       return;
     }
 
     const customerId = selectedCustomer.id;
+    const submittedForm = cloneAdminCustomerDraftFields(customerForm);
     const parsedPackageOverrides = creditPackages.map((item) => {
       const parsedOverride = parseOptionalPackageTotal(
         customerForm.commercial_package_price_overrides_eur[item.id],
@@ -1313,6 +1416,7 @@ export default function AdminPage() {
     const customUnitPriceOverrideEuro = parsedCustomOverride.value;
 
     const requestId = ++customerPricingSaveRequestRef.current;
+    customerPricingLoadRequestRef.current += 1;
     setCustomerPricingSavingId(customerId);
     setCustomerPricingError("");
     setCustomerPricingMessage("");
@@ -1344,7 +1448,8 @@ export default function AdminPage() {
 
       if (
         customerPricingSaveRequestRef.current !== requestId ||
-        selectedCustomerIdRef.current !== customerId
+        selectedCustomerIdRef.current !== customerId ||
+        customerEditorInstanceRef.current !== instanceId
       ) return;
       if (
         !response.ok ||
@@ -1362,8 +1467,14 @@ export default function AdminPage() {
         throw new Error("Saved pricing revision could not be verified. Reload before making another change.");
       }
 
-      setCustomerForm((current) => current
-        ? applyCustomerPricingPayload(current, payload.policy as CustomerCommercialPolicyPayload, payload.effectiveQuote)
+      setCustomerEditor((current) => current
+        ? acceptAdminCustomerSubmittedFields(
+          current,
+          editorIdentity,
+          submittedForm,
+          applyCustomerPricingPayload(current.draft, payload.policy as CustomerCommercialPolicyPayload, payload.effectiveQuote),
+          customerPricingFormKeys,
+        )
         : current);
       setCustomerPricingUpdatedAt(
         typeof payload.policy.updated_at === "string" ? payload.policy.updated_at : null,
@@ -1381,7 +1492,8 @@ export default function AdminPage() {
     } catch (error) {
       if (
         customerPricingSaveRequestRef.current !== requestId ||
-        selectedCustomerIdRef.current !== customerId
+        selectedCustomerIdRef.current !== customerId ||
+        customerEditorInstanceRef.current !== instanceId
       ) return;
       setCustomerPricingError(
         error instanceof Error
@@ -1391,8 +1503,11 @@ export default function AdminPage() {
     } finally {
       if (
         customerPricingSaveRequestRef.current === requestId &&
-        selectedCustomerIdRef.current === customerId
+        selectedCustomerIdRef.current === customerId &&
+        customerEditorInstanceRef.current === instanceId
       ) {
+        customerPricingLoadRequestRef.current += 1;
+        setCustomerPricingLoadState((current) => current === "loading" ? "error" : current);
         setCustomerPricingSavingId(null);
       }
     }
@@ -1518,6 +1633,12 @@ export default function AdminPage() {
     if (!selectedCustomer || !customerForm) return;
     const customerId = selectedCustomer.id;
     const customerSnapshot = selectedCustomer;
+    const instanceId = customerEditorInstanceRef.current;
+    const editorIdentity = { customerId, instanceId };
+    if (selectedCustomerIdRef.current !== customerId || !isAdminCustomerDraftIdentity(customerEditor, editorIdentity)) return;
+    const submittedForm = cloneAdminCustomerDraftFields(customerForm);
+    const requestId = ++customerProfileSaveRequestRef.current;
+    customerProfileSnapshotRevisionRef.current += 1;
     setCustomerSavingId(customerId);
     setMessage("");
 
@@ -1543,6 +1664,7 @@ export default function AdminPage() {
           }
         : {}),
     };
+    const submittedProfileKeys = customerProfileFormKeys.filter((key) => Object.hasOwn(updatePayload, key));
 
     try {
       const profileResponse = await authenticatedFetch(
@@ -1555,10 +1677,18 @@ export default function AdminPage() {
       );
       const profilePayload = await profileResponse.json().catch(() => ({}));
 
+      if (
+        customerProfileSaveRequestRef.current !== requestId ||
+        selectedCustomerIdRef.current !== customerId ||
+        customerEditorInstanceRef.current !== instanceId
+      ) return;
+
       if (!profileResponse.ok) {
-        if (selectedCustomerIdRef.current === customerId) {
-          setMessage(profilePayload.error || "Customer profile could not be saved.");
-        }
+        setMessage(profilePayload.error || "Customer profile could not be saved.");
+        return;
+      }
+      if (profilePayload.customer?.id !== customerId) {
+        setMessage("Customer profile could not be saved. Check the connection and retry.");
         return;
       }
 
@@ -1568,20 +1698,37 @@ export default function AdminPage() {
         ...(profilePayload.customer ?? {}),
         id: customerId,
       } as Profile;
+      const confirmedProfileFields = Object.fromEntries(
+        submittedProfileKeys.map((key) => [key, updatedCustomer[key]]),
+      ) as Partial<Profile>;
+      customerProfileSnapshotRevisionRef.current += 1;
       setCustomers((current) => current.map((customer) => (
-        customer.id === customerId ? updatedCustomer : customer
+        customer.id === customerId ? { ...customer, ...confirmedProfileFields } : customer
       )));
       if (selectedCustomerIdRef.current !== customerId) return;
       setSelectedCustomer((current) => (
-        current?.id === customerId ? updatedCustomer : current
+        current?.id === customerId ? { ...current, ...confirmedProfileFields } : current
       ));
+      setCustomerEditor((current) => current
+        ? acceptAdminCustomerSubmittedFields(current, editorIdentity, submittedForm, makeCustomerForm(updatedCustomer), submittedProfileKeys)
+        : current);
       setMessage(`${customerSnapshot.customer_id ?? customerSnapshot.email ?? "Customer"} updated.`);
     } catch {
-      if (selectedCustomerIdRef.current === customerId) {
+      if (
+        customerProfileSaveRequestRef.current === requestId &&
+        selectedCustomerIdRef.current === customerId &&
+        customerEditorInstanceRef.current === instanceId
+      ) {
         setMessage("Customer profile could not be saved. Check the connection and retry.");
       }
     } finally {
-      setCustomerSavingId((current) => current === customerId ? null : current);
+      if (
+        customerProfileSaveRequestRef.current === requestId &&
+        selectedCustomerIdRef.current === customerId &&
+        customerEditorInstanceRef.current === instanceId
+      ) {
+        setCustomerSavingId((current) => current === customerId ? null : current);
+      }
     }
   }
 
@@ -2165,19 +2312,7 @@ export default function AdminPage() {
           }}
           creditUpdating={creditUpdatingIds.has(selectedCustomer.id)}
           saving={customerSavingId === selectedCustomer.id}
-          onClose={() => {
-            customerPricingLoadRequestRef.current += 1;
-            customerPricingSaveRequestRef.current += 1;
-            selectedCustomerIdRef.current = null;
-            setSelectedCustomer(null);
-            setCustomerForm(null);
-            setCustomerPricingLoadState("idle");
-            setCustomerPricingError("");
-            setCustomerPricingMessage("");
-            setCustomerPricingUpdatedAt(null);
-            setCustomerPricingWritesEnabled(false);
-            setCustomerPricingSavingId(null);
-          }}
+          onClose={closeCustomer}
           onSave={saveCustomerSettings}
           pricingLoadState={customerPricingLoadState}
           pricingError={customerPricingError}
