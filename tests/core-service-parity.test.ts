@@ -217,6 +217,34 @@ test("Stage 1 retains fit, comparison and all fifteen genuine crawlable technica
       assert.equal(terms.filter((term) => term === escapeText(expectedCopy(locale, label))).length, 3, `${locale}: all three comparison columns must translate ${label}`);
       if (locale !== "en") assert.ok(!terms.includes(escapeText(label)), `${locale}: comparison label leaked English: ${label}`);
     }
+    // An exact catalog match alone cannot distinguish data logging from forestry.
+    const loggingTerms = { es: "Registro de datos", pl: "Rejestrowanie danych", sq: "Regjistrimi i të dhënave" } as const;
+    if (locale === "es" || locale === "pl" || locale === "sq") {
+      assert.equal(terms.filter((term) => term === escapeText(loggingTerms[locale])).length, 3, `${locale}: logging means recording vehicle data`);
+      assert.ok(!terms.some((term) => ["Explotación florestal", "Wycięcie lasu", "Prerjet"].includes(term)));
+    }
+    const nativeComparisonTerms: Partial<Record<LocaleCode, readonly string[]>> = {
+      fr: ["Modifications matérielles complémentaires"],
+      ru: ["Сопутствующие аппаратные доработки"],
+      zh: ["配套硬件改装"],
+      sq: ["Porositja"],
+    };
+    for (const term of nativeComparisonTerms[locale] ?? []) assert.equal(terms.filter((actual) => actual === escapeText(term)).length, 3, `${locale}: reviewed automotive/order meaning`);
+    const aspiratedTitles: Partial<Record<LocaleCode, string>> = {
+      de: "Saugmotor", tr: "Atmosferik motor", nl: "Atmosferische motor", pl: "Silnik wolnossący", sq: "Motor atmosferik",
+    };
+    const aspiratedTitle = aspiratedTitles[locale];
+    if (aspiratedTitle) {
+      const headings = [...html.matchAll(/<h3\b[^>]*>([\s\S]*?)<\/h3>/gu)].map((match) => match[1]);
+      assert.equal(headings.filter((heading) => heading === escapeText(aspiratedTitle)).length, 1, `${locale}: naturally aspirated engine terminology`);
+    }
+    const fitLabels: Record<LocaleCode, string> = {
+      en: "Stage 1 request fit", de: "Eignung für Stage 1", tr: "Stage 1 talebine uygunluk", nl: "Geschiktheid van een Stage 1-aanvraag",
+      fr: "Adéquation de la demande Stage 1", it: "Idoneità della richiesta Stage 1", es: "Idoneidad de la solicitud Stage 1",
+      pt: "Adequação do pedido Stage 1", pl: "Dopasowanie zlecenia do Stage 1", ru: "Пригодность заявки для Stage 1",
+      zh: "Stage 1 请求适用性", sq: "Përshtatshmëria e kërkesës Stage 1",
+    };
+    assert.ok(html.includes(`>${escapeText(fitLabels[locale])}</div>`), `${locale}: fit means request suitability, not physical fitting or cooperation`);
     assert.equal((html.match(/<details\b/gu) ?? []).length, 11);
     const itemList = graph(html).find((item) => item["@type"] === "ItemList")!;
     const routes = [...stage1BrandRoutes, ...stage1PlatformRoutes];
