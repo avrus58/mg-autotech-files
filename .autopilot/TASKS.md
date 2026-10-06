@@ -4,6 +4,47 @@
 
 ## Ready
 
+### MANUAL-20261007-REQUEST-BRIEF-SSR-LANGUAGE [P1] Resolve the request brief document language without de-prerendering static pages
+
+Fingerprint: `public-tools|request-brief-document-shell|native-body-with-english-opening-html|exact-runtime-locale-param-routing-pilot`
+
+Dependency of the In Progress request-brief accuracy acceptance, not a duplicate
+of the existing localized static-root fix or service-discovery work. Frozen
+561a0f0/build kIQ9QYifKY3YStuM1-tij strict raw HTML fails on NL; separate diagnostic
+records 11 wrong opening tags in 12 native body cases. RootDocument uses no locale
+param on this prefixless route; the descendant language script is insufficient.
+Business 4/User 4/Admin 2/Strategic 5/Confidence 5, urgency 3/effort 3/risk 2.
+
+Next-cycle bounded hypothesis: an exact internal locale-param wrapper and Proxy
+rewrite only for validated non-English canonical requests to the already-dynamic
+/tools/request-brief-builder page, reusing its body/metadata and unchanged public
+URL. English retains its already-correct existing route. Prove Next 16.2 behavior in an
+isolated local prototype before changing product source; current official docs
+are later-version guidance, not proof of this exact installed runtime. An
+unproven rewrite is not a fix. Do not read headers in the shared root, mutate
+response HTML, relax validators, move the whole route architecture, or add deps.
+
+Boundary if the prototype works: exact route wrapper, narrowly selected Proxy
+logic/pure route helper if needed, precise UI inventory and actual routing/raw
+HTML regressions. Existing request-brief model, copy, public path, metadata,
+canonical, aliases/sitemap eligibility, query parameters and privacy must remain
+unchanged. Direct internal aliases must not become extra public/indexable pages.
+Strip incoming provenance markers before routing, set any necessary upstream-only
+marker only on the exact canonical rewrite, and reject direct/forged aliases in
+the already-dynamic wrapper. Do not treat a caller-controlled header as trusted.
+No private/auth/API/embed/fixed/legal route rewrite or live calls. Local only.
+
+Acceptance: all 12 strict no-JS request-brief cases pass with the actual opening
+tag and unchanged canonical/FAQ/schema/zero-progress content. HTML/RSC navigation,
+native menu switching/reload, query continuity and no route/hydration loop tested
+in EN/DE/TR/ZH at mobile/laptop sizes. Compare the full current 139-entry prerender
+membership, not just the 48 representative performance routes; preserve private
+anonymous denial and fixed legal/admin/static language contracts. All mandatory
+gates/fresh build/performance plus immutable review. Failure preserves current
+RED/task In Progress and feeds the global proposal; no acceptance waiver.
+Independent read-only architecture/planning review agrees with this bounded
+pilot, preserving the global route-group proposal as a later reviewed option.
+
 ## Completed manual releases
 
 ### MANUAL-20261001-CURRENT-BUSINESS-ADDRESS [P1] Synchronize the owner-confirmed Asperg address
@@ -23,6 +64,47 @@ No policy, payment, auth, customer-data, migration or environment change.
 Receipt: `docs/production-release-2026-10-01-address.md`.
 
 ## In Progress
+
+### MANUAL-20261007-REQUEST-BRIEF-ACCURACY [P2] Make preparation progress truthful and preserve exact service intent
+
+Fingerprint: `public-tools|request-brief-builder|inconsistent-completeness-and-lost-service-handoff|truthful-preparation-and-strict-intent-continuity`
+
+Current7a85141 actual callback and localhost browser prove empty33%, Stage2
+without hardware100%, DTC without codes100%, all secure CTA paths generic.
+ROADMAP already prioritizes this unresolved gap; previous AUTO-068 and tool
+discovery tasks only expose existing preparation links, not these behaviors.
+Business4/User4/Admin3/Strategic4/Confidence5, urgency3/effort2/risk1; value17.
+
+Boundary: RequestBriefBuilder.tsx, new pure requestBriefPreparation.ts,
+tests/request-brief-preparation.test.ts, exact i18n source inventory only if
+needed, and task/status/history/roadmap. Preserve six goals/seven read methods,
+all ten inputs/copy/clipboard states, design, privacy and compact locale payload.
+No public wording, service/price/legal rule, dependency, auth/API/schema, customer
+data, storage/URL brief persistence or external write. Local only.
+
+Acceptance: one model calculates missing fields and percentage from vehicle,
+engine, year and notes, plus Stage2 hardware or DTC codes; defaults/optional
+fields never inflate progress. Whitespace is missing; goal switching updates
+requirements without losing entered values. Locale-native percentages and named
+numeric accessible progress agree. Exact Stage1/Stage2/TCU/DTC token handoff
+uses existing allowlisted requestIntent contract; broad aftertreatment/custom
+and unknown goals retain generic request path without guessing a product.
+Only intent may enter the URL; raw input remains solely local/copied by choice.
+Actual component callbacks/SSR/clipboard and existing auth-continuity regression,
+full mandatory gates, all12 copy/first-response, EN/DE/TR/ZH mobile/laptop
+interactive browser evidence and independent immutable review required.
+
+Frozen local source 561a0f0, fresh build kIQ9QYifKY3YStuM1-tij: normal mandatory
+gates PASS (1924 full/43 focused/37 prebuild, lint/full types, 282 build+assets,
+performance/2 emitted). Hydrated 8 views/144 states+1 fresh shot, 8 clipboard matches,
+all 6 handoffs/conditional requirements/native percent/ARIA/retained drafts pass;
+console 0/no horizontal overflow. Independent source/hydrated scoped GO.
+Overall PARTIAL/NO-GO: strict initial-HTML acceptance exit 1; unchanged prefixless
+RootDocument emits en for 11 non-English locales. Diagnostic 12 native body subsets
+is NOT a waived language/full-copy/canonical/schema gate. Keep In Progress;
+separate server-document-language remedy and fresh strict acceptance required.
+Ignored candidate-bound request-brief-*20261007 receipts and screenshots;
+STATUS records legacy copy/floating-widget/native-menu-reload boundaries.
 
 ### MANUAL-20261006-ADMIN-CUSTOMER-DRAFTS [P1] Preserve customer editor drafts across live admin synchronization
 

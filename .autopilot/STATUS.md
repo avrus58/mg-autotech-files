@@ -1,5 +1,82 @@
 # Otonom calisma gunlugu
 
+## 2026-10-07 — Request brief source and hydrated behavior verified; first-HTML acceptance RED
+
+- Frozen source 561a0f0f3c611ee9bf08db015e9cb69adf9d5330 differs from 7a851419
+  in exactly 3 source/test files: RequestBriefBuilder.tsx, pure
+  requestBriefPreparation.ts and request-brief-preparation.test.ts. One model
+  now owns missing fields/progress; empty 0%, conditional hardware/codes 80%
+  rather than false 100%, trimmed requirements, native percent/named ARIA,
+  exact allowlisted Stage 1/Stage 2/TCU/DTC handoff; broad goals stay generic.
+  Ten inputs, six goals, seven reading methods, clipboard states/design/privacy
+  and raw local data retained. No copy/API/auth/schema/price/dependency changes.
+- Exact-candidate lint, web+uploader types, 43 focused/1924 full tests,
+  prebuild i18n 37/37, fresh Webpack 282/282 pass. Build kIQ9QYifKY3YStuM1-tij;
+  unchanged strict 43 assets/5 fonts/30 PDFKit/8 sharp/auth 401/valid PNG+PDF/
+  zero external fetches, performance 15.7/80 KB gzip and 2 emitted tests pass.
+  Candidate
+  runner uses allowlisted OS environment/synthetic.invalid config, no dotenv.
+  Old owned server 68587 deliberately stopped before build; same-artifact own
+  local server 96262 serves port 3190. No user process killed/restart on silence.
+- Real anonymous hydrated GUI: EN/DE/TR/ZH at 1366x768 and 390x844, 144 observations
+  plus one separate fresh screenshot check. All six handoffs, native 0/80/100/75
+  percent/ARIA, optional 0%, conditional missing/whitespace, retained input during
+  service switches, eight actual clipboard matches (including Space) pass.
+  No horizontal overflow; bounded warn/error console 0. Root inspected all 8 final
+  screenshots; reviewer inspected EN laptop/DE mobile/TR laptop/ZH mobile.
+  First saved EN laptop capture was blank despite populated DOM; preserve it,
+  use separately named populated final capture, do not call it an app failure.
+- Ignored browser receipt request-brief-qa-20261007/browser-561a0f0.json binds
+  SHA/build; SHA256 396EF89F0662F6C4C935AD9AC55B7FF47F1926CFE72D273DA2F37E66E3A55B61.
+  Native clipboard failure and same-instance locale transition are unit proofs,
+  not actual menu persistence/authenticated proof. Actual locale menu reloads
+  public page and clears the synthetic draft; existing behavior not changed.
+  Viewport and EN preference restored; task tab/server kept for next local work.
+- Mandatory strict initial-HTML gate is RED, exit 1: expected nl, actual opening
+  html lang=en. Separate 12-language diagnostic proves native 0%/labels/body subset,
+  Content-Language and ServerLocaleBoundary script markers, but 11 wrong opening
+  document languages. Its subset success DOES NOT waive the gate; later strict
+  canonical/FAQ/full-copy assertions have not run after the first failed assert.
+  RootDocument/layout/ServerLocaleBoundary are unchanged and deliberately use
+  default en for prefixless paths; prior address release explicitly deferred this.
+- Independent immutable source+hydrated review GO, overall PARTIAL/NO-GO.
+  Keep task In Progress, not Done/Preview/Production. Separate bounded SSR-root
+  remedy must preserve the 139 current static prerenders; no whole-root headers
+  shortcut, injected HTML rewrite or weakened acceptance. Whole goal active.
+- Existing ToolsHeader Tools leakage TR/ZH, weak brief nouns and German
+  not-provided rendered as nicht vorgesehen remain native-copy followups, not
+  claimed fixed. Floating locale widget can overlap non-actionable mobile brief
+  text. No live account/backend/email/payment/Ads/SEO outcome tested or invented.
+  All work local; primary dirty owner checkout untouched; no push or deployment.
+- Read-only independent architecture audit counts all 139 real prerender entries,
+  including 88 localized public entries, rather than only 48 budget representatives.
+  Main read current official Proxy/locale-routing/request-time headers references.
+  Current docs describe later 16.x, installed product remains 16.2.10: no upgrade
+  or new root-params API. Next bounded Ready task is an exact request-brief locale
+  rewrite prototype; wider static/runtime root isolation is a design proposal,
+  not executed. No additional source implementation during this bounded cycle.
+  Independent planning review agrees; explicit incoming-marker stripping and
+  direct/forged alias denial belong to the pilot, not caller-header trust.
+
+## 2026-10-07 — Request brief progress and handoff started locally
+
+- Previous goal turn is progress: clean7a85141 receipt commit plus immutable
+ 2a98f865 accepted source/buildJnRpeAAvSidfUgVRbdTFs. Full goal remains active.
+  Re-polled same ownserver68587: live, not restarted on silence or branch change.
+- Read skill/references, AGENTS, all11constitution, project/package scripts,
+  current task/status/roadmap/inbox/history/proposals and100Git subjects.
+  OS controller/config/CLI remains absent: manual owner engineering, not invented
+  unattended lifecycle. Reuse attached managed worktree/clean baseline7a85141;
+  new local branchcodex/request-brief-accuracy-20261007. Primary checkout intact.
+- Current source plus actual anonymous TR browser reproduce empty33%, Stage2
+  nohardware100%, DTC nocodes100%, and generic CTA for all. Synthetic inputs only;
+  ignored request-brief-qa-20261007/baseline-behavior.json binds source/build.
+  Independently refreshed callback audit agrees. One bounded task, no new copy,
+  dependency, auth/backend, business rules, real data or external changes.
+- Start2026-10-06T23:23:22UTC; implementation/gates/browser acceptance pending.
+  Existing ToolsHeader TR Tools English label and some legacy tool noun choices
+  noted for later native-copy review; untouched header is not this behavior fix.
+
 ## 2026-10-07 — Core service parity accepted locally, whole goal still active
 
 - Final immutable source2a98f865f8b8768a2855d0b38ebf5f0e5b01dc01 on

@@ -54,9 +54,17 @@
      without altering facts.52new rows/572values,6inherited terminology rows
      refined. Full1917/120targeted/i18n/build plus60HTTP and40GUI/10interaction/
      4menu/8otherlocale checks and immutable independent final GO recorded.
-  3. Request brief accuracy/continuity: actual empty form reports33%, Stage2/DTC
-     can report100% with applicable inputs missing; secure CTA drops service.
-     Use one preparation model and strict service-token-only request handoff.
+  3. Request brief accuracy/continuity: frozen 561a0f0 corrects baseline empty 33%
+     and false conditional 100%, adds native percentage/named ARIA and strict
+     service-token-only handoff. 1924 full/43 targeted/fresh build and 8 GUI/144 states
+     pass. Task stays In Progress: mandatory raw opening document-language gate
+     is RED (11 non-English prefixless languages emit html lang=en). Diagnostic
+     native body subset and hydrated JS language correction do not waive it.
+     Prioritize a separately reviewed server-document-language remedy preserving
+     all 139 current static prerenders; do not make the shared root request-bound.
+     Next bounded task MANUAL-20261007-REQUEST-BRIEF-SSR-LANGUAGE is a verified
+     framework-routing pilot, not a global route rewrite. Wider isolation design
+     is PROPOSAL-20261007-PREFIXLESS-DOCUMENT-LANGUAGE, not implemented.
   4. Locale discovery for the four already translated newer service guides:
      current route/sitemap eligibility is legacy-only. Add genuine locale URLs
      and reciprocal discovery without feeding intent guides into legacy templates.
@@ -66,6 +74,10 @@
 - Explicit global usability followup: existing floating language/availability
   widgets can overlap non-actionable mobile text. Core-service scoped acceptance
   does not close this P3 gap or imply authenticated admin acceptance.
+- Existing request-brief copy needs a later native semantic sweep (ToolsHeader
+  Tools in TR/ZH, literal brief nouns and German not-provided meaning). This
+  behavioral fix reuses unchanged copy, not a claim that translation quality is
+  globally perfect. Keep the localization contract and exact scope intact.
 - This sequence is bounded initial product work, not a redefinition of the goal
   or a claim that five packages exhaust every requirement. Reassess uncovered
   requirements after each accepted package; keep the thread goal active until

@@ -2,6 +2,40 @@
 
 ## Proposed
 
+### PROPOSAL-20261007-PREFIXLESS-DOCUMENT-LANGUAGE — Native server document language with static/runtime isolation
+
+- Evidence: exact 561a0f0/build kIQ9QYifKY3YStuM1-tij brief HTML has native body,
+  Content-Language and descendant script markers, but 11 non-English opening
+  html tags are en. Unchanged RootDocument can read child locale route params,
+  not prefixless request preferences. Earlier address release deferred it.
+- Goal: initial no-JS document/body/metadata language agreement across already
+  request-localized public/auth/customer surfaces, retaining all 139 currently
+  prerendered routes (88 localized public plus static/fixed/legal/admin/assets).
+- Broad coherent candidate: separate static/fixed and request-localized root
+  route groups sharing the existing shell/runtimes exactly once. Public URLs
+  remain unchanged, but cross-root navigation becomes a full document load;
+  unfinished form/auth/navigation consequences need explicit product review.
+  This is a wider mechanical architecture change, NOT implemented here.
+- Smaller first step: exact internal locale-param rewrite pilot for the current
+  request-brief route only. Keep direct aliases non-public and canonical/body
+  unchanged, test actual installed-framework HTML/RSC/hydration behavior. This
+  can resolve one acceptance dependency; it cannot close every prefixless page.
+- Rejected shortcuts: whole-root request headers that remove static prerendering,
+  post-render regex/HTML mutation, duplicate html tags, script-only/no-JS waivers,
+  unchecked query locale values, new libraries or newly indexable alias pages.
+- Required proof before any broad migration: exact route/metadata/error/loading
+  inventory migration without relaxing source fingerprints, all-locale first
+  HTML, full original prerender membership, one runtime/provider installation,
+  auth/private cache/anonymous denial, responsive/native navigation and existing
+  workflow/state regressions. Local/synthetic only; no backend/customer/env data.
+- Official design references checked 7 October 2026:
+  [Proxy rewrites](https://nextjs.org/docs/app/api-reference/file-conventions/proxy),
+  [locale route params](https://nextjs.org/docs/app/guides/internationalization),
+  [request-time headers](https://nextjs.org/docs/app/api-reference/functions/headers).
+  Docs currently describe later 16.x; validate against installed 16.2.10 rather
+  than introducing unavailable new APIs. Selection remains design/prototype
+  work, not a completed global language fix or authorization to deploy.
+
 ### PROPOSAL-20260823-AUTHENTICATED-DATALOG-ENTITLEMENT - Gercek customer-only detayli datalog analizi
 
 - Problem: Public iki-metrik snapshot ve customer Studio ayni browser-local
