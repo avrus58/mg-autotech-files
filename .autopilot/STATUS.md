@@ -1,5 +1,139 @@
 # Otonom calisma gunlugu
 
+## 2026-10-07 — Core service parity accepted locally, whole goal still active
+
+- Final immutable source2a98f865f8b8768a2855d0b38ebf5f0e5b01dc01 on
+  codex/core-service-parity-20261006; fresh artifactJnRpeAAvSidfUgVRbdTFs.
+  Five reviewed service definitions extracted without fact/credit/notice edits
+  (raw golden455d22133e9f27ae201d90bb272cf2936bb43a37388d7dd870a0161332556ed5).
+  Root and all11 localized variants now use one compact black/red experience.
+  Preserve9Stage1/2other FAQs,4notices, fit/comparison/15technical links,
+  strict intent/register/price anchors, entity identity/canonical/alternates,
+  invalid routes and four newer service guides. Client-shared seo stays light.
+- Source25files: routes/model/renderer, isolated public SEO and mechanical
+  server-public imports, catalog/header, precise inventory/dynamic cleanup,
+  actual renderer tests and migrated source-location guards.52new scoped rows,
+  572non-English values;6 inherited rows refined for native automotive meaning.
+  No facts/legal/price/service-scope/modeldata/auth/API/schema/env/dependency,
+  customer data, external services or Ads changes. Primary owner checkout intact.
+- All exact-candidate gates pass: lint, web+uploader types, full1917/1917,
+  focused120/120, prebuildi18n37/37 and2485 reviewed strings/zero clean fallback,
+  fresh Webpack282/282, strict43assets/5fonts/30PDFKit/8sharp/auth401/validPNG+PDF/
+  zeroexternalfetch, performance15.7/80KBgzip and fresh2emitted-budget tests.
+- Anonymous no-JS initial HTTP60/60 binds the same SHA/build: language, body,
+  notices/FAQ JSON, canonical/alternates, native header and independent literal
+  technical sense checks. Actual browser40EN/DE/TR/ZH mobile390x844/laptop1366x768,
+  10pointer+Enter+Space/disclosure cases,4real language-menu changes,8otherlocale
+  semantic/header checks, console0, no main-content horizontal overflow.
+  Root inspected8freshStage1 shots; independent review inspected4freshDPF shots
+  plus raw/GUI/gate binding. Final scoped GO: no remaining scoped P0/P1/P2.
+- Candidate receipts copied to ignored core-service-validation-*-2a98f86-20261006
+  and first-html-2a98f86; browser-2a98f86.json and16fresh screenshots in
+  core-service-qa-20261006. Parent RED/NO-GO and corrected QA-collector/locator
+  evidence remain preserved, not reclassified as app defects or final green.
+- Limits: no authenticated admin/customer/backend, live SEO/conversion or
+  Production proof. Unchanged floating language/availability widgets overlap
+  non-actionable mobile text at some scroll positions: P3 global followup.
+  Admin-draft task still awaits its own interactive gate. Whole goal active;
+  next bounded product work is request-brief accuracy and strict intent handoff.
+  Local only; no push, Preview, deployment or claim that every site issue is gone.
+
+## 2026-10-07 — Semantic acceptance held a technically green candidate
+
+- Source139a928 passed full1917 tests, prebuild37/37, lint/types, build,
+  performance, emitted budgets and60 raw HTTP cases, but the immutable reviewer
+  found Logging mistranslated as forestry/cutting in ES/PL/SQ actual browser DOM.
+  Preserve the parent receipts and red independent actual-render regression;
+  technical green alone is not semantic acceptance.
+- Bounded short-label sweep also corrected SQ Ordering, native aspirated-engine
+  labels in DE/TR/NL/PL/SQ, request-fit labels and FR/RU/ZH hardware-modification
+  labels. Source2a98f865f8b8768a2855d0b38ebf5f0e5b01dc01 changes exactly5 inherited
+  rows/22 slots; no English service fact, price, notice, renderer or API change.
+  Prior headline row is a separate inherited-row correction, not new-source copy.
+- Independent source GO; actual literal semantic regression, targeted120/120
+  and fulltypes pass. Fresh full gates/build,60 HTTP and browser acceptance run
+  against this exact successor. Catalog SHA256:
+  94EC23C8A96B2BD011B7AB57A4C752012DCDC873843FD36C9C8644FDF6C8D36E.
+  Task/whole goal stay active; no publication or external write.
+
+## 2026-10-07 — Visual acceptance also repaired the shared sign-in label
+
+- cbdfab40 passes mandatory fresh gates and60 raw initial responses; build
+  7fUnONQxhTGKYqmf5cTDS. Recorded40 responsive cases,10 native interactions,
+  four actual menu changes and console0 after fixing a QA collector that lost
+  returned observations. Preserve parent browser-cbdfab4.json and before shots.
+- Main-agent inspection of all four mobile and four laptop Stage1 screenshots
+  caught the shared PublicSeoHeader Login label still English in TR/ZH.
+  Reuse the existing12-locale typed seoLabels.login matrix, not a new catalog,
+  exception, style or link. Real rendered header/login-anchor assertion covers
+  all60 services/locales. Header is added only for this3-line localization fix.
+- Independent shared-component scope audit found all other header/Stage1Authority/
+  StageComparison static and short labels in actual core/services catalogs.
+  Final successor139a9280a553fb2d2397e606cbb85ec1614de244 has two scoped files,
+  7 insertions/1 deletion. Focused120/120 passes; fresh mandatory gates and
+  successor browser/HTTP acceptance pending. No broad no-defect claim.
+
+## 2026-10-07 — Browser acceptance repaired natural headlines and scoped comparison copy
+
+- Parent a783cbb passed full gates, but actual TR/ZH screenshots exposed unnatural
+  inherited Stage1 headings. Exact existing headline tuple refined in10 locale
+  slots (natural PT retained); all407 other rows unchanged. Source1b840a9 added
+  an independent12-locale literal first-paint/metadata regression. No claim,
+  notice, price or service fact changed. Immutable independent source GO.
+- Source1b840a9 passed120 targeted/1917 full tests, lint/fulltypes,
+  full prebuild i18n37/37, Webpack282/282, strict assets/performance and2 fresh
+  emitted-budget checks. Actual60 initial HTTP responses passed on artifact
+  iCunizKUi0Ud1ayOfEu_k. These are parent receipts, not final acceptance.
+- Fresh ZH browser DOM then exposed three English Review labels in StageComparison.
+  Existing completeness test accepted legacy-global coverage, while the actual
+  public renderer consumes only scoped core/services catalogs. This is not an
+  object-label collector omission. Preserve failed actual-renderer regression
+  and browser review-label-before.json; do not turn a green coverage gate into
+  a no-leak claim. Narrow Review row added in all11 non-English locales with no
+  other408 existing-row edits and no new exception. Actual21 comparison terms
+  in all12 locales now have additive HTML assertions; focused8/8 passes.
+- Frozen successor cbdfab40cb1eb06c43962b286fafc34e466e7303; mandatory fresh
+  full gates/build/HTTP/mobile/laptop/keyboard/menu review in progress.
+  Whole owner goal and admin-draft interactive acceptance remain active/pending.
+  All work local; primary dirty checkout, live services, accounts and Ads untouched.
+
+## 2026-10-07 — Core-service acceptance caught and repaired dependency isolation
+
+- First candidate focused gates deliberately failed: three new test assumptions
+  (exact raw vehicle/Stage tokens and equivalent price-anchor trailing slash),
+  two legacy tests still looking for facts in the former route, one route-local
+  Services catalog row, and full customer closure rejected public catalogs newly
+  imported by client-shared seo.ts. No failed candidate is marked Done.
+- Preserve the compact customer graph, not widen its exemptions: move the rich
+  public service SEO projection into publicCoreServiceSeo.ts, with mechanical
+  server-public import updates only. Existing short-name/home/label matrices stay
+  in seo.ts. Body/schema/credits/notice equality remains tested on actual HTML.
+- Catalog Services row reuses the exact existing core tuple. Raw five-service
+  golden hash already passed; all60 FAQ body/schema and entity metadata passed
+  on the first actual renderer run. Full final gates and browser QA still pending.
+
+## 2026-10-06 — Core service locale/content parity started locally
+
+- Previous goal turn is progress: actual source 8fa6853 plus d8ce92a receipt,
+  1909/1909 tests and current clean Git state. Full goal remains active; admin
+  draft task still awaits its interactive acceptance, not relabelled Done.
+- Reused attached managed worktree and created codex/core-service-parity-20261006
+  from clean d8ce92a. Primary dirty owner checkout remains untouched. Read skills,
+  AGENTS, all 11 constitution files, project/task/status/roadmap/inbox/history,
+  100 Git subjects and current source. OS policy/config/CLI still absent; manual
+  owner engineering, not a fabricated unattended lifecycle.
+- Re-polled exact server handle 95087: live, not restarted on timeout. Current
+  localhost initial HTML proves 9 vs 2 Stage1 FAQs, missing localized fit and
+  comparison, legacy localized timing and omitted DE DPF notice. Ignored baseline
+  receipt core-service-baseline-20261006.json binds build and six actual GETs.
+- One bounded task selected: source extraction/shared compact renderer + all
+  scoped translations, with metadata/schema/route preservation. Source worker,
+  localization writer and read-only reviewer separated; root owns acceptance
+  tests, exact inventory integration and final gates. No price/legal/service
+  claims altered, new dependencies, backend/customer/Ads changes or publication.
+- Start checkpoint 2026-10-06 21:49:28UTC. Browser QA and all candidate gates
+  pending; prior invalid-tab security rejection has not been bypassed.
+
 ## 2026-10-06 — Admin drafts implemented locally; interactive acceptance pending
 
 - Goal remains active in full; previous turn classified progress, corroborated

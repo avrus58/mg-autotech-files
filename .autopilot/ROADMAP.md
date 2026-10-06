@@ -14,9 +14,11 @@
   admin experience, conversion-oriented content and preparation, SEO discovery,
   advertising readiness, usability, accessibility and reliability. Keep all work
   local; no push, Preview, Production or Ads account/spend changes in this phase.
-- Current verified baseline: clean81ab52b, three locally accepted homepage
-  packages; owner primary checkout is dirty and must remain untouched. Previous
-  turn is concrete progress (source commits and bounded acceptance), not idle.
+- Current verified local source:2a98f865, three accepted homepage packages and
+  accepted five-service/all12-locale compact experience (buildJnRpeAAvSidfUgVRbdTFs).
+  Tested admin draft source8fa6853 still awaits interactive acceptance.
+  Owner primary checkout is dirty and must remain untouched. Previous turn is
+  concrete progress (source commits and bounded evidence), not idle.
   Historical release/Ads/SEO receipts are not current account metrics.
 - Acceptance matrix (all remain unproven until their own authoritative receipt):
   - Design: coherent black/red hierarchy, compact useful content, no clipped
@@ -46,11 +48,12 @@
      reconstructs an open profile+commercial form, discarding edits and loaded
      pricing while readiness remains ready (admin/page:493-522,932-935,1238-1245).
      Current implementation task MANUAL-20261006-ADMIN-CUSTOMER-DRAFTS.
-  2. Core service semantic/design parity: separate localized template omits
-     existing notices/Stage1 authority and retains old30-minute timing. Shared
-     review-led experience requires47 distinct existing-source translation rows
-     (517 non-English values), not an English-leaking reuse. Preserve schema and
-     metadata identity, exact notices and all current service facts.
+  2. Core service semantic/design parity: accepted locally, not published,
+     MANUAL-20261006-CORE-SERVICE-PARITY source2a98f865. Shared compact review-led
+     body restores notices/Stage1 authority/FAQ parity and removes stale timing
+     without altering facts.52new rows/572values,6inherited terminology rows
+     refined. Full1917/120targeted/i18n/build plus60HTTP and40GUI/10interaction/
+     4menu/8otherlocale checks and immutable independent final GO recorded.
   3. Request brief accuracy/continuity: actual empty form reports33%, Stage2/DTC
      can report100% with applicable inputs missing; secure CTA drops service.
      Use one preparation model and strict service-token-only request handoff.
@@ -60,6 +63,9 @@
   5. Finish public catalog/content and offline advertising message-match review,
      then customer/admin cross-flow quality sweep. Select concrete remaining
      gaps from new evidence rather than repeatedly repainting the homepage.
+- Explicit global usability followup: existing floating language/availability
+  widgets can overlap non-actionable mobile text. Core-service scoped acceptance
+  does not close this P3 gap or imply authenticated admin acceptance.
 - This sequence is bounded initial product work, not a redefinition of the goal
   or a claim that five packages exhaust every requirement. Reassess uncovered
   requirements after each accepted package; keep the thread goal active until

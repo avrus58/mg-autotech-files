@@ -309,6 +309,38 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20261006-CORE-SERVICE-PARITY [P2] Give every core service locale the same reviewed compact experience
+
+Fingerprint: `public-services|core-detail-locale-parity|generic-localized-template-omits-reviewed-service-context|shared-compact-review-led-experience`
+
+Done locally, not published. Baseline d8ce92a actual HTML proved Stage1 9vs2
+FAQs, missing localized fit/comparison, stale30-minute timing and omitted DE
+DPF notice. Shared compact black/red renderer now covers five core services
+in all12 locales. Existing raw fact/credit/notice extraction is golden-tested;
+four notices,9Stage1/2other FAQs and visible/schema equality remain exact.
+Stage1 fit/comparison/15 genuine technical links, related services, metadata,
+canonical/alternates and strict intent/register redirects preserved. Four newer
+guides and invalid routes unchanged. Rich public SEO projection isolated from
+light client-shared seo.ts; exact inventory/signature cleanup, no broad bypass.
+52 scoped new rows/all572 values; six inherited terminology/headline rows
+refined after real visual/semantic review. Existing typed header login labels
+reused without href/style/auth change. No price/legal/service fact, dependency,
+API/schema/auth/vehicle data/backend/customer/Ads change or external release.
+
+Frozen source2a98f865f8b8768a2855d0b38ebf5f0e5b01dc01;
+buildJnRpeAAvSidfUgVRbdTFs. Lint/fulltypes,1917/1917 full,120/120 targeted,
+prebuildi18n37/37, fresh Webpack282/282+strictassets, performance and2 emitted
+budget checks pass. Raw initial HTTP60/60; actual EN/DE/TR/ZH mobile/laptop40,
+10pointer/Enter/Space/disclosure cases,4realmenus,8otherlocale semantic/header
+cases and console0. Root inspected8Stage1 screenshots; independent reviewer
+inspected4freshDPF images and same-source/build receipts: scoped final GO.
+Prior technically green139 was NO-GO for Logging forestry meanings, now fixed
+with independent literal actual-HTML/HTTP/DOM assertions. Unchanged floating
+widgets overlapping non-actionable mobile text remain a P3 global followup.
+Ignored receipts: core-service-validation-*-2a98f86-20261006.*, first-html-2a98f86
+and core-service-qa-20261006/browser-2a98f86.json. STATUS holds audit checkpoints.
+Owner's whole goal stays active; admin-draft interactive acceptance is not Done.
+
 ### MANUAL-20261005-HOMEPAGE-SERVICE-EXPLORER [P2] Category-aware service exploration within the existing homepage
 
 Fingerprint: `public-homepage|service-discovery|flat-six-card-grid-and-secondary-route-hierarchy|in-place-family-filtered-service-exploration`
