@@ -1,5 +1,74 @@
 # Otonom calisma gunlugu
 
+## 2026-10-06 — Admin drafts implemented locally; interactive acceptance pending
+
+- Goal remains active in full; previous turn classified progress, corroborated
+  by clean 81ab52b source and accepted homepage receipts. Primary owner checkout
+  is dirty and untouched. Reused attached clean worktree, branch
+  codex/admin-customer-drafts-20261006. No push/deploy/Ads mutation authorized.
+- Read applicable skills/references, current AGENTS, all 11 constitution files,
+  project/task/status/roadmap/inbox/history and 100 Git subjects. OS controller/
+  policy/CLI absent; no autonomous lifecycle receipt invented. Broader acceptance
+  matrix and evidence-led sequence recorded without shrinking the goal.
+- Three independent read-only audits confirm product gaps: localized service
+  semantic/timing divergence; misleading brief completeness/lost intent; admin
+  customer draft overwrite on every successful background snapshot. Highest
+  priority current task is P1 account-bound draft reconciliation, not decoration.
+- Implementation/test/review responsibilities separated. Profile/pricing rules,
+  permissions, API/schema, customer data and commercial/legal facts unchanged.
+  Frozen local source 8fa6853d39b6d03c68ad343853cdbd10eb263e3e contains only
+  admin/page.tsx, pure adminCustomerDraft.ts and the dedicated regression test.
+  Plan/task/status/history documentation is recorded separately from source.
+- Immutable customer/account/editor-instance baseline+draft preserves changed
+  profile fields and all loaded commercial values across dashboard refreshes.
+  Untouched profile fields accept new snapshots. Profile and pricing saves
+  reconcile only their own fields against the submitted values, preserving
+  post-click edits and nested package overrides. Errors retain the draft.
+  Account+instance+request guards include success/error/finally. A stale dashboard
+  snapshot preserves current explicit profile fields for existing records if
+  the profile revision changed, independent of the originally open editor;
+  read-only fields still refresh and the next fresh poll resumes profile merges.
+- Independent actual helper/application-callback suite 25/25 passes using AST
+  extraction and deferred synthetic transport. Retained targeted pricing/sync
+  suite 50/50 passes. Immutable 81ab52b full actual loadAdminData/form constructors
+  produce two expected lost-value assertions (name and loaded custom price).
+  Earlier acceptance fixture-id/helper-extraction failures are retained as test
+  harness corrections, not represented as product defects or hidden green runs.
+- Final frozen-source gates all exit0: lint, full web+desktop typecheck, npm test
+  1909/1909 (214249.6866ms), full prebuild check:i18n 37/37 and 2485/2485 reviewed
+  rows per non-English locale with 0 clean English fallbacks; fresh Webpack 282/282.
+  Build ID 30gaqEFxiKBuAO3vjyBgB. Strict unchanged postbuild validates 43 assets,
+  5 report fonts, 30 PDFKit/8 sharp files, compiled anonymous Auth 401, valid PNG/PDF
+  and 0 external fetches. These are bounded tests, not authenticated/backend proof.
+- Same-artifact performance gate passes: 3 checked initial chunks 15.7KB gzip
+  against 80KB, no forbidden initial runtime, localization payload budgets and
+  139 prerendered document languages/48 required public routes. Local GET-only
+  homepage initial HTML 12/12 preserves correct first-response languages,
+  8 localized explorer phrases, 6 services/5 related routes and vehicle/tools,
+  canonical and language alternatives. No hydrated/browser/SEO-ranking claim.
+- Independent immutable source/test review found no scoped P0/P1/P2; final
+  code/unit/static gate verdict is conditional GO only. AST comparison against
+  81ab52b proves the complete CustomerDetailModal declaration and AdminPage JSX
+  are unchanged except the fenced close-handler binding (CRLF normalized).
+  This reduces markup regression risk; it is not real React scheduling,
+  responsive rendering, keyboard/console or interactive browser acceptance.
+- Previous local process handle 68740 is authoritatively missing and port 3190 had
+  no listener. Started fresh OS-only synthetic preview handle 76319 from the same
+  accepted artifact; observation timeout is not treated as server termination.
+  Browser binding timed out/reset; subsequent existing IAB-tab selection was
+  rejected by CUA security policy. No alternate browser/CDP/navigation workaround
+  was attempted. Stopped own 76319 before build and confirmed no 3190 listener;
+  fresh frozen-artifact synthetic preview 95087 is ready on 127.0.0.1:3190.
+- Task remains In Progress, implementation validated but mandatory mobile/compact
+  laptop interactive gate pending. No Done/Preview/Production or whole-goal
+  completion claim. Goal remains active; next evidence-led product package is
+  core service locale/content parity, then request preparation/discovery and
+  offline acquisition contracts. No live account metrics inferred from history.
+- Ignored evidence: admin-customer-draft-* and admin-draft-*20261006 logs,
+  admin-draft-first-html-20261006.json and unchanged-UI AST receipt. Last verified
+  checkpoint 2026-10-06 21:44:21UTC. No new dependency/env/migration/auth bypass,
+  customer-data operation, external mutation, push, Preview, deploy or Ads change.
+
 ## 2026-10-05 — Homepage service explorer accepted locally, not published
 
 - One bounded owner task MANUAL-20261005-HOMEPAGE-SERVICE-EXPLORER; clean

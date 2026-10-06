@@ -24,6 +24,43 @@ Receipt: `docs/production-release-2026-10-01-address.md`.
 
 ## In Progress
 
+### MANUAL-20261006-ADMIN-CUSTOMER-DRAFTS [P1] Preserve customer editor drafts across live admin synchronization
+
+Fingerprint: `admin-operations|customer-profile-editor|background-snapshot-reinitializes-account-draft|account-bound-reconciliation-without-silent-loss`
+
+Owner's broad local-first excellence goal remains active in ROADMAP. Independent
+current81ab52b source audit proves that successful dashboard snapshots call
+makeCustomerForm on the open editor every20seconds/visibility/online recovery,
+resetting profile edits and loaded commercial fields to empty/inherit defaults
+while pricing can remain ready. Existing pricing revision/A-B checks do not
+protect this refresh path. Business4/User4/Admin5/Strategic5/Confidence5,
+urgency4/effort3/risk2; value18. Manual local-only product implementation.
+
+Boundary: src/app/admin/page.tsx, pure src/lib/adminCustomerDraft.ts,
+tests/admin-customer-draft-preservation.test.ts and task/status/history/roadmap.
+No new dependency/API/schema/auth/pricing rule, external write or real data.
+Acceptance: immutable account/editor-instance draft+baseline; refresh merges
+untouched profile fields without overwriting edits or any loaded commercial
+values; account switching/close-reopen fences stale responses; successful
+profile/pricing saves preserve post-click edits and update only their proper
+baseline; failure retains draft. Actual application/state regressions include
+repeated sync/recovery, late responses, nested package edits and A-B-A identity.
+Retain permissions/revision/readiness and existing UI. Full required gates plus
+independent immutable review; honest synthetic/browser evidence, no live claims.
+
+Local source checkpoint:8fa6853d39b6d03c68ad343853cdbd10eb263e3e.
+Actual helper/application-callback tests25/25 and retained targeted pricing/sync
+suite50/50 pass; immutable baseline81ab52b actual full refresh reproduces two
+lost-value assertions. Independent source/test GO, no scoped P0/P1/P2 found.
+Full gates pass: lint/fulltypes,1909/1909 tests, full prebuild i18n37/37,
+fresh Webpack282/282 plus strict postbuild/performance checks. Same-artifact
+anonymous homepage initial HTML12/12 retains language/copy/links/features.
+Build ID30gaqEFxiKBuAO3vjyBgB; ignored admin-draft-*20261006 receipts.
+Task stays In Progress: unchanged JSX/AST is not a
+substitute for the required interactive browser/mobile/compact-laptop gate.
+CUA rejected the existing IAB tab under its security policy; no alternate
+browser/CDP/navigation workaround was attempted. No Done/Preview/release claim.
+
 ### MANUAL-20260919-AUTH-SESSION-RECOVERY [P1] Prevent stale checks from ending a newer browser session
 
 Fingerprint: `auth|browser-session|stale-response-and-global-logout|session-bound-recovery`

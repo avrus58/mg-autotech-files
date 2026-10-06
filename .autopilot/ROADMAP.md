@@ -2,6 +2,69 @@
 
 ## Active milestone
 
+### MILESTONE-20261006-SITE-EXCELLENCE — Local-first product, design and acquisition quality
+
+- Owner objective: "websitesini gercekten dunyanin en iyi tasarimi ve islevsel
+  olarak en iyi olana kadar calismaya devam et, reklamlar seolar tasarim yazilar
+  hersey akilna gelebilecek hersey en iyisi olsun, once herseyi local olarak tut,
+  en iyisi derken yillarca calisma ama bir hedefimiz olsun gercekten iyi birseyler
+  ortaya cikartalim". This full objective remains active, not satisfied by the
+  already accepted homepage alone. No global ranking/perfection claim is made.
+- Scope: File Service product in this repository; coherent public/auth/customer/
+  admin experience, conversion-oriented content and preparation, SEO discovery,
+  advertising readiness, usability, accessibility and reliability. Keep all work
+  local; no push, Preview, Production or Ads account/spend changes in this phase.
+- Current verified baseline: clean81ab52b, three locally accepted homepage
+  packages; owner primary checkout is dirty and must remain untouched. Previous
+  turn is concrete progress (source commits and bounded acceptance), not idle.
+  Historical release/Ads/SEO receipts are not current account metrics.
+- Acceptance matrix (all remain unproven until their own authoritative receipt):
+  - Design: coherent black/red hierarchy, compact useful content, no clipped
+    actions or horizontal overflow on mobile/compact laptop; no decorative
+    effect at the expense of clarity, accessibility or performance.
+  - Functional product: request preparation, account entry, request/order/file/
+    delivery/report/credit journeys and admin editing/sync preserve state and
+    expose actionable loading/error/empty/success states. Tests must cover real
+    application boundaries, not only a duplicated model or a source regex.
+  - Localization/content: every changed user-visible surface complete in all12
+    supported languages; initial HTML, semantics and schema agree with rendered
+    copy. Preserve approved commercial/legal facts; no fake testimonials, power,
+    turnaround, coverage, expertise or customer-activity assertions.
+  - SEO: real useful pages, correct first-response languages, crawlable genuine
+    links, canonical/reciprocal alternatives/sitemap/JSON-LD alignment; no thin
+    doorway multiplication or assumption that client translations prove indexing.
+  - Advertising/acquisition: local intent-to-page/copy/CTA/consent/conversion
+    contracts and campaign assets match actual supported services. Live spend,
+    signup/sales attribution and field results need their own current authorized
+    evidence; synthetic smoke or historical clicks cannot prove customers.
+  - Verification: required i18n, targeted behavior, lint, full types/tests/build,
+    relevant asset/performance/security checks, responsive/browser evidence and
+    immutable independent review for each product package. Keep missing evidence
+    explicitly pending; no broad completion claim from one green subset.
+- Evidence-led sequence from the independent6October source audit:
+  1. P1 admin customer drafts: every successful20-second/recovery snapshot
+     reconstructs an open profile+commercial form, discarding edits and loaded
+     pricing while readiness remains ready (admin/page:493-522,932-935,1238-1245).
+     Current implementation task MANUAL-20261006-ADMIN-CUSTOMER-DRAFTS.
+  2. Core service semantic/design parity: separate localized template omits
+     existing notices/Stage1 authority and retains old30-minute timing. Shared
+     review-led experience requires47 distinct existing-source translation rows
+     (517 non-English values), not an English-leaking reuse. Preserve schema and
+     metadata identity, exact notices and all current service facts.
+  3. Request brief accuracy/continuity: actual empty form reports33%, Stage2/DTC
+     can report100% with applicable inputs missing; secure CTA drops service.
+     Use one preparation model and strict service-token-only request handoff.
+  4. Locale discovery for the four already translated newer service guides:
+     current route/sitemap eligibility is legacy-only. Add genuine locale URLs
+     and reciprocal discovery without feeding intent guides into legacy templates.
+  5. Finish public catalog/content and offline advertising message-match review,
+     then customer/admin cross-flow quality sweep. Select concrete remaining
+     gaps from new evidence rather than repeatedly repainting the homepage.
+- This sequence is bounded initial product work, not a redefinition of the goal
+  or a claim that five packages exhaust every requirement. Reassess uncovered
+  requirements after each accepted package; keep the thread goal active until
+  the full current-state completion audit can prove the requested end state.
+
 ### MILESTONE-20260712-PRODUCT-EVOLUTION - B2B SaaS operasyon ve musteri deneyimi
 
 - Source request: `MANUAL-20260712-120055` in `INBOX.md`.
