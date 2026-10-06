@@ -3,9 +3,11 @@ import { Cpu, LayoutGrid } from "lucide-react";
 import { RuntimePublicLocalization } from "@/components/RuntimePublicLocalization";
 import type { LocaleCode } from "@/lib/i18nConfig";
 import { getLocalizedPublicHref } from "@/lib/i18nRoutes";
+import { seoLabels } from "@/lib/seo";
 
 export function PublicSeoHeader({ locale = "en" }: { locale?: LocaleCode }) {
   const href = (pathname: string) => getLocalizedPublicHref(pathname, locale);
+  const labels = seoLabels[locale];
 
   return (
     <RuntimePublicLocalization locale={locale} scopes={["core"]}>
@@ -43,7 +45,7 @@ export function PublicSeoHeader({ locale = "en" }: { locale?: LocaleCode }) {
           >
             <LayoutGrid className="h-4 w-4" aria-hidden="true" />
           </Link>
-          <Link href="/login" className="hidden rounded-lg border border-white/10 px-4 py-2.5 text-sm font-bold hover:bg-white/10 sm:inline-flex">Login</Link>
+          <Link href="/login" className="hidden rounded-lg border border-white/10 px-4 py-2.5 text-sm font-bold hover:bg-white/10 sm:inline-flex">{labels.login}</Link>
           <Link href="/new-request" className="rounded-lg bg-[#b1121b] px-3 py-2.5 text-sm font-black hover:bg-[#c91824] sm:px-4"><span className="sm:hidden">Request</span><span className="hidden sm:inline">Start request</span></Link>
         </div>
       </div>

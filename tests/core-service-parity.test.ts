@@ -187,6 +187,10 @@ test("actual primary controls keep exact service intent, registration redirect, 
       const request = buildNewRequestPath(getPublicServiceRequestIntent(slug));
       const register = buildAuthEntryPath("/register", request);
       const hrefs = [...html.matchAll(/<a\b[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gu)];
+      const header = html.match(/<header\b[^>]*>([\s\S]*?)<\/header>/u)?.[1];
+      assert.ok(header, `${locale}:${slug}: public header missing`);
+      const login = [...header.matchAll(/<a\b[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gu)].find((match) => match[1] === "/login");
+      assert.equal(login?.[2], escapeText(seoLabels[locale].login), `${locale}:${slug}: actual header login label`);
       assert.equal(hrefs.filter((match) => match[1] === escapeText(request)).length, 2, `${locale}:${slug}: two primary service request controls`);
       assert.equal(hrefs.filter((match) => match[1] === escapeText(register)).length, 1);
       const pricePath = localizedPath(locale, "/").replace(/\/$/u, "") || "/";
