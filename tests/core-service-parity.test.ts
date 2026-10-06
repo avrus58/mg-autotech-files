@@ -72,6 +72,30 @@ test("reviewed core-service facts are an exact extraction, not rewritten claims 
   assert.doesNotMatch(seoSource, /(?:const|export const) (?:serviceTemplates|localizedServiceOperations)\b/u);
 });
 
+test("Stage 1 headline keeps the reviewed natural workshop wording on first paint", () => {
+  // Freeze the visual-QA correction independently of catalog-derived assertions.
+  const headlines: Record<LocaleCode, string> = {
+    en: "Stage 1 Tuning File Service for Workshops",
+    de: "Stage 1-Tuning-Dateiservice für Werkstätten",
+    tr: "Oto servisleri için Stage 1 ECU dosya hizmeti",
+    nl: "Stage 1-tuningbestandsservice voor werkplaatsen",
+    fr: "Service de fichiers de reprogrammation Stage 1 pour ateliers",
+    it: "Servizio di file di calibrazione Stage 1 per officine",
+    es: "Servicio de archivos de reprogramación Stage 1 para talleres",
+    pt: "Serviço de ficheiros de calibração Stage 1 para oficinas",
+    pl: "Usługa plików kalibracyjnych Stage 1 dla warsztatów",
+    ru: "Сервис файлов калибровки Stage 1 для автомастерских",
+    zh: "面向维修厂的 Stage 1 调校文件服务",
+    sq: "Shërbim skedarësh kalibrimi Stage 1 për servise",
+  };
+  for (const { code } of supportedLocales) {
+    const headline = headlines[code];
+    assert.equal(getServiceSeo("stage-1", code).title, headline);
+    assert.ok(rendered.get(`${code}:stage-1`)!.includes(escapeText(headline)));
+    assert.equal(getPublicCoreServiceMetadata("stage-1", code).title, headline);
+  }
+});
+
 test("all 60 real service renders contain the complete reviewed translated body and compatible SEO projection", () => {
   assert.equal(rendered.size, 60);
   for (const { code: locale } of supportedLocales) {
