@@ -208,6 +208,11 @@ test("Stage 1 retains fit, comparison and all fifteen genuine crawlable technica
     const html = rendered.get(`${locale}:stage-1`)!;
     assert.ok(html.includes('id="stage-1-fit-heading"'));
     for (const title of ["Turbo petrol", "Turbo diesel", "Naturally aspirated", "Modified hardware", "Stage 1", "Stage 2", "Stage 3"]) assert.ok(html.includes(escapeText(expectedCopy(locale, title))));
+    const terms = [...html.matchAll(/<dt\b[^>]*>([\s\S]*?)<\/dt>/gu)].map((match) => match[1]);
+    for (const label of ["Typical hardware", "Calibration scope", "Supporting modifications", "Logging", "Intended customer", "Review", "Ordering"]) {
+      assert.equal(terms.filter((term) => term === escapeText(expectedCopy(locale, label))).length, 3, `${locale}: all three comparison columns must translate ${label}`);
+      if (locale !== "en") assert.ok(!terms.includes(escapeText(label)), `${locale}: comparison label leaked English: ${label}`);
+    }
     assert.equal((html.match(/<details\b/gu) ?? []).length, 11);
     const itemList = graph(html).find((item) => item["@type"] === "ItemList")!;
     const routes = [...stage1BrandRoutes, ...stage1PlatformRoutes];

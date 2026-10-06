@@ -4185,4 +4185,17 @@ export const publicServicesTranslations: Record<string, PublicSurfaceTranslation
     "服务",
     "Shërbime",
   ],
+  "Review": [
+    "Prüfung",
+    "İnceleme",
+    "Controle",
+    "Vérification",
+    "Verifica",
+    "Revisión",
+    "Revisão",
+    "Weryfikacja",
+    "Проверка",
+    "审核",
+    "Shqyrtim",
+  ],
 };
