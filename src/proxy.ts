@@ -8,6 +8,12 @@ import {
 import { getFixedPresentationLocale } from "@/lib/fixedPresentationLocale";
 import { getInitialLocaleRedirect } from "@/lib/i18nRoutes";
 import { isSeoLocale } from "@/lib/seo";
+import {
+  isRequestBriefDocumentAlias,
+  requestBriefDocumentHeader,
+  requestBriefDocumentMarker,
+  requestBriefDocumentTarget,
+} from "@/lib/requestBriefDocumentRoute";
 
 const localeCookie = "mg_locale";
 
@@ -27,23 +33,47 @@ export function proxy(request: NextRequest) {
     );
   const requestHeaders = new Headers(request.headers);
 
+  requestHeaders.delete(requestBriefDocumentHeader);
   requestHeaders.set("x-mg-locale", resolvedLocale);
 
   const localizedTarget = getInitialLocaleRedirect(
     request.nextUrl.pathname,
     resolvedLocale,
   );
-  const response = localizedTarget
+  const documentTarget = requestBriefDocumentTarget(
+    request.nextUrl.pathname,
+    resolvedLocale,
+  );
+  // Prefetch can return a route tree without evaluating the page's guard.
+  // Deny direct aliases here as well as in both wrapper exports.
+  const response = isRequestBriefDocumentAlias(request.nextUrl.pathname)
+    ? new NextResponse(null, {
+        status: 404,
+        headers: { "X-Robots-Tag": "noindex" },
+      })
+    : localizedTarget
     ? (() => {
         const targetUrl = request.nextUrl.clone();
         targetUrl.pathname = localizedTarget;
         return NextResponse.redirect(targetUrl);
       })()
-    : NextResponse.next({
-        request: {
-          headers: requestHeaders,
-        },
-      });
+    : documentTarget
+      ? (() => {
+          const targetUrl = request.nextUrl.clone();
+          targetUrl.pathname = documentTarget;
+          requestHeaders.set(
+            requestBriefDocumentHeader,
+            requestBriefDocumentMarker(resolvedLocale),
+          );
+          return NextResponse.rewrite(targetUrl, {
+            request: { headers: requestHeaders },
+          });
+        })()
+      : NextResponse.next({
+          request: {
+            headers: requestHeaders,
+          },
+        });
 
   // The embedded customer widget owns its language independently from the
   // surrounding MG AutoTech site and can also use Romanian or Arabic. Its

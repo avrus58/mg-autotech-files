@@ -56,6 +56,7 @@ const publicServiceRoots = [
 
 const publicToolRoots = [
   "src/app/tools",
+  "src/app/[locale]/tools/request-brief-builder/page.tsx",
   "src/components/tools",
 ] as const;
 
