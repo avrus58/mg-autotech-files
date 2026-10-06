@@ -6,7 +6,6 @@ import { buildHomepageTranslationCatalog } from "@/lib/homepageTranslationCatalo
 import { buildHomepageMetadata } from "@/lib/homepageMetadata";
 import { notFoundMetadata } from "@/lib/notFoundMetadata";
 import {
-  getServiceSeo,
   homeSeo,
   hreflangByLocale,
   isSeoLocale,
@@ -17,6 +16,7 @@ import {
   siteUrl,
   websiteJsonLd,
 } from "@/lib/seo";
+import { getServiceSeo } from "@/lib/publicCoreServiceSeo";
 import type { LocaleCode } from "@/lib/i18nConfig";
 
 export function generateStaticParams() {

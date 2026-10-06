@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import type { LocaleCode } from "@/lib/i18nConfig";
 import { openGraphLocaleByCode } from "@/lib/i18nConfig";
 import {
-  getServiceSeo,
   homeSeo,
   languageAlternates,
   localizedUrl,
@@ -10,6 +9,7 @@ import {
   seoLocales,
   siteName,
 } from "@/lib/seo";
+import { getServiceSeo } from "@/lib/publicCoreServiceSeo";
 import { buildPublicMetadataKeywords } from "@/lib/structuredDataI18n";
 
 export function buildHomepageMetadata(locale: LocaleCode): Metadata {

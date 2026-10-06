@@ -129,6 +129,7 @@ const customerSurfaceRoots = [
   "src/components/OnlineStatus.tsx",
   "src/components/PlatformReliabilityMonitor.tsx",
   "src/components/PublicSeoHeader.tsx",
+  "src/components/PublicCoreServiceExperience.tsx",
   "src/components/RequestChat.tsx",
   "src/components/SeoGuidePage.tsx",
   "src/components/ServiceIntentPage.tsx",
@@ -148,6 +149,8 @@ const customerSurfaceRoots = [
   "src/lib/industry-content.ts",
   "src/lib/renderRootHomepage.tsx",
   "src/lib/serviceIntentGuides.ts",
+  "src/lib/publicCoreServices.ts",
+  "src/lib/publicCoreServiceSeo.ts",
   "src/lib/workshopGuides.ts",
   "src/lib/email/authLocaleCopy.ts",
   "src/lib/email/localeCopy.ts",
@@ -8260,6 +8263,8 @@ function allowedSupplementalLabelsForFile(file: string) {
     add("customer-workflow");
 
   if (normalized === "src/lib/industry-content.ts") add("public-vehicle");
+  if (normalized === "src/components/PublicCoreServiceExperience.tsx" || normalized === "src/lib/publicCoreServices.ts" || normalized === "src/lib/publicCoreServiceSeo.ts")
+    add("public-core", "public-services");
   if (normalized === "src/lib/serviceIntentGuides.ts") add("service-intent");
   if (normalized === "src/lib/workshopGuides.ts") add("workshop-guides");
 

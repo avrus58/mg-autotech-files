@@ -88,7 +88,7 @@ test("Audi search intent is served by the existing canonical brand guide", async
 });
 
 test("DPF, EGR and AdBlue pages show legal context while DTC requires diagnosis", () => {
-  const source = projectFile("src", "app", "services", "[slug]", "page.tsx");
+  const source = [projectFile("src", "lib", "publicCoreServices.ts"), projectFile("src", "components", "PublicCoreServiceExperience.tsx")].join("\n");
   assert.match(source, /Legal use depends on the vehicle and jurisdiction/);
   assert.match(source, /Confirm lawful use before submission/);
   assert.match(source, /SCR and AdBlue requirements vary by jurisdiction/);
@@ -99,7 +99,7 @@ test("DPF, EGR and AdBlue pages show legal context while DTC requires diagnosis"
 });
 
 test("public service delivery estimates stay review-led without an unsupported time promise", () => {
-  const source = projectFile("src", "app", "services", "[slug]", "page.tsx");
+  const source = [projectFile("src", "lib", "publicCoreServices.ts"), projectFile("src", "lib", "publicCoreServiceSeo.ts")].join("\n");
 
   assert.doesNotMatch(source, /usually around 30 minutes|usually fast/i);
   assert.match(source, /Confirmed after vehicle, ECU and original-file review/);

@@ -17,12 +17,11 @@ import { renderRootHomepage } from "../src/lib/renderRootHomepage";
 import {
   buildNeutralSiteIdentityJsonLd,
   buildSiteIdentityJsonLd,
-  getServiceSeo,
   homeSeo,
   hreflangByLocale,
   publicServiceSlugs,
-  serviceJsonLd,
 } from "../src/lib/seo";
+import { getServiceSeo, serviceJsonLd } from "../src/lib/publicCoreServiceSeo";
 import {
   businessAudienceTypeByLocale,
   organizationAreaServedJsonLd,

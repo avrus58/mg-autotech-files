@@ -7,6 +7,7 @@ import {
   stage1BrandRoutes,
   stage1PlatformRoutes,
 } from "../src/components/Stage1Authority";
+import { getPublicCoreService } from "../src/lib/publicCoreServices";
 
 function projectFile(...segments: string[]) {
   return readFileSync(resolve(process.cwd(), ...segments), "utf8");
@@ -26,14 +27,28 @@ test("Stage 1 uses one exact-intent canonical page with useful search metadata",
 });
 
 test("Stage 1 answers fit, file and evidence questions without generic power promises", () => {
-  const page = projectFile("src", "app", "services", "[slug]", "page.tsx");
+  const model = projectFile("src", "lib", "publicCoreServices.ts");
+  const experience = projectFile("src", "components", "PublicCoreServiceExperience.tsx");
   const authority = projectFile("src", "components", "Stage1Authority.tsx");
-  const combined = `${page}\n${authority}`;
+  const combined = `${model}\n${experience}\n${authority}`;
+  const service = getPublicCoreService("stage-1");
 
-  assert.match(page, /What is a Stage 1 tuning file service\?/);
-  assert.match(page, /What file do I need for a Stage 1 request\?/);
-  assert.match(page, /Is a Stage 1 tuning file generic\?/);
-  assert.match(page, /Do I need logs for a Stage 1 file request\?/);
+  assert.ok(service);
+  assert.equal(service.faq.length, 9);
+  for (const question of [
+    "What is a Stage 1 tuning file service?",
+    "What file do I need for a Stage 1 request?",
+    "Is a Stage 1 tuning file generic?",
+    "Do I need logs for a Stage 1 file request?",
+  ]) {
+    assert.ok(service.faq.some((item) => item.q === question), question);
+  }
+  assert.match(model, /What is a Stage 1 tuning file service\?/);
+  assert.match(model, /What file do I need for a Stage 1 request\?/);
+  assert.match(model, /Is a Stage 1 tuning file generic\?/);
+  assert.match(model, /Do I need logs for a Stage 1 file request\?/);
+  assert.match(experience, /slug === "stage-1" && <Stage1Authority locale=\{locale\}/);
+  assert.match(experience, /slug === "stage-1" && <StageComparison compact locale=\{locale\}/);
   assert.match(authority, /Turbo petrol/);
   assert.match(authority, /Turbo diesel/);
   assert.match(authority, /Naturally aspirated/);
@@ -70,14 +85,23 @@ test("ECU platform guides link back to Stage 1 and the homepage stays compact", 
 
 test("Stage 1 public content and schema do not expose private platform metadata", () => {
   const servicePage = projectFile("src", "app", "services", "[slug]", "page.tsx");
+  const experience = projectFile("src", "components", "PublicCoreServiceExperience.tsx");
+  const serviceSeo = projectFile("src", "lib", "publicCoreServiceSeo.ts");
   const structuredDataI18n = projectFile("src", "lib", "structuredDataI18n.ts");
   const files = [
     servicePage,
+    experience,
+    serviceSeo,
+    projectFile("src", "lib", "seo.ts"),
+    projectFile("src", "lib", "publicCoreServices.ts"),
     projectFile("src", "components", "Stage1Authority.tsx"),
   ].join("\n").toLowerCase();
 
   assert.match(files, /"@type": "itemlist"/);
-  assert.match(servicePage, /audienceType: businessAudienceTypeByLocale\[locale\]/);
+  assert.match(experience, /stage1BrandRoutes, \.\.\.stage1PlatformRoutes/);
+  assert.match(experience, /serviceJsonLd\(slug, locale\)/);
+  assert.match(servicePage, /<PublicCoreServiceExperience slug=\{slug\} locale=\{defaultLocale\}/);
+  assert.match(serviceSeo, /audienceType: businessAudienceTypeByLocale\[locale\]/);
   assert.match(structuredDataI18n, /Automotive workshops and tuning professionals/);
 
   for (const marker of [

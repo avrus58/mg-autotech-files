@@ -33,11 +33,11 @@ import {
 import type { LocaleCode } from "@/lib/i18nConfig";
 import {
   absoluteUrl,
-  getServiceSeo,
   organizationJsonLd,
   publicServiceSlugs,
   websiteJsonLd,
 } from "@/lib/seo";
+import { getServiceSeo } from "@/lib/publicCoreServiceSeo";
 import { serviceIntentGuides } from "@/lib/serviceIntentGuides";
 import { getServerLocale } from "@/lib/serverLocale";
 import { organizationAreaServedJsonLd } from "@/lib/structuredDataI18n";

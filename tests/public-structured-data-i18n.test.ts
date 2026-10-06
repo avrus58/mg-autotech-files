@@ -10,10 +10,10 @@ import {
 } from "../src/lib/i18n/runtime-public";
 import { supportedLocales } from "../src/lib/i18nConfig";
 import {
-  getServiceSeo,
   homeSeo,
   publicServiceSlugs,
 } from "../src/lib/seo";
+import { getServiceSeo } from "../src/lib/publicCoreServiceSeo";
 import { servicesPageTitle } from "../src/lib/servicesPageMetadata";
 import {
   buildPublicMetadataKeywords,
@@ -184,8 +184,13 @@ test("canonical routes consume the audited structured-data helpers", () => {
   assert.doesNotMatch(services, /areaServed: \["Germany", "Europe"\]/u);
 
   const service = projectFile("src", "app", "services", "[slug]", "page.tsx");
-  assert.match(service, /category: service\.title/u);
-  assert.match(service, /audienceType: businessAudienceTypeByLocale\[locale\]/u);
+  const serviceExperience = projectFile("src", "components", "PublicCoreServiceExperience.tsx");
+  const serviceSeo = projectFile("src", "lib", "publicCoreServiceSeo.ts");
+  assert.match(service, /PublicCoreServiceExperience/u);
+  assert.match(serviceExperience, /category: service\.title/u);
+  assert.match(serviceExperience, /name: service\.title/u);
+  assert.match(serviceExperience, /serviceType: service\.title/u);
+  assert.match(serviceSeo, /audienceType: businessAudienceTypeByLocale\[locale\]/u);
 
   for (const route of [
     "ecu-read-method-advisor",

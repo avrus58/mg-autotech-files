@@ -5,11 +5,11 @@ import {
   companyAddress,
   contactEmail,
   contactPhone,
-  getServiceSeo,
   localizedPath,
   publicServiceSlugs,
   seoLabels,
 } from "@/lib/seo";
+import { getServiceSeo } from "@/lib/publicCoreServiceSeo";
 import { seoUiCopy } from "@/lib/seo-ui";
 import { getHowItWorksCopy } from "@/lib/howItWorksI18n";
 import { getFileServiceCopy } from "@/lib/fileServiceI18n";

@@ -501,8 +501,6 @@ test("legacy DOM observer catalogs are shrink-only", () => {
         "homeSeo",
         "seoLabels",
         "serviceNames",
-        "serviceTemplates",
-        "localizedServiceOperations",
       ],
     },
   ]);

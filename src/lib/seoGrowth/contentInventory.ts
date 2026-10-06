@@ -1,5 +1,6 @@
 import { brandGuides, platformGuides } from "@/lib/industry-content";
-import { publicServiceSlugs, getServiceSeo } from "@/lib/seo";
+import { publicServiceSlugs } from "@/lib/seo";
+import { getServiceSeo } from "@/lib/publicCoreServiceSeo";
 import { serviceIntentGuides } from "@/lib/serviceIntentGuides";
 import type { ContentInventoryItem } from "@/lib/seoGrowth/types";
 import { workshopGuideArticles } from "@/lib/workshopGuides";

@@ -45,6 +45,9 @@ const publicVehicleRoots = [
 
 const publicServiceRoots = [
   "src/app/services",
+  "src/components/PublicCoreServiceExperience.tsx",
+  "src/lib/publicCoreServices.ts",
+  "src/lib/publicCoreServiceSeo.ts",
   "src/components/Stage1Authority.tsx",
   "src/components/StageComparison.tsx",
   "src/lib/fileServiceSearchIntents.ts",
@@ -822,15 +825,14 @@ test("all visible public-route prose has reviewed exact coverage", () => {
 
 test("localized service metrics and metadata never compose English-only fragments", () => {
   const localizedService = readFileSync(
-    "src/app/[locale]/services/[slug]/page.tsx",
+    "src/components/PublicCoreServiceExperience.tsx",
     "utf8"
   );
   const servicesIndex = readFileSync("src/app/services/page.tsx", "utf8");
   const homepageMetadata = readFileSync("src/lib/homepageMetadata.ts", "utf8");
 
-  assert.match(localizedService, /publicSurfaceExactT/u);
-  assert.match(localizedService, /"ECU \/ TCU File Service"/u);
-  assert.match(localizedService, /value=\{`\$\{service\.credits\} \$\{labels\.credits\}`\}/u);
+  assert.match(localizedService, /getServiceSeo\(slug, locale\)/u);
+  assert.match(localizedService, /number\.format\(Number\(service\.credits\)\)\} \{labels\.credits\}/u);
   assert.doesNotMatch(localizedService, /\$\{service\.credits\} credits/u);
   assert.match(servicesIndex, /creditCount: service\.credits/u);
   assert.match(servicesIndex, /\{service\.creditCount\} <span>Credits<\/span>/u);

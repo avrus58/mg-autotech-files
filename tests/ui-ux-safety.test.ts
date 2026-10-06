@@ -1448,11 +1448,17 @@ test("How It Works localization is wired for locale routes, homepage and footer"
 
 test("localized homepages expose page-level service structured data", () => {
   const localizedHomeRoute = readProjectFile("src", "app", "[locale]", "page.tsx");
+  const serviceSchemaSource = readProjectFile("src", "lib", "publicCoreServiceSeo.ts")
+    .split("export function serviceJsonLd")[1] ?? "";
   const structuredDataSource =
     localizedHomeRoute.match(/function buildLocalizedHomepageJsonLd[\s\S]*?export async function generateMetadata/)?.[0] ??
     "";
 
   assert.match(localizedHomeRoute, /function buildLocalizedHomepageJsonLd\(locale: LocaleCode\)/);
+  assert.match(localizedHomeRoute, /import \{ getServiceSeo \} from "@\/lib\/publicCoreServiceSeo"/);
+  assert.match(serviceSchemaSource, /const service = getServiceSeo\(slug, locale\)/);
+  assert.match(serviceSchemaSource, /"@type": "Service"/);
+  assert.match(serviceSchemaSource, /audienceType: businessAudienceTypeByLocale\[locale\]/);
   assert.match(localizedHomeRoute, /const jsonLd = buildLocalizedHomepageJsonLd\(locale\)/);
   assert.match(structuredDataSource, /"@type": "WebPage"/);
   assert.match(structuredDataSource, /"@id": `\$\{pageUrl\}#page`/);

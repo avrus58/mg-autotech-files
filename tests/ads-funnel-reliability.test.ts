@@ -429,6 +429,7 @@ test("insufficient-credit recovery preserves the form and upload copy matches va
 test("public CTA intent survives auth and prices stay on the localized public page", () => {
   const servicePage = projectFile("src", "app", "[locale]", "services", "[slug]", "page.tsx");
   const defaultServicePage = projectFile("src", "app", "services", "[slug]", "page.tsx");
+  const serviceExperience = projectFile("src", "components", "PublicCoreServiceExperience.tsx");
   const serviceIntentPage = projectFile("src", "components", "ServiceIntentPage.tsx");
   const accessBoundary = projectFile(
     "src",
@@ -440,13 +441,17 @@ test("public CTA intent survives auth and prices stay on the localized public pa
   const platformPage = projectFile("src", "app", "ecu-platforms", "[slug]", "page.tsx");
   const adsClient = projectFile("src", "app", "admin", "ads-performance", "AdsPerformanceClient.tsx");
 
-  assert.match(servicePage, /localizedPath\(locale, "\/#prices"\)/);
-  assert.doesNotMatch(servicePage, /labels\.navPrices[\s\S]{0,180}dashboard\/credits/);
-  assert.match(servicePage, /buildNewRequestPath\(getPublicServiceRequestIntent\(slug\)\)/);
-  assert.match(defaultServicePage, /buildNewRequestPath\([\s\S]*?getPublicServiceRequestIntent\(service\.slug\)/);
-  assert.match(defaultServicePage, /buildAuthEntryPath\("\/register", requestHref\)/);
-  assert.equal((defaultServicePage.match(/href=\{requestHref\}/g) ?? []).length, 2);
-  assert.equal((defaultServicePage.match(/href=\{registrationHref\}/g) ?? []).length, 1);
+  assert.match(servicePage, /from "@\/components\/PublicCoreServiceExperience"/);
+  assert.match(defaultServicePage, /from "@\/components\/PublicCoreServiceExperience"/);
+  assert.match(servicePage, /<PublicCoreServiceExperience slug=\{rawSlug\} locale=\{rawLocale\}/);
+  assert.match(defaultServicePage, /<PublicCoreServiceExperience slug=\{slug\} locale=\{defaultLocale\}/);
+  assert.match(serviceExperience, /localizedPath\(locale, "\/#prices"\)/);
+  assert.match(serviceExperience, /href=\{localizedPath\(locale, "\/#prices"\)\}[\s\S]*?\{labels\.navPrices\}/);
+  assert.doesNotMatch(serviceExperience, /labels\.navPrices[\s\S]{0,180}dashboard\/credits/);
+  assert.match(serviceExperience, /buildNewRequestPath\(getPublicServiceRequestIntent\(slug\)\)/);
+  assert.match(serviceExperience, /buildAuthEntryPath\("\/register", requestHref\)/);
+  assert.equal((serviceExperience.match(/href=\{requestHref\}/g) ?? []).length, 2);
+  assert.equal((serviceExperience.match(/href=\{registrationHref\}/g) ?? []).length, 1);
   assert.match(serviceIntentPage, /buildNewRequestPath\([\s\S]*?getPublicServiceRequestIntent\(guide\.slug\)/);
   assert.match(serviceIntentPage, /href=\{requestHref\}/);
   assert.match(accessBoundary, /parseRequestIntent\(searchParams\.get\("intent"\)\)/);

@@ -41,10 +41,10 @@ export const reviewedDynamicVisibleExpressions = [
     classification: "localized-copy",
   },
   {
-    file: "src/app/[locale]/services/[slug]/page.tsx",
+    file: "src/components/PublicCoreServiceExperience.tsx",
     kind: "template",
-    source: "`${service.credits} ${labels.credits}`",
-    classification: "numeric-unit",
+    source: "`${service.title} | MG AutoTech`",
+    classification: "localized-copy",
   },
   {
     file: "src/app/dashboard/orders/page.tsx",

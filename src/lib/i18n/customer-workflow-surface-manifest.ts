@@ -418,8 +418,6 @@ export const customerWorkflowExternallyLocalizedSharedSources = [
       "homeSeo",
       "seoLabels",
       "serviceNames",
-      "serviceTemplates",
-      "localizedServiceOperations",
     ],
   },
 ] as const;
