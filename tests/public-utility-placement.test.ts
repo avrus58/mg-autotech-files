@@ -17,6 +17,7 @@ import LocalizedFileServicePage from "../src/app/[locale]/file-service/page";
 import { ActiveLocaleProvider } from "../src/lib/useActiveLocale";
 import { renderRootHomepage } from "../src/lib/renderRootHomepage";
 import { createPublicUtilityHostRegistry, type PublicUtilitySlot } from "../src/lib/publicUtilityHosts";
+import { isCustomerNotificationRuntimePath } from "../src/lib/customerNotificationRuntime";
 import * as localeConfig from "../src/lib/i18nConfig";
 import * as localeRoutes from "../src/lib/i18nRoutes";
 import * as workflowRoutes from "../src/lib/i18n/customer-workflow-client-routes";
@@ -94,7 +95,7 @@ function harness(file: string, exportName: string, options: { locale?: localeCon
   };
   const context: Record<string, unknown> = {
     exports, ...localeConfig, ...localeRoutes, ...workflowRoutes, ...runtimeTranslation, ...analytics, ...icons,
-    fixedPresentationLocaleBySegment, isSeoLocale, getAnalyticsConsentCopy, getAnalyticsPrivacyPath,
+    fixedPresentationLocaleBySegment, isCustomerNotificationRuntimePath, isSeoLocale, getAnalyticsConsentCopy, getAnalyticsPrivacyPath,
     useActiveLocale: () => locale,
     usePathname: () => pathname,
     usePublicUtilityHost: (slot: PublicUtilitySlot) => { requestedSlots.push(slot); return host; },
