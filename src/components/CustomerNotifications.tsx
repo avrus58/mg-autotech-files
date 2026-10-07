@@ -289,6 +289,12 @@ export function CustomerNotifications() {
     setToast((current) => current === toast ? null : current);
   }
 
+  function openToastRequest() {
+    if (!toast) return;
+    void markRead([toast.id]);
+    dismissToast();
+  }
+
   if (notificationsSuppressed || !userId) return null;
   if (!notificationAccount?.active || !notificationAccount.authorized || notificationAccount.userId !== userId) return null;
 
@@ -307,7 +313,7 @@ export function CustomerNotifications() {
               <div className="mt-1 break-words font-black text-white" translate={copy.rawTitle ? "no" : undefined} data-no-translate={copy.rawTitle ? true : undefined}>{copy.title}</div>
               {copy.body && <div className="mt-1 line-clamp-2 break-words text-sm leading-5 text-zinc-400" translate={copy.rawBody ? "no" : undefined} data-no-translate={copy.rawBody ? true : undefined}>{copy.body}</div>}
               {toast.order_id && (
-                <Link href={`/dashboard/orders/${toast.order_id}`} onClick={() => { markRead([toast.id]); dismissToast(); }} className="mt-3 inline-flex text-sm font-black text-red-400 hover:text-red-300">
+                <Link href={`/dashboard/orders/${toast.order_id}`} onClick={openToastRequest} className="mt-3 inline-flex text-sm font-black text-red-400 hover:text-red-300">
                   Open request
                 </Link>
               )}
