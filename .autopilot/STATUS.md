@@ -1,5 +1,78 @@
 # Otonom calisma gunlugu
 
+## 2026-10-07 — Native order-conversation headings accepted locally; admin interaction next
+
+- Previous goal turn was progress: chat source6996a0a and auditd85c5af were
+  accepted with actual React draft/context evidence. This separate bounded
+  manual cycle used only the owned attached worktree, clean based85c5af and
+  codex/order-chat-heading-20261007. Frozen candidate
+  aa913611dec66070986a5ef69675948de37a6935; buildn3TbXrsmbViLKp4PgI0nS.
+  Checks05:41:52-05:57:40UTC, native05:51-05:53UTC; independent final scoped GO
+  before audit closure. Owner primary untouched; absent OS/Docker lifecycle not
+  claimed. Broad goal remains ACTIVE, with all wider unresolved gates intact.
+- Product: exact Order conversation tuple in customer-workflow-translations.ts
+  and generated customer-workflow-orders-dom-translations.ts; independent all12
+  literal pin in tests/customer-workflow-client-bundles.test.ts. Seven inherited
+  command-like translations and three relational phrasings corrected; EN/ZH
+  unchanged. Existing generator produced no unrelated output drift. Component,
+  switcher, generator, primary catalog, inventory, baseline, all other strings,
+  layout/state/API and fixed-EN admin default unchanged. Three product/test plus
+  TASKS/STATUS/ROADMAP/TASK_HISTORY = seven distinct cumulative files.
+- Raw SHA256: master7307ba8e9a610685150b4d45ed5b78a3511f7781d0aeb78e647d49d91e6d0b9b;
+  generateda85e7e913c01a26b10a93008b7d89632c76fee64300ee4a3887495541495b301;
+  testcdd237c86f5b287764d4e2cfda3ced37de32d33aa8f890e0e3100dee2dfa7e83.
+  RequestChat remains e574f6bfe485b5c7de04d7cc4e1d7e53c4f35c5bfbb767c6cd7e4e870e69a5ac.
+- Same-clean-SHA runtime/order-chat-* receipts: targeted054152641Z73/73;
+  lint054517326Z PASS; types054213963Z full web/uploader PASS;
+  tests055431880Z2028/2028, no failed/skipped/cancelled/todo;
+  build054238894Z prebuildi18n38/38, all12/43sources/2495reviewed rows/
+  zero clean English fallbacks and23dynamic/21signatures; build337/337,
+  strict43assets/fonts5/PDFKit30/sharp8/compiled-auth401/PNG/PDF/externalFetch0;
+  performance054956607Z homepage16.3/80KBgzip, worker6.5/12KBraw,
+  maxlocale22.7raw/6.8gzip,187prerenders/no missing or invalid langs;
+  emitted054958118Z2/2. Envelope order-chat-envelope-aa91361-20261007.json
+  SHA256e162d8314f4adf81213c1c0edfb968175724accbc792ab0dc8a1a383499e9c97.
+- Two RED attempts retained, never deleted or called passing: lint054203209Z
+  scanned prior Git-ignored CJS/webpack fixture code (27errors/736warnings only
+  there). Exact owned chat-draft-browser-20261007 directory resolved/validated,
+  moved natively to absent task-only Temp/mg-order-chat-lint-20261007-aa91361,
+  unchanged npm run lint rerun, restored in finally and all32file hashes checked.
+  Reviewer independently reconstructs every32byte hash from earlier immutable
+  binding/native proof. Pre-move PowerShell hash array was not persisted; actual
+  tool session4346 output/exit0 and retained manifests are the provenance.
+  No lint flag/config/rule/validator change. First full054224769Z2027/2028 had
+  only unchanged registration-handoff-resume.test.ts260 notificationCompleted
+  false within its50ms budget while heavy checks ran concurrently. Separate
+  unchanged diagnostic055003081Z3/3 and full npm test alone055431880Z2028/2028
+  pass with no timeout/skip/auth/test edits. Contention remains a hypothesis;
+  avoid overlapping heavy host checks around this timing-sensitive fixture.
+- Actual React/RequestChat/LanguageSwitcher and fresh compiled CSS, same six
+  root-read helpers, only synthetic exact transport/navigation aliases. Frozen
+  binding chat-draft-browser-20261007/compiled-aa913611dec6-b5d2c323d413/binding.json
+  SHA2565395331efec0aebde6c255840d54a9a5a0e34ba924f3bfc2a2d3bd7f8645f4b2.
+  Native order-chat-native-aa91361-20261007/browser-aa91361.json
+  SHA25657a73ae440beb24646ef31c857aa3e7f838d0ae271941294a6416ae50c310fd1:
+  eight unique EN/DE/TR/ZH x1280x720/390x844 heading/locale/horizontal bounds,
+ 13recorded actual global-menu checked/draft/success/failure/loading-ready
+  interactions,13distinct actual JPEGs, console0, viewport reset. Locale fixture
+  shortcuts unused. Independent88native/module+20receipt/log+32prior-restored
+  hashes and physical all8heading/menu/loading frames; main also viewed EN/DE
+  laptop/TR/ZH mobile. Final scoped GO/no new actionable finding.
+- Hydrated synthetic React proof only: not real server HTML, reload preference
+  persistence, authenticated customer/admin E2E, server isolation or release.
+  Fixture query bootstrap deliberately resets locale on reload; controls/raw
+  synthetic messages explicitly test-only. Inherited same-request GET/POST
+  snapshot overwrite, other copy and broader milestone debts stay OPEN. No
+  push/Preview/Production/Ads/spend/Supabase/DB/payment/e-mail/customer/envfile/
+  secret/dependency action or new registration/revenue claim. Local compiled
+  preview4929 ready343ms; next-start standalone warning observed, not a
+  Production runner assertion. Disposable fixture10764 closed after review.
+- Next action resumes existing P1 MANUAL-20261006-ADMIN-CUSTOMER-DRAFTS only.
+  Read-only triage verifies admin/page, helper and regression unchanged from
+  8fa6853; actual modal/field/callback synthetic React mobile/laptop acceptance
+  remains missing. Preserve sync/save/editor identity and true disabled pricing
+  controls; no duplicate new task or admin implementation this cycle.
+
 ## 2026-10-07 — Local chat draft/context settlement accepted; native heading meaning queued
 
 - Previous goal turn was progress: accepted localized campaign sourcebd8281 and

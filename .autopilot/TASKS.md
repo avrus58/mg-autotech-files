@@ -4,44 +4,6 @@
 
 ## Ready
 
-## In Progress — current bounded manual cycle
-
-### MANUAL-20261007-ORDER-CHAT-HEADING [P2] Describe the order conversation naturally in every language
-
-Fingerprint: `customer-workflow|order-chat-heading|order-noun-mistranslated-as-command|native-order-context-in-all-locales`
-
-Origin: actual6996a0a native DE heading "Gespräch bestellen" and TR heading
-"Görüşmeyi sipariş edin"; both ask users to order a conversation. RequestChat503
-raw workspace heading is "Order conversation". Master5296-5307 and generated
-orders-DOM1139-1150 share one11-locale tuple; seven values use a verb/command,
-FR wording is awkward, IT/PT/ZH noun meanings remain valid. This is inherited
-fromd85a911, not introduced by the accepted draft fix. Main verified both rows;
-independent source/native audit and queue/history/roadmap/inbox/proposals/Git
-dedup found no equivalent semantic-heading task. Primary orders catalog does
-not own the row; LanguageSwitcher302-306 loads its orders-DOM companion.
-Business2/User4/Admin1/Strategic4/Confidence5/Effort1/Risk1; value14.
-
-Boundary: only the existing exact row in
-src/lib/i18n/customer-workflow-translations.ts, its generated row in
-src/lib/i18n/customer-workflow-orders-dom-translations.ts and an independent
-12-locale semantic pin in tests/customer-workflow-client-bundles.test.ts.
-Regenerate through the existing generator and reject unrelated generated drift.
-Keep the EN source/key, RequestChat state/JSX/API, primary catalog, inventory,
-baseline, checker, every other string and fixed-EN admin default heading intact.
-No dependency, commercial/legal/auth/backend/data/env or external action.
-
-Acceptance: all12 outputs describe an order-bound conversation, never an action
-to order a conversation; native grammar/automotive meaning and diacritics remain.
-Master/generated parity alone is insufficient: literal independently reviewed
-expected headings must detect the existing wrong verb meanings. Existing state
-fix, pending drafts, statuses and raw message leaves remain unchanged. Complete
-mandatory gates/fresh build/performance, actual EN/DE/TR/ZH mobile/laptop copy
-and containment plus independent immutable review. Local only. Started from
-clean d85c5af on codex/order-chat-heading-20261007 in the owned attached worktree.
-Root owns the exact master row and existing generator; separate test writer and
-read-only reviewer own independent regression/semantic evidence. Previous cycle
-is verified progress; broader milestone and inherited snapshot race remain OPEN.
-
 ## Completed manual releases
 
 ### MANUAL-20261001-CURRENT-BUSINESS-ADDRESS [P1] Synchronize the owner-confirmed Asperg address
@@ -499,6 +461,39 @@ Remediation: Batch with a future documentation/source-comment maintenance pass a
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
+
+### MANUAL-20261007-ORDER-CHAT-HEADING [P2] Describe the order conversation naturally in every language
+
+Fingerprint: `customer-workflow|order-chat-heading|order-noun-mistranslated-as-command|native-order-context-in-all-locales`
+
+Done locally, not published. Frozen aa913611dec66070986a5ef69675948de37a6935
+against d85c5af; build n3TbXrsmbViLKp4PgI0nS. Seven inherited command-like
+translations corrected, and FR/IT/PT relational wording clarified. All describe
+the conversation about the order; EN/ZH remain unchanged. Only the master/orders-DOM row
+and an independent all12 literal semantic pin changed. Component, switcher,
+generator, primary catalog, inventory, baseline, API/state/layout and every other
+string remain unchanged; fixed-EN admin default preserved. Three product/test
+files plus four audit records; no dependency or external action.
+
+Same-source73targeted/2028full/38prebuild/lint/fulltypes/build337/strictassets/
+performance/2emitted PASS; separate unchanged registration diagnostic3/3.
+Initial lint scanned prior ignored CJS/webpack fixture artifacts: exact owned
+directory temporarily moved to a validated task-only Temp path and restored;
+unchanged npm run lint passed, all32prior files independently hash-verified.
+Initial full-suite registration50ms-budget assertion failed during concurrent
+heavy checks; unchanged full npm test passed alone. Both RED receipts retained,
+no validator/timeout/skip change; resource contention is a hypothesis only.
+
+Native manifest SHA25657a73ae4...0c310fd1, envelopee162d831...499e9c97,
+binding5395331e...8645f4b2. Actual React/synthetic transport:8unique EN/DE/TR/ZH
+mobile/laptop heading views,13recorded menu/draft/send/loading interactions,
+13distinct JPEGs, console0 and viewport reset. Real global menu used, not locale
+fixture shortcuts. Independent20receipt/log+88native/module+32prior-file hashes
+and physical8heading/menu/loading image review; final scoped GO.
+Not actual SSR/preference reload/authenticated/server/release/unattended or
+whole-goal proof. Other copy and same-request snapshot race remain OPEN.
+Next cycle resumes existing P1 ADMIN-CUSTOMER-DRAFTS interactive acceptance;
+no duplicate task or admin implementation in this cycle.
 
 ### MANUAL-20261007-CHAT-DRAFT-SETTLEMENT [P1] Preserve newer chat drafts when an older send finishes
 

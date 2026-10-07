@@ -14,12 +14,13 @@
   admin experience, conversion-oriented content and preparation, SEO discovery,
   advertising readiness, usability, accessibility and reliability. Keep all work
   local; no push, Preview, Production or Ads account/spend changes in this phase.
-- Current verified local source:6996a0a296f79795504c3aca7236a7c977224f02,
-  buildLE9ntJ-sLtJE6XtCTFf7N; three accepted homepage packages, five-service/all12
+- Current verified local source:aa913611dec66070986a5ef69675948de37a6935,
+  buildn3TbXrsmbViLKp4PgI0nS; three accepted homepage packages, five-service/all12
   compact experience, four-guide locale discovery/compact entry, bounded shared
   public-header utility placement, ECU read-advisor form containment and offline
-  campaign-guide locale parity and context/revision-bound customer chat sends.
-  Priorbd8281/buildtzbd0d05cUiiuW4BIXkqx,f4cd512/buildjxEseGeFkmCoevqtWEcwb,
+  campaign-guide locale parity, context/revision-bound customer chat sends and
+  native order-conversation heading semantics. Prior6996a0a/buildLE9ntJ-sLtJE6XtCTFf7N,
+  bd8281/buildtzbd0d05cUiiuW4BIXkqx,f4cd512/buildjxEseGeFkmCoevqtWEcwb,
   658977b/buildialpFw3aQcowOg5JX63cP,0a55d547/build-rWBvfpAWFA01d1qFc_AM
   and core2a98f865/buildJnRpeAAvSidfUgVRbdTFs remain audit evidence, not the current
   artifact. Header placement acceptance is not all Tools body containment.
@@ -94,8 +95,17 @@
   Independent113hashes/23JPEGs/8final+4context frames and scoped GO. No actual
   authenticated/server/Production claim; same-request snapshot overwrite remains
   OPEN. Native heading-copy debt separately verified: seven order-as-command
-  translations, exact master/generated row. MANUAL-20261007-ORDER-CHAT-HEADING
-  Ready only for the next cycle; keep the broader milestone gates OPEN.
+  translations, exact master/generated row, subsequently closed by the separately
+  validated heading package below. Keep the broader milestone gates OPEN.
+- MANUAL-20261007-ORDER-CHAT-HEADING accepted locally ataa913611:
+  all12 order-bound heading meanings independently pinned; EN/ZH unchanged.
+  Exact master/generated row only, no component/switcher/state/layout drift.
+ 73targeted/2028full/38prebuild/lint/fulltypes/build337/strictassets/performance/
+ 2emitted PASS; actual React8locale/device heading views+13real-menu/draft/send/
+  loading interactions,13JPEGs/console0/reset and final independent scoped GO.
+  Initial ignored-artifact lint and existing50ms registration-test REDs retained;
+  unchanged raw lint/full-test reruns pass, no validators/timeouts/skips changed.
+  No actual SSR/reload persistence/authenticated/release or whole-goal claim.
 - Public-family arbitrary-scroll utility placement accepted locally at658977b:
   PublicSeoHeader,ToolsHeader,HomepageHeader and localized file-service header
   own the existing singleton language/privacy/status controls in normal flow.
@@ -130,13 +140,14 @@
   is source-proven, not authenticated GUI proof. Inherited DE-TCU final-n line
   wrap remains a nonblocking rough edge. No new campaign/spend/live account/
   conversion/customer/revenue outcome or whole-goal closure claim.
-- Next Ready P1: MANUAL-20261007-CHAT-DRAFT-SETTLEMENT. Actual shared chat source
-  permits edits duringPOST but its success unconditionally clears the current
-  draft. Read-only actual-handler deferred-POST proof reproduces newer-draft loss
-  and obsolete-request UI settlement; main verified source and consumers. Same
-  narrow send-lifecycle fix must preserve editable composer, context/draft
-  identity, retries/limits/history and all12 copy. Client-state isolation only,
-  not alleged backend tenant leakage. Separate next cycle; no chat edits yet.
+- Next P1: resume existing MANUAL-20261006-ADMIN-CUSTOMER-DRAFTS, not a new task.
+  Source8fa6853 remains byte-identical in current admin/helper/regression paths;
+  original synthetic callbacks pass but real React interaction is still pending.
+  Read-only7October triage specifies actual modal/field/callback AST extraction,
+  exact source/build binding, synthetic dashboard/profile/pricing responses,
+  repeated sync, late save/edit, A-B-A/close-reopen and mobile/laptop focus/scroll.
+  Do not bypass genuinely disabled pricing controls or infer native package edits
+  during saving from callback tests. Other full-milestone gates remain OPEN.
 - Existing request-brief copy needs a later native semantic sweep (ToolsHeader
   Tools in TR/ZH, literal brief nouns and German not-provided meaning). This
   behavioral fix reuses unchanged copy, not a claim that translation quality is
