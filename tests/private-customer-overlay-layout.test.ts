@@ -168,7 +168,8 @@ const className = (element: Element) => String(element.props.className ?? "");
 function zIndex(element: Element) { const match = className(element).match(/(?:^|\s)z-\[(\d+)\](?:\s|$)/u); assert.ok(match, "explicit actual stacking context"); return Number(match[1]); }
 function maximumHeight(element: Element, viewportHeight: number) {
   const token = className(element).split(/\s/u).find((value) => value.startsWith("max-h-["));
-  assert.ok(token?.endsWith("]"), "actual unprefixed maximum-height class must bound the overlay");
+  assert.ok(token, "actual unprefixed maximum-height class must exist");
+  assert.ok(token.endsWith("]"), "actual unprefixed maximum-height class must bound the overlay");
   const expression = token.slice(7, -1).replace(/_/gu, " ")
     .replace(/(\d+(?:\.\d+)?)(dvh|vh|rem|px)/gu, (_match, amount: string, unit: string) => String(Number(amount) * (unit === "rem" ? 16 : unit === "px" ? 1 : viewportHeight / 100)))
     .replace(/\bcalc\(/gu, "(").replace(/\bmin\(/gu, "Math.min(").replace(/\bmax\(/gu, "Math.max(");
@@ -178,7 +179,7 @@ function maximumHeight(element: Element, viewportHeight: number) {
 }
 const nativeLocales = ["en", "de", "tr", "zh"] as const;
 
-function nonClassSourceFingerprint(file: string) {
+function nonClassSourceFingerprint(file: (typeof filenames)[keyof typeof filenames]) {
   const ast = modules.get(file)!.ast;
   const withoutAllowedImport = file === filenames.language
     ? ts.factory.updateSourceFile(ast, ast.statements.filter((statement) => !isExactPrivateRuntimeImport(statement)))
