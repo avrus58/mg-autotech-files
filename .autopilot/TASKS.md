@@ -4,21 +4,6 @@
 
 ## Ready
 
-### MANUAL-20261007-PRIVATE-MENU-STACKING [P2] Keep the language menu usable beside an open notification panel
-
-Fingerprint: `customer-chrome|notification-and-language-menus|notification-panel-intercepts-language-choice|independently-operable-overlays`
-
-Native bound6bbd observation33: with both actual panels open, clicking Deutsch
-activates the overlaid own notification link and leaves EN selected. Screenshot
-and mark-read ledger7 prove the interception; panel-closed retake34 succeeds.
-Existing classes are unchanged by the isolation task. Client fixture evidence
-only, not an authenticated Production claim. Value13 (B3/U4/A1/S3/C5/E2/R1).
-Next bounded local UI task: preserve all copy, locale catalogs, panel contents,
-actions, auth/account fences and public header placement; repair only private
-overlay coexistence/reachability. Validate keyboard/pointer access, full unchanged
-gates and EN/DE/TR/ZH compact laptop/mobile. Do not absorb chat, mark-read outcome,
-SSR or business changes. No dependencies, live services or publication.
-
 ## Completed manual releases
 
 ### MANUAL-20261001-CURRENT-BUSINESS-ADDRESS [P1] Synchronize the owner-confirmed Asperg address
@@ -38,6 +23,29 @@ No policy, payment, auth, customer-data, migration or environment change.
 Receipt: `docs/production-release-2026-10-01-address.md`.
 
 ## In Progress
+
+### MANUAL-20261007-PRIVATE-MENU-STACKING [P2] Keep the language menu usable beside an open notification panel
+
+Fingerprint: `customer-chrome|notification-and-language-menus|notification-panel-intercepts-language-choice|independently-operable-overlays`
+
+Started7October08:22:58UTC on clean base9c677c9 in the owned worktree only.
+Previous goal turn was concrete progress: candidate6bbd and audit9c677c9 accepted
+notification isolation with raw/native evidence; no idle or global completion.
+Native bound6bbd observation33 remains RED: both-open Deutsch click instead
+activates own notification link. Current two-component source matches6bbd; actual
+private95-versus80 roots and toast-dependent absolute panel corroborate it.
+Value13 (B3/U4/A1/S3/C5/E2/R1). One bounded local UI package: private-only96 via
+existing exact route helper, natural-height viewport budget, normal-flow panel,
+scrollable list/toast and short-height fallback; no new state/effects/handlers,
+copy/tree/colors/catalog/auth/action/API/public-host change. New actual-source/
+React structural test: baseline5PASS/3expectedRED, current9/9preparatory PASS;
+native hit testing/geometry/focus/scroll remains required, not proved by CSS math.
+Acceptance requires same-SHA full unchanged gates, EN/DE/TR/ZH laptop/mobile,
+both-open pointer/keyboard selection without UPDATE/navigation,20 long rows+
+toast/last-item/footer/blank-click access and a short-height sample, then immutable
+independent review. OS/controller/scripts absent: manual local fallback only.
+No dependencies, schema, backend, env, services, customer data or publication.
+Chat same-context/read-error/SSR debts stay separate; wider milestone OPEN.
 
 ### MANUAL-20261007-TOOLS-HUB-COPY-QUALITY [P2] Make public tool choices understandable in every supported language
 

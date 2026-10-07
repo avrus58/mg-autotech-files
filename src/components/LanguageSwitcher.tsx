@@ -30,6 +30,7 @@ import {
 } from "@/lib/localePreference";
 import { isSeoLocale } from "@/lib/seo";
 import { useActiveLocale } from "@/lib/useActiveLocale";
+import { isCustomerNotificationRuntimePath } from "@/lib/customerNotificationRuntime";
 import {
   customerWorkflowClientGroupForPath,
   customerWorkflowManagedRouteSegments,
@@ -997,7 +998,7 @@ export function LanguageSwitcher() {
         data-language-switcher
         data-language-switcher-pending
         aria-hidden="true"
-        className={`${utilityHost ? "relative" : "fixed bottom-4 right-4 z-[80]"} flex h-11 min-w-11 items-center justify-center rounded-full border border-white/10 bg-[#111720]/95 px-3 text-base text-white shadow-2xl shadow-black/40 backdrop-blur-xl`}
+        className={`${utilityHost ? "relative" : `fixed bottom-4 right-4 ${isCustomerNotificationRuntimePath(pathname) ? "z-[96]" : "z-[80]"}`} flex h-11 min-w-11 items-center justify-center rounded-full border border-white/10 bg-[#111720]/95 px-3 text-base text-white shadow-2xl shadow-black/40 backdrop-blur-xl`}
       >
         <span aria-hidden="true">🌐</span>
       </div>
@@ -1052,7 +1053,7 @@ export function LanguageSwitcher() {
   return renderPublicUtilityControl(utilityHost, (
     <div
       data-language-switcher
-      className={`${utilityHost ? "relative" : "fixed bottom-4 right-4 z-[80]"} flex flex-col items-end gap-2`}
+      className={`${utilityHost ? "relative" : `fixed bottom-4 right-4 ${isCustomerNotificationRuntimePath(pathname) ? "z-[96]" : "z-[80]"}`} flex flex-col items-end gap-2`}
       aria-label={currentSelectorCopy.label}
       aria-busy={isLocaleLoading}
     >

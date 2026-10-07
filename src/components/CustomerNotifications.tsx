@@ -300,11 +300,11 @@ export function CustomerNotifications() {
   if (!notificationAccount?.active || !notificationAccount.authorized || notificationAccount.userId !== userId) return null;
 
   return (
-    <div className="fixed right-4 top-20 z-[95] flex flex-col items-end gap-3">
+    <div className="pointer-events-none fixed right-4 top-20 z-[95] flex max-h-[calc(100dvh-10rem)] min-h-0 flex-col items-end gap-3">
       {toast && (() => {
         const copy = localizeCustomerNotification(locale, toast);
         return (
-        <div className="w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-red-700/40 bg-[#101114]/95 shadow-2xl shadow-black/60 backdrop-blur-xl">
+        <div className="pointer-events-auto max-h-[min(12rem,calc((100dvh-10rem)/3))] w-[min(360px,calc(100vw-2rem))] shrink-0 overflow-y-auto rounded-2xl border border-red-700/40 bg-[#101114]/95 shadow-2xl shadow-black/60 backdrop-blur-xl">
           <div className="flex items-start gap-3 p-4">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-950/50 text-red-400">
               <MessageSquareText className="h-5 w-5" />
@@ -325,22 +325,22 @@ export function CustomerNotifications() {
         );
       })()}
 
-      <div className="relative">
-        <button type="button" onClick={() => setOpen((current) => !current)} aria-label="Notifications" className="relative flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-[#111720]/95 text-white shadow-2xl shadow-black/50 backdrop-blur-xl hover:border-red-700/60">
+      <div className="relative flex min-h-0 flex-col items-end gap-3">
+        <button type="button" onClick={() => setOpen((current) => !current)} aria-label="Notifications" className="pointer-events-auto relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/10 bg-[#111720]/95 text-white shadow-2xl shadow-black/50 backdrop-blur-xl hover:border-red-700/60">
           <Bell className="h-5 w-5" />
           {unread > 0 && <span className="absolute -right-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black">{Math.min(unread, 99)}</span>}
         </button>
 
         {open && (
-          <div className="absolute right-0 top-14 w-[min(390px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-white/10 bg-[#0c0e12]/98 shadow-2xl shadow-black/70 backdrop-blur-xl">
-            <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
+          <div className="pointer-events-auto flex min-h-0 w-[min(390px,calc(100vw-2rem))] flex-col overflow-y-auto rounded-2xl border border-white/10 bg-[#0c0e12]/98 shadow-2xl shadow-black/70 backdrop-blur-xl">
+            <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-4">
               <div><div className="font-black text-white">Notifications</div><div className="mt-0.5 text-xs text-zinc-500">{unread} unread</div></div>
               <div className="flex items-center gap-1">
                 <button onClick={toggleSound} title={soundEnabled ? "Disable notification sound" : "Enable notification sound"} className="rounded-lg p-2 text-zinc-400 hover:bg-white/10 hover:text-white">{soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}</button>
                 <button onClick={() => markRead(items.filter((item) => !item.read_at).map((item) => item.id))} title="Mark all as read" className="rounded-lg p-2 text-zinc-400 hover:bg-white/10 hover:text-white"><CheckCheck className="h-4 w-4" /></button>
               </div>
             </div>
-            <div className="max-h-[60vh] overflow-y-auto">
+            <div className="max-h-[60vh] min-h-0 flex-1 overflow-y-auto [@media(max-height:32rem)]:flex-none">
               {notificationLoading && items.length === 0 ? (
                 <div role="status" aria-live="polite" className="p-8 text-center text-sm text-zinc-500">
                   Loading notifications...
@@ -374,7 +374,7 @@ export function CustomerNotifications() {
                 );
               })}
             </div>
-            <div className="border-t border-white/10 p-3">
+            <div className="shrink-0 border-t border-white/10 p-3">
               <Link
                 href="/dashboard/notifications"
                 onClick={() => setOpen(false)}

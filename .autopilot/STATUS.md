@@ -1,5 +1,28 @@
 # Otonom calisma gunlugu
 
+## 2026-10-07 — Private overlay coexistence selected; native acceptance pending
+
+- Started08:22:58UTC, one existing Ready P2 selected at clean9c677c9. Previous
+  goal turn progressed authoritative source and native acceptance, not idle.
+  Only owned worktree; owner primary untouched. Autopilot OS/config/scripts
+  absent, so manual bounded local fallback, no invented controller lifecycle.
+- Current source confirms retained observation33: private notification95 covers
+  language80; toast preceding bell displaces absolute panel beyond viewport.
+  Root owns two component presentation changes; delegated sole new actual-source
+  test and Temp fixture preparation; independent read-only review separate.
+- Exact scope: eight notification classes, one existing pure private-path import
+  and two language wrapper expressions; non-class AST pins unchanged except
+  exact one-helper import. Existing private boundary, state/effects/handlers,
+  all12 copy/catalogs, public host/placement, auth/action/transport remain intact.
+  Baseline narrow5PASS/3RED, current9/9preparatory PASS; no gate waiver. Native
+  BOTH-OPEN pointer/keyboard,20longrows/toast/short-height/footer/last item and
+  blank hitbox checks plus full same-source gates/reviewer GO still pending.
+- Main and reviewer read all11 task helpers before execution. Narrow synthetic
+  SDK/session/context/realtime, ephemeral storage, genuine8s timers and compiled
+  CSS/font/module binding only, not live customer/backend/SSR proof. No source
+  completion, release or global-goal claim. Chat reconciliation, read-error and
+  Tools/brief initial-language/final-Vary debt remain OPEN separately.
+
 ## 2026-10-07 — Account-bound customer notifications accepted locally
 
 - One P1 MANUAL-20261007-NOTIFICATION-ACCOUNT-ISOLATION completed locally at
