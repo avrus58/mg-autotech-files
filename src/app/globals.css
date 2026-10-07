@@ -52,6 +52,13 @@ body:has([data-public-utility-bar]) > [data-language-switcher-pending] {
   overflow-y: visible;
 }
 
+/* Tools pages place the header directly inside a clipping wrapper, not main.
+   Only a wrapper owning the opted-in public header receives this correction. */
+:where(div):has(> header [data-public-utility-bar]) {
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
 /* Existing in-page shortcuts land below the now-persistent public header. */
 :where(main, .mg-homepage):has([data-public-utility-bar]) [id] {
   scroll-margin-top: 14rem;

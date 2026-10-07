@@ -464,6 +464,8 @@ test("placement remains exact-file inventoried and does not introduce root reque
   assert.match(css, /body:has\([^\n]*data-public-utility-bar[^\n]*\)[^\n]*>[^\n]*data-language-switcher-pending/u);
   const scrollAncestorRule = css.match(/:where\([^\n]+\):has\(\[data-public-utility-bar\]\)\s*\{[^}]+\}/u)?.[0] ?? "";
   assert.match(scrollAncestorRule, /:where\(body,\s*main,\s*\.mg-homepage\):has\(\[data-public-utility-bar\]\)\s*\{\s*overflow-x:\s*clip;\s*overflow-y:\s*visible;/u);
+  const directHeaderWrapperRule = css.match(/:where\(div\):has\([^\n]+\)\s*\{[^}]+\}/u)?.[0] ?? "";
+  assert.match(directHeaderWrapperRule, /:where\(div\):has\(>\s*header\s+\[data-public-utility-bar\]\)\s*\{\s*overflow-x:\s*clip;\s*overflow-y:\s*visible;/u);
   const anchorClearanceRule = css.match(/:where\([^\n]+\):has\(\[data-public-utility-bar\]\)\s+\[id\]\s*\{[^}]+\}/u)?.[0] ?? "";
   assert.match(anchorClearanceRule, /:where\(main,\s*\.mg-homepage\):has\(\[data-public-utility-bar\]\)\s+\[id\]\s*\{\s*scroll-margin-top:\s*14rem;/u);
 });
