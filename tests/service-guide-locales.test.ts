@@ -16,10 +16,12 @@ import { publicServicesTranslations } from "../src/lib/i18n/public-services-tran
 import { publicSurfaceLocaleOrder } from "../src/lib/i18n/public-surface-types";
 import { serviceIntentExactTranslations, serviceIntentLocaleOrder } from "../src/lib/i18n/service-intent-translations";
 import { supportedLocales, intlLocaleByCode, openGraphLocaleByCode, type LocaleCode } from "../src/lib/i18nConfig";
+import { localizeHomepageHref } from "../src/lib/homepageLocalization";
 import { appendSafeQuery, getInitialLocaleRedirect, getLocalizedPublicHref, getLocalizedPublicPath, requiresServerLocaleRefresh } from "../src/lib/i18nRoutes";
 import { buildNewRequestPath, getPublicServiceRequestIntent } from "../src/lib/requestIntent";
 import { getServiceIntentGuide, serviceIntentGuides, serviceIntentGuideSlugs, type ServiceIntentGuide } from "../src/lib/serviceIntentGuides";
 import { isServiceIntentGuideSlug } from "../src/lib/serviceIntentGuideRoutes";
+import { organizationAreaServedJsonLd } from "../src/lib/structuredDataI18n";
 import { absoluteUrl, hreflangByLocale, languageAlternates, localizedPath, localizedSeoLocales, localizedUrl, publicServiceSlugs } from "../src/lib/seo";
 
 const reviewedGuideIds = ["stage-2", "stage-3", "tcu-tuning", "ecu-file-check"] as const;
@@ -213,6 +215,26 @@ test("all 48 actual guide schemas use reviewed native requirement labels and wor
   }
 });
 
+test("all 48 actual guide Service schemas retain audited language-neutral DE, EU and Europe area identifiers", async () => {
+  // Preserve the audited geographical scope without translatable country-name
+  // prose or an additional service-coverage claim in any locale variant.
+  const areaServed = [
+    { "@type": "Country", identifier: "DE" },
+    { "@type": "AdministrativeArea", identifier: "EU" },
+    { "@type": "Place", identifier: { "@type": "PropertyValue", propertyID: "UN M49", value: "150" } },
+  ];
+  assert.deepEqual(organizationAreaServedJsonLd, areaServed, "existing audited shared helper retains its exact language-neutral scope");
+  const pages = await rendered;
+  for (const { code } of supportedLocales) {
+    for (const guide of serviceIntentGuides) {
+      const service = graph(pages.get(`${code}:${guide.slug}`)!).find((entry) => entry["@type"] === "Service")!;
+      assert.deepEqual(service.areaServed, organizationAreaServedJsonLd, `${code}:${guide.slug}: actual Service must use the audited organization area projection`);
+      assert.deepEqual(service.areaServed, areaServed, `${code}:${guide.slug}: exact DE / EU / UN M49 150 identifiers`);
+      assert.doesNotMatch(JSON.stringify(service.areaServed), /\b(?:Germany|Europe)\b/u, `${code}:${guide.slug}: no plain English country or region name`);
+    }
+  }
+});
+
 test("Chinese file-check guidance retains the source's review boundary without inventing an automatic system actor", async () => {
   const source = "Vehicle, controller, HW/SW and file context are checked for conflicts instead of relying on the filename.";
   const native = "会检查车辆、控制器、HW/SW 和文件背景是否存在冲突，而不是依赖文件名。";
@@ -319,13 +341,48 @@ test("sitemap exposes exactly 48 unique genuine guide URLs with reciprocal twelv
   assert.ok(!entries.some(({ url }) => /\/(?:admin|dashboard|new-request|api)(?:\/|$)/u.test(new URL(url).pathname)));
 });
 
+test("all 48 actual guide footers link to the four genuine matching locale guides without stale English destinations", async () => {
+  const pages = await rendered;
+  for (const { code } of supportedLocales) {
+    for (const guide of serviceIntentGuides) {
+      const html = pages.get(`${code}:${guide.slug}`)!;
+      const footer = html.match(/<footer\b[^>]*>([\s\S]*?)<\/footer>/u);
+      assert.ok(footer, `${code}:${guide.slug}: actual shared Footer must be rendered`);
+      const hrefs = [...footer[1].matchAll(/<a\b[^>]*href="([^"]*)"/gu)].map((match) => match[1]);
+      for (const slug of reviewedGuideIds) {
+        const path = `/services/${slug}`;
+        assert.equal(hrefs.filter((href) => href === localizedPath(code, path)).length, 1, `${code}:${guide.slug}: exact footer guide destination ${slug}`);
+        if (code !== "en") assert.ok(!hrefs.includes(path), `${code}:${guide.slug}: footer ${slug} cannot silently return to English root`);
+      }
+      for (const slug of publicServiceSlugs) assert.ok(hrefs.includes(localizedPath(code, `/services/${slug}`)), `${code}:${guide.slug}: existing core-service footer destination ${slug}`);
+      for (const path of ["/services", "/about", "/dashboard", "/tools"]) assert.ok(hrefs.includes(path), `${code}:${guide.slug}: single/private footer route ${path} remains unchanged`);
+    }
+  }
+});
+
+test("homepage/footer guide href localization adds only four exact reviewed families and preserves suffixes and existing route behavior", () => {
+  for (const { code } of supportedLocales) {
+    for (const slug of [...publicServiceSlugs, ...reviewedGuideIds]) {
+      for (const pathname of [`/services/${slug}`, `/services/${slug}/`]) {
+        const suffix = "?ref=footer&mode=review#requirements";
+        assert.equal(localizeHomepageHref(`${pathname}${suffix}`, code), `${code === "en" ? "" : `/${code}`}${pathname}${suffix}`, `${code}:${pathname}: exact query and fragment preserved`);
+      }
+    }
+    for (const path of ["/services", "/services/stage-4", "/services/Stage-2", "/services/%73tage-2", "/services/stage-2/extra", "/services/tcu-tuning/extra", "/de/services/stage-2", "/dashboard/log-analysis", "/new-request?service=tcu_stage_1#upload", "/admin", "/api/vehicles", "/tools/request-brief-builder", "/brands/bmw", "/about", "https://example.invalid/services/stage-2", "//example.invalid/services/stage-2"]) {
+      assert.equal(localizeHomepageHref(path, code), path, `${code}:${path}: unsupported, private, single-path or external route remains unchanged`);
+    }
+    assert.equal(localizeHomepageHref("/?ref=footer#prices", code), `${code === "en" ? "/" : `/${code}`}?ref=footer#prices`);
+    for (const path of ["/file-service", "/how-it-works"]) assert.equal(localizeHomepageHref(`${path}?ref=footer#workflow`, code), `${code === "en" ? "" : `/${code}`}${path}?ref=footer#workflow`);
+  }
+});
+
 test("client-shared navigation imports only the tiny reviewed guide registry, never the rich guide copy graph", () => {
   const root = process.cwd();
   const seen = new Set<string>();
-  function collect(file: string) {
+  function collect(file: string, visited = seen) {
     const absolute = resolve(root, file);
-    if (seen.has(absolute)) return;
-    seen.add(absolute);
+    if (visited.has(absolute)) return;
+    visited.add(absolute);
     const source = readFileSync(absolute, "utf8");
     for (const match of source.matchAll(/(?:import|export)\s[\s\S]*?\sfrom\s+["']([^"']+)["']/gu)) {
       const name = match[1];
@@ -333,12 +390,15 @@ test("client-shared navigation imports only the tiny reviewed guide registry, ne
       const base = name.startsWith("@/") ? resolve(root, "src", name.slice(2)) : resolve(dirname(absolute), name);
       const next = [base, `${base}.ts`, `${base}.tsx`, resolve(base, "index.ts"), resolve(base, "index.tsx")].find((candidate) => existsSync(candidate) && /\.[jt]sx?$/u.test(candidate));
       assert.ok(next, `unresolved navigation dependency: ${name}`);
-      collect(next);
+      collect(next, visited);
     }
   }
   collect("src/lib/i18nRoutes.ts");
   assert.ok(seen.has(resolve(root, "src/lib/serviceIntentGuideRoutes.ts")), "actual navigation must use the small guide eligibility registry");
-  for (const file of seen) assert.doesNotMatch(file.replaceAll("\\", "/"), /\/(?:serviceIntentGuides|publicCoreServices|publicCoreServiceSeo|service-intent-translations|public-services-translations|runtime-public)\.[jt]sx?$/u, "route eligibility cannot drag rich catalogs into compact client graphs");
+  const homepageSeen = new Set<string>();
+  collect("src/lib/homepageLocalization.tsx", homepageSeen);
+  assert.ok(homepageSeen.has(resolve(root, "src/lib/serviceIntentGuideRoutes.ts")), "actual homepage/footer navigation must use the tiny registry independently of the generic route helper");
+  for (const file of new Set([...seen, ...homepageSeen])) assert.doesNotMatch(file.replaceAll("\\", "/"), /\/(?:serviceIntentGuides|publicCoreServices|publicCoreServiceSeo|service-intent-translations|public-services-translations|runtime-public)\.[jt]sx?$/u, "route eligibility cannot drag rich catalogs into compact client graphs");
   const registry = readFileSync("src/lib/serviceIntentGuideRoutes.ts", "utf8");
   assert.doesNotMatch(registry, /^import\s/mu);
   assert.doesNotMatch(registry, /description|heroTitle|fitSignals|requiredInputs|workflow|faq|publishedAt|metaTitle/u);

@@ -24,7 +24,10 @@ import {
   websiteJsonLd,
 } from "@/lib/seo";
 import type { ServiceIntentGuide } from "@/lib/serviceIntentGuides";
-import { businessAudienceTypeByLocale } from "@/lib/structuredDataI18n";
+import {
+  businessAudienceTypeByLocale,
+  organizationAreaServedJsonLd,
+} from "@/lib/structuredDataI18n";
 import {
   localizeRuntimePublicJsonLd,
   runtimePublicInLanguage,
@@ -109,7 +112,7 @@ export function ServiceIntentPage({
           "@type": "BusinessAudience",
           audienceType: businessAudienceTypeByLocale[locale],
         },
-        areaServed: ["Germany", "Europe"],
+        areaServed: organizationAreaServedJsonLd,
         url: pageUrl,
         mainEntityOfPage: { "@id": `${pageUrl}#page` },
       },

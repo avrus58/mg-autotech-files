@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import type { LocaleCode } from "@/lib/i18nConfig";
+import { isServiceIntentGuideSlug } from "@/lib/serviceIntentGuideRoutes";
 
 export type HomepageTranslationCatalog = {
   exact: Record<string, string>;
@@ -92,7 +93,9 @@ export function localizeHomepageHref(href: string, locale: LocaleCode) {
   const suffix = `${match[2] ?? ""}${match[3] ?? ""}`;
   const serviceMatch = pathname.match(/^\/services\/([^/]+)\/?$/);
   const isLocalizedService = Boolean(
-    serviceMatch?.[1] && localizedServiceSlugs.has(serviceMatch[1])
+    serviceMatch?.[1] &&
+      (localizedServiceSlugs.has(serviceMatch[1]) ||
+        isServiceIntentGuideSlug(serviceMatch[1]))
   );
 
   if (!localizedHomepageRoutes.has(pathname) && !isLocalizedService) {
