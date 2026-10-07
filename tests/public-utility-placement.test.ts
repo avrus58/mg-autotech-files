@@ -227,15 +227,15 @@ test("actual UtilityHost refs register, replace and unmount without document dis
     require(name: string) { assert.equal(name, "react/jsx-runtime"); return jsxRuntime; },
   });
   const hosts = descendants(exports.PublicUtilityBar!({})).filter((element) => typeof element.type === "function");
-  assert.deepEqual(hosts.map((element) => element.props.slot), ["status", "privacy", "language"]);
+  assert.deepEqual(hosts.map((element) => element.props["data-public-utility-host"]), ["status", "privacy", "language"]);
   for (const element of hosts) {
     const hostElement = (element.type as (props: Props) => Element)(element.props);
     const ref = hostElement.props.ref as (node: HTMLElement | null) => void;
     const first = syntheticHost(); const second = syntheticHost();
-    ref(first); assert.equal(exports.usePublicUtilityHost!(element.props.slot as PublicUtilitySlot), first);
-    ref(second); assert.equal(exports.usePublicUtilityHost!(element.props.slot as PublicUtilitySlot), second);
-    ref(null); assert.equal(exports.usePublicUtilityHost!(element.props.slot as PublicUtilitySlot), null);
-    ref(null); assert.equal(exports.usePublicUtilityHost!(element.props.slot as PublicUtilitySlot), null);
+    ref(first); assert.equal(exports.usePublicUtilityHost!(element.props["data-public-utility-host"] as PublicUtilitySlot), first);
+    ref(second); assert.equal(exports.usePublicUtilityHost!(element.props["data-public-utility-host"] as PublicUtilitySlot), second);
+    ref(null); assert.equal(exports.usePublicUtilityHost!(element.props["data-public-utility-host"] as PublicUtilitySlot), null);
+    ref(null); assert.equal(exports.usePublicUtilityHost!(element.props["data-public-utility-host"] as PublicUtilitySlot), null);
   }
 });
 

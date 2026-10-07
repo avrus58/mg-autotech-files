@@ -16,8 +16,8 @@ export function renderPublicUtilityControl(host: HTMLElement | null, control: Re
   return host ? createPortal(control, host) : control;
 }
 
-function UtilityHost({ slot, className, children }: {
-  slot: PublicUtilitySlot;
+function UtilityHost({ "data-public-utility-host": slot, className, children }: {
+  "data-public-utility-host": PublicUtilitySlot;
   className: string;
   children?: ReactNode;
 }) {
@@ -35,9 +35,9 @@ export function PublicUtilityBar({ wide = false }: { wide?: boolean }) {
   return (
     <div data-public-utility-bar className="border-t border-white/5">
       <div className={`mx-auto flex min-h-13 items-center gap-2 px-4 py-1 ${wide ? "max-w-[86rem] sm:px-6" : "max-w-7xl"}`}>
-        <UtilityHost slot="status" className="min-w-0 flex-1" />
-        <UtilityHost slot="privacy" className="shrink-0 empty:hidden" />
-        <UtilityHost slot="language" className="relative min-w-[4.625rem] shrink-0">
+        <UtilityHost data-public-utility-host="status" className="min-w-0 flex-1" />
+        <UtilityHost data-public-utility-host="privacy" className="shrink-0 empty:hidden" />
+        <UtilityHost data-public-utility-host="language" className="relative min-w-[4.625rem] shrink-0">
           <span data-public-utility-placeholder aria-hidden="true" className="flex h-11 items-center justify-center rounded-full border border-white/10 bg-[#111720]/95 text-base text-white">🌐</span>
         </UtilityHost>
       </div>
