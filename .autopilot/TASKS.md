@@ -6,6 +6,26 @@
 
 ## Completed manual releases
 
+### MANUAL-20261008-EXPERIENCE-RELEASE [P1] Publish the complete ready v0.2.0 package
+
+Fingerprint: `release|file-service-ready-package|accepted-local-changes-unpublished|validated-scoped-production-v0.2.0`
+
+Status: **Done — published and independently verified on 8 October 2026.**
+Runtime c9bf48c5f613/version0.2.0/buildgT-gKmfVbgumVH1yhFPVa is the healthy
+app/analyzer pair. All16 accepted ready packages included; incomplete Tools/
+request-brief pilots remain excluded and In Progress below. Scope record:
+docs/experience-reliability-v0.2.0-release-scope.md. Fresh full2072/38i18n/lint/
+fulltypes/local326pagebuild/performance/emitted2 and Linux326/38/strictassets
+passed. Live GET-only167/167, both separate20asset batches,16representative
+locale/device views and8 actual language selections passed. Initial129a guide
+capture-order negative fixed with the existing validated preference writer;
+original evidence and privacy sanitizer/consent/configuration remain unchanged.
+Independent final GO_SCOPED_PRODUCTION d6d7bbab...71e41 read by root before
+closure. Retained paired rollback129a; earlierb4 full-package pair available.
+No Ads/payment/schema/customer-data/auth-policy/workshop mutations or global
+backend/auth/revenue guarantee. Durable receipt:
+docs/production-release-2026-10-08-experience-reliability.md.
+
 ### MANUAL-20261001-CURRENT-BUSINESS-ADDRESS [P1] Synchronize the owner-confirmed Asperg address
 
 Fingerprint: `business-location|public-footer-contact-legal-schema|outdated-stuttgart-address|owner-confirmed-asperg-address`
@@ -23,24 +43,6 @@ No policy, payment, auth, customer-data, migration or environment change.
 Receipt: `docs/production-release-2026-10-01-address.md`.
 
 ## In Progress
-
-### MANUAL-20261008-EXPERIENCE-RELEASE [P1] Publish the complete ready v0.2.0 package
-
-Fingerprint: `release|file-service-ready-package|accepted-local-changes-unpublished|validated-scoped-production-v0.2.0`
-
-Owner authorized Production on8October after the package/version discussion.
-Exact scope and incomplete-pilot exclusions are in
-docs/experience-reliability-v0.2.0-release-scope.md. Fresh frozen-source gates,
-independent review, checksum-bound archive, healthy retained rollback pair,
-responsive browser checks and immediate live GET-only smoke are pending.
-No Ads, payment, schema, customer-data or separate workshop change authorized.
-Existing three pilot tasks below remain incomplete, not silently accepted.
-
-Initial129a cutover passed Linux326/38 and post167/167 with20oldassets, but
-native guide EN selection exposed a P2 capture-order defect. Final acceptance
-requires the bounded existing locale-intent writer before forced fresh-document
-navigation, actual-handler regressions and newly frozen gates/native proof.
-Measurement allowlists, consent and private isolation must remain unchanged.
 
 ### MANUAL-20261007-TOOLS-HUB-COPY-QUALITY [P2] Make public tool choices understandable in every supported language
 

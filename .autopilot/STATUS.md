@@ -1,11 +1,52 @@
 # Otonom calisma gunlugu
 
+## 2026-10-08 — Complete ready Experience & Reliability v0.2.0 published
+
+- MANUAL-20261008-EXPERIENCE-RELEASE Done after root read the immutable final
+  GO_SCOPED_PRODUCTION receipt in full. Runtime c9bf48c5f613/source
+  c9bf48c5f61358e4aa0a535e17c945d8024b35c8/buildgT-gKmfVbgumVH1yhFPVa,
+  version0.2.0, healthy paired app/analyzer, zero recorded restarts. Exact source
+  pushed, checksum-bound archive deployed through the unchanged existing VPS
+  runner; later audit-only commits are not the runtime source or a CI claim.
+- All16 accepted ready packages retained; only incomplete Tools/request-brief
+  pilots excluded/restored. Existing capabilities, dependencies, desktop version,
+  Ads/prices/payments/auth-policy/schema/customer-data/email/workshop unchanged;
+  dirty primary owner checkout untouched. Source/test delta after first cutover
+  is only validated locale-intent persistence before forced document navigation
+  plus four actual-handler regressions. No measurement/consent/privacy waiver.
+- Fresh final-source gates: full2072/2072 FIRST/ALONE,38/38i18n(all12/43sources/
+  2485rows/zero cleanEnglishfallback), unchangedlint/34fixtures restored identical,
+  fullweb+desktoptypes before/after fresh326pageWebpackbuild, strictassets,
+  performance/emitted2 PASS. Native Linux326pages/prebuild38/69assets/compiled
+  synthetic401/validPNG+PDF/external0 PASS. Local/Linux build IDs kept distinct.
+- Immediate unchanged GET-only post167/167/140rawlocaleobservations, readiness,
+  private anonymous denial and20predecessorassets PASS; originalb4 separate20
+  status/byte/hash checks PASS, not40distinct. Recorded unrelated Caddy/workshop/
+  PostgreSQL image identities/starttimes/restarts unchanged; no container-ID claim.
+- Final native16 home/TCUguide EN/DE/TR/ZH laptop/mobile frames and8 actual EN
+  menu selections independently physically inspected; matchinglang/body/URL,
+  no document/main overflow/crash, observed console0. SettledTCU remainsEN;
+  arbitraryquery/hash intentionally removed by unchanged production sanitizer.
+  Initial/intermediate over-specific observer claims retained and superseded,
+  not relabelled persistent-query acceptance or a product regression.
+- Finalreviewd6d7bbab...71e41, packetdef59c63...5d7a, acceptednative76083863...3be9d;
+  root reviewed final audit diff. Receipts/logs/images retained hash-identically
+  in ignored runtime/experience-release-c9bf48c5f613. Durable release record:
+  docs/production-release-2026-10-08-experience-reliability.md. Immediate paired
+  rollback129a5dbc8c88 and full-package b4 pair both retained; no DB change.
+- Initial129a native guide negative and all earlier gate/instrumentation history
+  preserved. No affected-other-PC auth, real private backend/RLS, signup/CAPTCHA/
+  email/payment/conversion/revenue/global-perfection claim. Tools/brief initial
+  language/Vary and notification read-error debts remain open; three pilots
+  remain In Progress. Wider paused goal/controller state untouched. Local owned
+  preview stopped, browser viewport reset, liveTRhomepage deliverable retained.
+
 ## 2026-10-08 — Native release acceptance caught guide locale capture-order defect
 
 - Initial129a5dbc8c88 cutover is healthy as a paired app/analyzer,0restarts.
   Native Linux build326pages/prebuild38/strict assets/PNG/PDF/compiled401/
   external-fetch0 passed; immediate GET-only post167/167 and old20assets passed.
-  Caddy/workshop/PostgreSQL IDs,start times and restart counts are unchanged.
+  Caddy/workshop/PostgreSQL image IDs,start times and restart counts are unchanged.
   Version0.2.0/buildLZ3RtuSXcD6G91bRzyRl4; raw0600 deploy log retained on VPS.
 - Actual DE TCU-guide EN selection closes menu but returns toDE URL/body/lang;
   mouse/nativeAX/keyboard and waitForURL negative preserved. Real coreStage1
