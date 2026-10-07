@@ -289,7 +289,8 @@ export function CustomerNotifications() {
     setToast((current) => current === toast ? null : current);
   }
 
-  if (notificationsSuppressed || !userId || !notificationAccount?.active || !notificationAccount.authorized || notificationAccount.userId !== userId) return null;
+  if (notificationsSuppressed || !userId) return null;
+  if (!notificationAccount?.active || !notificationAccount.authorized || notificationAccount.userId !== userId) return null;
 
   return (
     <div className="fixed right-4 top-20 z-[95] flex flex-col items-end gap-3">
