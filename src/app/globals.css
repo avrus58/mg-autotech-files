@@ -61,7 +61,7 @@ body:has([data-public-utility-bar]) > [data-language-switcher-pending] {
 
 /* Localized tool introductions must shrink with their existing flex hero.
    Keep complete compound words and adjacent copy readable instead of clipped. */
-:where(div):has(> header [data-public-utility-bar]):not(.mg-homepage) > main :where(div):has(> h1) {
+:where(div):has(> header [data-public-utility-bar]):not(.mg-homepage) > main .flex.flex-col.items-start > :where(div):has(> h1) {
   min-width: 0;
   max-width: 100%;
   overflow-wrap: anywhere;

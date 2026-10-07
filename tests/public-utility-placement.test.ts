@@ -466,7 +466,7 @@ test("placement remains exact-file inventoried and does not introduce root reque
   assert.match(scrollAncestorRule, /:where\(body,\s*main,\s*\.mg-homepage\):has\(\[data-public-utility-bar\]\)\s*\{\s*overflow-x:\s*clip;\s*overflow-y:\s*visible;/u);
   const directHeaderWrapperRule = css.match(/:where\(div\):has\([^\n]+\)\s*\{[^}]+\}/u)?.[0] ?? "";
   assert.match(directHeaderWrapperRule, /:where\(div\):has\(>\s*header\s+\[data-public-utility-bar\]\)\s*\{\s*overflow-x:\s*clip;\s*overflow-y:\s*visible;/u);
-  const toolsIntroRule = css.match(/:where\(div\):has\(>\s*header\s+\[data-public-utility-bar\]\):not\(\.mg-homepage\)\s*>\s*main\s+:where\(div\):has\(>\s*h1\)\s*\{[^}]+\}/u)?.[0] ?? "";
+  const toolsIntroRule = css.match(/:where\(div\):has\(>\s*header\s+\[data-public-utility-bar\]\):not\(\.mg-homepage\)\s*>\s*main\s+\.flex\.flex-col\.items-start\s*>\s*:where\(div\):has\(>\s*h1\)\s*\{[^}]+\}/u)?.[0] ?? "";
   assert.match(toolsIntroRule, /min-width:\s*0;\s*max-width:\s*100%;\s*overflow-wrap:\s*anywhere;/u);
   const anchorClearanceRule = css.match(/:where\([^\n]+\):has\(\[data-public-utility-bar\]\)\s+\[id\]\s*\{[^}]+\}/u)?.[0] ?? "";
   assert.match(anchorClearanceRule, /:where\(main,\s*\.mg-homepage\):has\(\[data-public-utility-bar\]\)\s+\[id\]\s*\{\s*scroll-margin-top:\s*14rem;/u);
