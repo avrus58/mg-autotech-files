@@ -1,5 +1,78 @@
 # Otonom calisma gunlugu
 
+## 2026-10-07 — Local campaign-guide locale parity accepted; customer chat draft loss queued
+
+- Previous goal turn was progress: accepted form source f4cd512 and audit2d4973b,
+  not merely a plan. This bounded MANUAL-20261007-CAMPAIGN-GUIDE-LOCALE-PARITY
+  cycle uses the owned worktree/branch codex/campaign-guide-locale-20261007;
+  primary owner checkout untouched. Final frozen source
+  bd8281cd3af97ab896ebcddb4262f40ec2145f64, build tzbd0d05cUiiuW4BIXkqx.
+  Initial implementation commit04:51:45 UTC; final gates04:53:34-05:01:04;
+  native GUI05:01:48-05:04:03, then independent immutable review and audit closure.
+- Product/test/doc: src/lib/googleAds/campaignLinks.ts,
+  tests/ads-funnel-reliability.test.ts, docs/google-ads-campaign-launch-plan.md.
+  Audit only after GO: TASKS/STATUS/TASK_HISTORY/ROADMAP, seven distinct files
+  cumulatively from2d4973b. Remove only3obsolete EN restrictions/labels for the
+  already-localized Stage2/TCU/file-check guides; enable33 previously rejected
+  non-English combinations. Existing admin option/support/reset consumer benefits
+  without editing its UI. Seven keys/audited sitelinks/ECUPlatforms EN-only/
+  token/UTM/privacy logic intact. Launch/legal/consent gates and full historical
+  account-snapshot suffix preserved; only2forward-looking support paragraphs change.
+  No new capability/campaign/spend, price/legal fact, auth/API/DB/customer/envfile,
+  dependency, push, Preview or Production action. No current account metrics claim.
+- Raw hashes: campaignLinks
+  1f938ff84fd808b27df2616ff7917c2c1cb55fee11f3c366df2beef7034262d9;
+  test5dffe82a1c7d046a4b2dc9284d916559fbd7a35acf6c83c415534630e3c9566b;
+  plan64411f8168c927c5fd674ee7b05542767d6483053a651449012470fc26a18e6a.
+  Every final receipt is clean, unchanged and source/hash-bound:
+  campaign-locale-targeted-20261007T045334573Z.json150/150;
+  lint-045334604Z PASS; types-045334592Z web/uploader PASS;
+  tests-045334652Z2015/2015, no skipped/cancelled;
+  build-045334659Z mandatory i18n37/37, all12/43source and2495 reviewed rows,
+  zero clean EN fallback, Webpack337/337/strict43assets/fonts5/PDFKit30/sharp8/
+  compiled auth401/valid PNG+PDF/externalFetch0 PASS;
+  performance-050040950Z homepage16.3/80KB gzip, worker6.5/12KB raw,
+  maxlocale22.7raw/6.8gzip,187prerenders/no missing or invalid langs;
+  emitted-050041342Z2/2. Receipt names have campaign-locale- prefix and20261007T
+  timestamp. HTTP-050103119Z and http-data-050103600Z pass36 actual generated
+  localhost GETs with200/initial lang/scoped H1/canonical/intent href; optional
+  urls-050103119Z and urls-data-050103602Z use the actual builder. Local dummy
+  allowlist/env-file-presence guard, not hermetic/networkless container validation.
+- Browser receipt runtime/campaign-locale-browser-bd8281-20261007/
+  browser-bd8281.json SHA256
+  e8b91ea92c31e067873e925672f09de85f6f311e91735823c5ec1323695da2f7.
+  24 unique native cases: EN/DE/TR/ZH x3existing guides x390x844/1280x720.
+  Actual viewport/path/opening-current lang/H1/query-free canonical, main/h1
+  containment and complete translated two-CTA href/44px/first-screen geometry
+  PASS; main375/375 or1265/1265. Three actual menu transitions retain TCU route,
+  tcu_stage_1 intent and original tcu_zh attribution token. Captured console
+  warnings/errors0 in the inspected QA window.25 actual JPEG files/24 unique
+  hashes (owner preview duplicates TR-TCU), not image-pixel viewport claims.
+  Independent reviewer physically viewed8positive mobile/laptop frames and
+  recomputed all13 artifact/25image hashes+MIME, all24bounds/copy rows and3menu
+  transitions; final immutable scoped GO/noP0-P2. No authenticated admin GUI,
+  completed private request, live account/conversion/customer/revenue proof.
+- Negative lineage retained: source358 targeted pass but required type gate
+  TS2352 RED; old parallel lint/tests/build cancelled before the one-line explicit
+  malformed-runtime cast correction, all final gates rerun onbd8281. Ignored
+  observer's CJS top-level-await and REPL late lexical-binding errors are setup
+  REDs, corrected without product-source drift; first bootstrap view excluded
+  as duplicate. Inherited DE-mobile TCU final-n compound line remains a contained
+  typography rough edge. Prefixless Tools/brief lang/Vary/footer, cross-tab locale,
+  authenticated customer/admin and whole-goal acceptance remain OPEN.
+- Next gap is concrete client state loss, not decoration: RequestChat textarea
+  stays editable duringPOST but success354 clears any newer draft; POST lacks
+  GET's request/context settlement guard. Component hash984ab693...96ab423 and
+  actual customer/admin consumers verified by main. Read-only actual-function
+  synthetic deferred-POST audit reproduces loss and late-request UI/lock mutation
+  with0network/writes; not server tenant leakage. Deduplicated
+  MANUAL-20261007-CHAT-DRAFT-SETTLEMENT queued Ready only; no implementation here.
+- Skill's newer OS/policy/CLI remains absent; bounded manual workflow used, no
+  fictional unattended lifecycle. Goal remains active, not redefined as this
+  package. Compiled localhost3190/session1595 retained with TR-TCU preview,
+  viewport override reset and owned tabs preserved. Audit-only diff reviewed;
+  no heavy rerun for documentation because frozen product/test/build bytes remain.
+
 ## 2026-10-07 — ECU read-advisor compact form accepted locally; campaign-guide locale parity queued
 
 - One bounded MANUAL-20261007-READ-ADVISOR-FORM-CONTAINMENT cycle in the owned

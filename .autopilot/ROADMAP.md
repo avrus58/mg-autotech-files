@@ -14,11 +14,12 @@
   admin experience, conversion-oriented content and preparation, SEO discovery,
   advertising readiness, usability, accessibility and reliability. Keep all work
   local; no push, Preview, Production or Ads account/spend changes in this phase.
-- Current verified local source:f4cd512a90b2d182d2e2a52e71f4d5753899a892,
-  buildjxEseGeFkmCoevqtWEcwb; three accepted homepage packages, five-service/all12
+- Current verified local source:bd8281cd3af97ab896ebcddb4262f40ec2145f64,
+  buildtzbd0d05cUiiuW4BIXkqx; three accepted homepage packages, five-service/all12
   compact experience, four-guide locale discovery/compact entry, bounded shared
-  public-header utility placement and ECU read-advisor form containment.
-  Prior658977b/buildialpFw3aQcowOg5JX63cP,0a55d547/build-rWBvfpAWFA01d1qFc_AM
+  public-header utility placement, ECU read-advisor form containment and offline
+  campaign-guide locale parity. Priorf4cd512/buildjxEseGeFkmCoevqtWEcwb,
+  658977b/buildialpFw3aQcowOg5JX63cP,0a55d547/build-rWBvfpAWFA01d1qFc_AM
   and core2a98f865/buildJnRpeAAvSidfUgVRbdTFs remain audit evidence, not the current
   artifact. Header placement acceptance is not all Tools body containment.
   Tested admin draft source8fa6853 still awaits interactive acceptance.
@@ -106,13 +107,24 @@
   Three wrong-locale images/six initial DE-labelled320 rows retained/excluded;
   confirmed reload passes DE320 only, cross-tab locale observation remains OPEN.
   Prefixless first-HTML/Vary/footer and other product gates stay OPEN.
-- Next Ready: MANUAL-20261007-CAMPAIGN-GUIDE-LOCALE-PARITY. Actual campaign builder
-  still restricts three now-localized reviewed guide families to EN, blocking33
-  valid non-English combinations. Small offline hookup via existing localized
-  paths and exact URL/token regressions; preserve ECU Platforms EN-only, all keys,
-  UTM/privacy/launch gates and historical account snapshots. No new campaign,
-  Stage3, spend or live account action. Readiness value is not customer/revenue
-  proof; implement in the next separate bounded cycle after current closure.
+- MANUAL-20261007-CAMPAIGN-GUIDE-LOCALE-PARITY accepted locally atbd8281:
+  three existing reviewed guide families use all12 native destinations, adding33
+  formerly blocked combinations. Seven keys/ECUPlatforms EN-only/token/UTM/privacy/
+  launch/legal/history gates preserved.150targeted/2015full/i18n/lint/types/build/
+  assets/performance/two emitted and36actual generated-URL HTTP cases PASS.
+  Browser SHA256 e8b91ea92c31e067873e925672f09de85f6f311e91735823c5ec1323695da2f7:
+  24native EN/DE/TR/ZH mobile/laptop views,3native language/intent transitions,
+  console0 and independent8image/fullreceipt scoped GO. Admin consumer behavior
+  is source-proven, not authenticated GUI proof. Inherited DE-TCU final-n line
+  wrap remains a nonblocking rough edge. No new campaign/spend/live account/
+  conversion/customer/revenue outcome or whole-goal closure claim.
+- Next Ready P1: MANUAL-20261007-CHAT-DRAFT-SETTLEMENT. Actual shared chat source
+  permits edits duringPOST but its success unconditionally clears the current
+  draft. Read-only actual-handler deferred-POST proof reproduces newer-draft loss
+  and obsolete-request UI settlement; main verified source and consumers. Same
+  narrow send-lifecycle fix must preserve editable composer, context/draft
+  identity, retries/limits/history and all12 copy. Client-state isolation only,
+  not alleged backend tenant leakage. Separate next cycle; no chat edits yet.
 - Existing request-brief copy needs a later native semantic sweep (ToolsHeader
   Tools in TR/ZH, literal brief nouns and German not-provided meaning). This
   behavioral fix reuses unchanged copy, not a claim that translation quality is

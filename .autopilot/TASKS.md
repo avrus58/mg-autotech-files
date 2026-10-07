@@ -4,6 +4,40 @@
 
 ## Ready
 
+### MANUAL-20261007-CHAT-DRAFT-SETTLEMENT [P1] Preserve newer chat drafts when an older send finishes
+
+Fingerprint: `customer-workflow|request-chat-send-lifecycle|late-post-clears-newer-draft|request-and-draft-bound-settlement`
+
+Origin: current bd8281 RequestChat.tsx hash
+984ab6936c7a2a2b1e7cc32d68f41b4d174b5c8c9663550cddd7278d596ab423.
+Textarea608 remains editable during POST; success354 unconditionally clears
+the current draft. Unlike GET198/237/253 and request-reset266, POST327-366 lacks
+context-bound settlement. Customer order1137 and admin3892 share this component.
+Read-only actual-function AST/VM audit with deferred synthetic POST reproduced
+newer-draft loss, normal submitted-draft cleanup, failure draft preservation and
+late-A settlement mutating B UI state/lock. No network or customer data used;
+this is client draft/UI isolation evidence, not server tenant leakage.
+Main independently checked source, consumers and exact orders catalog inventory.
+Queue/history/roadmap/inbox/proposals/Git dedup: earlier chat hardening and
+AUTO-026 length guidance do not cover this send-settlement boundary.
+Business4/User5/Admin3/Strategic4/Confidence5/Effort2/Risk2; next local manual cycle.
+
+Boundary: src/components/RequestChat.tsx and tests/request-chat-hardening.test.ts.
+Bind success/error/finally to the originating request/context and submitted
+draft. Keep composer editable during sending; do not evade draft preservation
+by disabling it. Preserve all visible copy/12 locales, API/auth/privacy, payload,
+history/poll/reconnect, 4000-character, Enter/Shift+Enter and duplicate-send rules.
+No backend/schema/price/legal/catalog/storage/dependency or external action.
+
+Acceptance: actual handlers preserve newer edits and clear only the unchanged
+submitted draft; failures retain draft/retry. Old success/error/finally cannot
+mutate another context's messages, draft, status, scroll or send lock, including
+A-B-A and unmount. Test edit-away-and-back identity and overlapping async work,
+not only different strings. Actual synthetic local component/browser interaction
+in EN/DE/TR/ZH mobile/laptop plus targeted i18n, lint/full types/tests/build and
+immutable independent review required. Do not claim authenticated/server outcomes.
+Ready only; no chat implementation in the campaign package.
+
 ## Completed manual releases
 
 ### MANUAL-20261001-CURRENT-BUSINESS-ADDRESS [P1] Synchronize the owner-confirmed Asperg address
@@ -23,33 +57,6 @@ No policy, payment, auth, customer-data, migration or environment change.
 Receipt: `docs/production-release-2026-10-01-address.md`.
 
 ## In Progress
-
-### MANUAL-20261007-CAMPAIGN-GUIDE-LOCALE-PARITY [P2] Match offline campaign links to existing localized service guides
-
-Fingerprint: `advertising-readiness|campaign-destination-builder|localized-reviewed-guides-still-english-only|locale-matched-offline-campaign-links`
-
-Origin: frozen f4cd512 campaignLinks.ts:8-30 still restricts Stage 2, ECU File
-Check and TCU to English. Its filter and builder reject 33 now-valid non-English
-guide/destination combinations. Existing guide registry and actual route/render
-tests already support all 12 locales; guide request intent and review boundary
-are intact. Launch plan's forward-looking TCU restriction is stale. Independent
-audit and main source review checked queue/history/roadmap/inbox/proposals and
-recent Git: this is not the completed guide-route discovery task.
-Business4/User4/Admin3/Strategic4/Confidence5/Effort2/Risk2; local manual cycle.
-
-Boundary: campaignLinks.ts, focused builder tests and only forward-looking
-destination-support paragraphs of the campaign launch plan. Remove three
-obsolete EN restrictions/labels through existing localized-path behavior.
-Retain ECU Platforms EN-only, all seven destination keys, campaign-token
-allowlist, UTM/privacy rules and launch/consent/legal gates. No Stage 3 addition,
-new campaign, spend, live Ads action, business claim, dependency or backend change.
-Historical account snapshots remain untouched. This is offline readiness, not
-proof of lost customers, current Ads failure, acquisition or revenue.
-
-Acceptance: all 36 locale/guide URL cases, retained EN-only rejection and exact
-token/URL/privacy contracts; existing guide regressions, i18n, lint, full types,
-full tests/build and local EN/DE/TR/ZH destination/CTA browser evidence, followed
-by immutable independent review. Local implementation and verification underway.
 
 ### MANUAL-20261007-TOOLS-HUB-COPY-QUALITY [P2] Make public tool choices understandable in every supported language
 
@@ -488,6 +495,42 @@ Remediation: Batch with a future documentation/source-comment maintenance pass a
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
+
+### MANUAL-20261007-CAMPAIGN-GUIDE-LOCALE-PARITY [P2] Match offline campaign links to existing localized service guides
+
+Fingerprint: `advertising-readiness|campaign-destination-builder|localized-reviewed-guides-still-english-only|locale-matched-offline-campaign-links`
+
+Done locally, not published. Old EN restrictions blocked33 valid non-English
+combinations despite accepted guide routes. Three definition restrictions/labels
+removed; unchanged localized-path logic now enables Stage2/TCU/file-check in all
+12 locales. Unchanged admin consumer enables those options and retains service
+when language changes. This consumer relationship is source proof, not logged-in
+admin GUI evidence. Seven keys/audited sitelinks/ECUPlatforms EN-only/token/UTM/
+privacy/launch gates and historical account snapshots unchanged. Only two
+forward-looking launch-plan paragraphs updated; no new service/campaign/spend.
+Business4/User4/Admin3/Strategic4/Confidence5/Effort2/Risk2; manual local workflow.
+
+Frozen source bd8281cd3af97ab896ebcddb4262f40ec2145f64;
+build tzbd0d05cUiiuW4BIXkqx. Three product/test/doc files plus initial TASKS,
+then four audit records: seven distinct cumulative files from2d4973b.
+Same-source clean/unchanged 150 targeted/2015 full/37 mandatory prebuild i18n,
+lint/full web-uploader types/337-page Webpack build/strict assets/performance/
+two emitted tests PASS. Exact independently literal36 locale-guide builder
+cases, all namespaces and privacy rejection retained. Generated36 localhost
+GETs verify200/opening lang/scoped H1/canonical destination/request intent.
+
+Immutable browser receipt runtime/campaign-locale-browser-bd8281-20261007/
+browser-bd8281.json SHA256
+e8b91ea92c31e067873e925672f09de85f6f311e91735823c5ec1323695da2f7:
+24 unique native EN/DE/TR/ZH x3guide x390x844/1280x720 cases PASS; three native
+menu changes preserve TCU intent and original campaign. Console0 in inspected
+QA window;25 JPEG files/24 unique image hashes. Eight positive frames physically
+reviewed; all13 artifact and25 image hashes/MIME independently match. Independent
+final immutable scoped GO, no P0-P2. Retained358 typing RED/cancelled runs and
+ignored-helper CJS/late-binding setup errors are not acceptance. DE mobile TCU
+final-n compound wrap is inherited/nonblocking, not a new regression or perfect
+typography claim. No auth/private-request/live Ads/customer/revenue/global proof.
+Other goal gates remain OPEN; next Ready is chat draft settlement, not implemented.
 
 ### MANUAL-20261007-READ-ADVISOR-FORM-CONTAINMENT [P2] Keep localized ECU read-method forms inside compact screens
 
