@@ -24,6 +24,23 @@ Receipt: `docs/production-release-2026-10-01-address.md`.
 
 ## In Progress
 
+### MANUAL-20261007-NOTIFICATION-ACCOUNT-ISOLATION [P1] Keep customer notifications bound to their current account
+
+Fingerprint: `customer-experience|notification-bell|account-change-retains-previous-customer-feed-and-toast|account-bound-state-and-async-lifecycle`
+
+Local-only, one bounded product task. Clean baseline26bd69a: actual auth effect
+reproduction changes A to B but retains A feed/toast after B authority resolves,
+before B SELECT. This is retained client UI, not a proved live/RLS breach.
+Value17 (B4/U5/A3/S5/C4/E2/R2); YELLOW/auth-adjacent. Account-bound state and
+late authority/SELECT/timer fences only; preserve SDK/auth policies, projection,
+RLS/user_id query/write/channel scopes, private runtime routes and existing copy.
+Accept synchronous clearance, A-B-A/logout/unmount/suppression, stale initial
+session fencing and same-user refresh; actual-component regressions, unchanged
+full gates, native EN/DE/TR/ZH compact laptop/mobile and immutable review.
+No dependencies, schema, backend, secrets, live services, push or deployment.
+Chat stale-snapshot and mark-read outcome gaps remain separate, not silently
+accepted by this task. OS controller unavailable: manual local fallback.
+
 ### MANUAL-20261007-TOOLS-HUB-COPY-QUALITY [P2] Make public tool choices understandable in every supported language
 
 Fingerprint: `public-tools|hub-feature-copy|scoped-runtime-english-leak-and-literal-request-meaning|native-all-locale-tool-selection`

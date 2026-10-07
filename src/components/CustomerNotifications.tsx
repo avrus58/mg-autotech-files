@@ -23,6 +23,12 @@ type CustomerNotification = {
   created_at: string;
 };
 
+type NotificationAccountContext = {
+  userId: string;
+  active: boolean;
+  authorized: boolean;
+};
+
 const soundStorageKey = "mg_notification_sound";
 type AudioWindow = Window & typeof globalThis & {
   webkitAudioContext?: typeof AudioContext;
@@ -72,6 +78,7 @@ export function CustomerNotifications() {
   const locale = useActiveLocale();
   const notificationsSuppressed = pathname === "/admin" || pathname.startsWith("/admin/") || pathname.startsWith("/embed/");
   const [userId, setUserId] = useState("");
+  const [notificationAccount, setNotificationAccount] = useState<NotificationAccountContext | null>(null);
   const [items, setItems] = useState<CustomerNotification[]>([]);
   const [open, setOpen] = useState(false);
   const [toast, setToast] = useState<CustomerNotification | null>(null);
@@ -83,6 +90,8 @@ export function CustomerNotifications() {
   );
   const knownIds = useRef(new Set<string>());
   const initialized = useRef(false);
+  const accountContext = useRef<NotificationAccountContext | null>(null);
+  const toastTimer = useRef<number | null>(null);
 
   const unread = useMemo(() => items.filter((item) => !item.read_at).length, [items]);
 
@@ -91,15 +100,43 @@ export function CustomerNotifications() {
 
     let active = true;
     let resolutionSequence = 0;
+    let deferredResolution: number | null = null;
 
-    async function resolveCustomer(id?: string) {
-      const resolution = ++resolutionSequence;
-      setUserId("");
+    function clearAccountNotifications() {
+      setItems([]);
+      setToast(null);
       setOpen(false);
+      setNotificationLoading(false);
+      setNotificationLoadError(null);
+      knownIds.current = new Set();
+      initialized.current = false;
+      if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
+      toastTimer.current = null;
+    }
 
-      if (!id) {
-        return;
+    function beginResolution(id?: string) {
+      const resolution = ++resolutionSequence;
+      const current = accountContext.current;
+      if (!id || current?.userId !== id) {
+        if (current) current.active = false;
+        accountContext.current = id
+          ? { userId: id, active: true, authorized: false }
+          : null;
+        // Clear ownership synchronously, before deferred authority work can
+        // run or an old SELECT/toast callback can settle (including A-B-A).
+        clearAccountNotifications();
+      } else {
+        current.authorized = false;
       }
+      setUserId("");
+      setNotificationAccount(null);
+      setOpen(false);
+      return resolution;
+    }
+
+    async function resolveCustomer(id?: string, resolution = beginResolution(id)) {
+      const context = accountContext.current;
+      if (!active || resolution !== resolutionSequence || !id || !context) return;
 
       try {
         const response = await authenticatedFetch("/api/account/context", {
@@ -108,36 +145,61 @@ export function CustomerNotifications() {
         const payload = response.ok
           ? (await response.json()) as { home?: unknown }
           : null;
-        if (!active || resolution !== resolutionSequence) return;
-        setUserId(payload?.home === "/dashboard" ? id : "");
+        if (!active || resolution !== resolutionSequence || accountContext.current !== context) return;
+        context.authorized = payload?.home === "/dashboard";
+        if (context.authorized) {
+          setNotificationAccount(context);
+          setUserId(id);
+        } else {
+          clearAccountNotifications();
+        }
       } catch {
         // Authority lookup fails closed: never show customer notifications to
         // an account whose staff/customer classification is unavailable.
+        if (active && resolution === resolutionSequence && accountContext.current === context) {
+          clearAccountNotifications();
+        }
       }
     }
 
-    void getStableSession().then(({ session }) => resolveCustomer(session?.user?.id));
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      window.setTimeout(() => { void resolveCustomer(session?.user?.id); }, 0);
-      if (!session?.user) {
-        setItems([]);
-        setOpen(false);
-        setNotificationLoading(false);
-        setNotificationLoadError(null);
+    const initialResolution = resolutionSequence;
+    void getStableSession().then(({ session }) => {
+      if (active && resolutionSequence === initialResolution) {
+        void resolveCustomer(session?.user?.id);
       }
+    }).catch(() => {
+      // A later auth event owns the account even if the initial lookup fails.
+      if (active && resolutionSequence === initialResolution) beginResolution();
+    });
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!active) return;
+      const resolution = beginResolution(session?.user?.id);
+      if (deferredResolution !== null) window.clearTimeout(deferredResolution);
+      deferredResolution = window.setTimeout(() => { void resolveCustomer(session?.user?.id, resolution); }, 0);
     });
     return () => {
       active = false;
       resolutionSequence += 1;
+      if (accountContext.current) accountContext.current.active = false;
+      accountContext.current = null;
+      if (deferredResolution !== null) window.clearTimeout(deferredResolution);
+      if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
+      toastTimer.current = null;
+      knownIds.current = new Set();
+      initialized.current = false;
       data.subscription.unsubscribe();
     };
   }, [notificationsSuppressed]);
 
   useEffect(() => {
     if (notificationsSuppressed || !userId) return;
+    const context = accountContext.current;
+    if (!context?.active || !context.authorized || context.userId !== userId) return;
     let active = true;
+    const ownsAccount = () => active && context.active && context.authorized && accountContext.current === context;
 
     async function loadNotifications(notify = false) {
+      if (!ownsAccount()) return;
       if (!initialized.current) {
         setNotificationLoading(true);
         setNotificationLoadError(null);
@@ -150,7 +212,7 @@ export function CustomerNotifications() {
         .order("created_at", { ascending: false })
         .limit(20);
 
-      if (!active) return;
+      if (!ownsAccount()) return;
       if (error) {
         setNotificationLoading(false);
         if (!initialized.current) {
@@ -158,7 +220,7 @@ export function CustomerNotifications() {
         }
         return;
       }
-      const next = (data ?? []) as CustomerNotification[];
+      const next = ((data ?? []) as CustomerNotification[]).filter((item) => item.user_id === userId);
       const incoming = next.filter((item) => !knownIds.current.has(item.id));
       setItems(next);
       setNotificationLoading(false);
@@ -168,7 +230,14 @@ export function CustomerNotifications() {
       if (initialized.current && notify && incoming.length > 0) {
         setToast(incoming[0]);
         if (soundEnabled) playNotificationSound();
-        window.setTimeout(() => setToast(null), 8000);
+        if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
+        const timer = window.setTimeout(() => {
+          if (context.active && accountContext.current === context && toastTimer.current === timer) {
+            toastTimer.current = null;
+            setToast(null);
+          }
+        }, 8000);
+        toastTimer.current = timer;
       }
       initialized.current = true;
     }
@@ -188,13 +257,12 @@ export function CustomerNotifications() {
       active = false;
       window.clearInterval(interval);
       supabase.removeChannel(channel);
-      knownIds.current = new Set();
-      initialized.current = false;
     };
-  }, [notificationRefreshKey, notificationsSuppressed, soundEnabled, userId]);
+  }, [notificationAccount, notificationRefreshKey, notificationsSuppressed, soundEnabled, userId]);
 
   async function markRead(ids: string[]) {
-    if (!ids.length) return;
+    const context = notificationAccount;
+    if (!ids.length || !context?.active || !context.authorized || context.userId !== userId || accountContext.current !== context) return;
     const readAt = new Date().toISOString();
     setItems((current) => current.map((item) => ids.includes(item.id) ? { ...item, read_at: readAt } : item));
     await supabase.from("notifications").update({ read_at: readAt }).in("id", ids).eq("user_id", userId);
@@ -210,12 +278,18 @@ export function CustomerNotifications() {
   }
 
   function retryNotificationLoad() {
+    if (!notificationAccount?.active || !notificationAccount.authorized || accountContext.current !== notificationAccount) return;
     setNotificationLoading(true);
     setNotificationLoadError(null);
     setNotificationRefreshKey((current) => current + 1);
   }
 
-  if (notificationsSuppressed || !userId) return null;
+  function dismissToast() {
+    if (!notificationAccount?.active || accountContext.current !== notificationAccount) return;
+    setToast((current) => current === toast ? null : current);
+  }
+
+  if (notificationsSuppressed || !userId || !notificationAccount?.active || !notificationAccount.authorized || notificationAccount.userId !== userId) return null;
 
   return (
     <div className="fixed right-4 top-20 z-[95] flex flex-col items-end gap-3">
@@ -232,12 +306,12 @@ export function CustomerNotifications() {
               <div className="mt-1 break-words font-black text-white" translate={copy.rawTitle ? "no" : undefined} data-no-translate={copy.rawTitle ? true : undefined}>{copy.title}</div>
               {copy.body && <div className="mt-1 line-clamp-2 break-words text-sm leading-5 text-zinc-400" translate={copy.rawBody ? "no" : undefined} data-no-translate={copy.rawBody ? true : undefined}>{copy.body}</div>}
               {toast.order_id && (
-                <Link href={`/dashboard/orders/${toast.order_id}`} onClick={() => { markRead([toast.id]); setToast(null); }} className="mt-3 inline-flex text-sm font-black text-red-400 hover:text-red-300">
+                <Link href={`/dashboard/orders/${toast.order_id}`} onClick={() => { markRead([toast.id]); dismissToast(); }} className="mt-3 inline-flex text-sm font-black text-red-400 hover:text-red-300">
                   Open request
                 </Link>
               )}
             </div>
-            <button onClick={() => setToast(null)} aria-label="Close notification" className="rounded-lg p-1 text-zinc-500 hover:bg-white/10 hover:text-white"><X className="h-4 w-4" /></button>
+            <button onClick={dismissToast} aria-label="Close notification" className="rounded-lg p-1 text-zinc-500 hover:bg-white/10 hover:text-white"><X className="h-4 w-4" /></button>
           </div>
         </div>
         );

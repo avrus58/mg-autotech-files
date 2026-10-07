@@ -1,5 +1,19 @@
 # Otonom calisma gunlugu
 
+## 2026-10-07 — Notification account isolation selected; verification pending
+
+- One local P1 task selected at clean26bd69a after exact-effect synthetic
+  A-to-B reproduction retained A feed/toast under B userId. Client retained
+  state only; not a live customer leak, backend/RLS or authentication claim.
+  Work only in owned acquisition-recovery worktree; primary untouched.
+- Root owns component; independent actual-component tests and native fixture
+  preparation delegated; immutable review separate. Preserve existing copy,
+  auth callbacks' deferred network work, query/write/channel scopes and private
+  runtime. No auth policy, schema, dependencies, service mutation or release.
+- Required full/localization/build/native gates pending. OS absent/manual
+  local fallback; task In Progress and broader goal OPEN. Existing SSR/Vary,
+  chat snapshot and mark-read failure gaps remain explicit separate work.
+
 ## 2026-10-07 — Editor-visible customer profile save outcomes accepted locally
 
 - Current record07:09:50UTC: concrete product progress, not idle or whole-goal
