@@ -1,5 +1,106 @@
 # Otonom calisma gunlugu
 
+## 2026-10-07 01:02 UTC — Scoped tool copy and mobile containment verified; strict document/header debt retained
+
+- Same bounded task, source b22faa6 plus necessary physical-GUI repair33711ad.
+  Final immutable33711ad090680872d0a19806eb9a46f4d94197b7 changes only the
+  cumulative5 source/audit/test files: Tools Page, public-tools tuples, existing
+  check-customer-i18n collector, public-surface test and actual-page hub test.
+  No source edits after freeze. Main inspected the entire5972..33711ad diff.
+- Actual public core/tools scope now covers Tools and the10 missing feature
+  labels in all11 non-English languages; every original15bullet/5tool/4step,
+  English source and destination is preserved. Exact typed13-source union and
+  both strengthened features collectors prevent customer-catalog false coverage.
+  Four existing hub rows now describe clear requests/ECU reading rather than
+  literal cleaning/prose-reading. No firmware-validation or new-service claim.
+- Final sourceDirty=false receipts: targeted25, lint0errors/warnings, full
+  web/uploader types, full1939/1939 (283056.6ms), prebuildi18n37/37 with2495
+  reviewed rows and23/21 dynamic signatures, Webpack build, performance and
+  emitted2/2 PASS. BuildxiBnrMnlkXu9Ndx4I6w4y generated293/293; unchanged
+  strict assets43/fonts5/PDFKit30/sharp8/auth401/PNG+PDF/zero checker fetches PASS.
+  Homepage15.7/80KB gzip, all locale budgets and48 representative prerenders PASS.
+  TestSHA39e4cb9c2bc1e66ce2254b763557811e3ca6f0e1821ad601d5bf5f0c30a8b0bd.
+- Exact full139 prerender membership AND manifestSHA remain baseline
+  b844d3a6f1eabd69c1ed1b0d75d90b167492dc8e3bfcecb23e01300b5c78b751.
+  Request-brief unchanged strict firstHTML script PASS12/12 on this artifact;
+  receiptSHA59B2B462D67B1024D0A351AC9768571B7CB22A6AA3291D5943AAB5AAF73CFCAF.
+  Prior b22 firstHTML JSON was copied exactly to source-b22faa6 before rerun,
+  SHA62E346C1A1EDA6E2823245387DC7B277549651820277A65E78C46E7E49AA3DBC.
+- Fresh actual CUA EN/DE/TR/ZH x1366x768/390x844:8 full screenshots plusTRcards,
+  real menus/reloads, native header and15feature texts. Main width1351/375 and
+  measured card/text boxes remain inside viewport with zero clipped/overflowing
+  descendants. Main visually inspected all8 plusTRcards. DE mobile main496px
+  genuinely became375px, not merely hidden document overflow. Consolewarn/error0.
+  Native ZH card->brief->All tools->back/forward/reload preserves localized body.
+  Initial URL-only back read preceded React destination commit and is preserved;
+  actual heading waits then prove brief8emptyfields/progress0 and Tools15bullets.
+  No URL-only intermediate is counted as a finished navigation.
+  GUIreceiptSHA259EB877CFF4B65FED71E712D11A089F8F11BC66239997DE4BE0796E428645A9.
+- Raw Tools native body/header/copy/metadata/links PASS12/12 but strict overall
+  remains14/37:11 non-English openinglang failures and12 finalVary failures.
+  tools-hub-http-20261007T005909128Z.json SHA0908BBF328527772CAA7923FBBF237B026608FA416E11231CF09A3C3B753722E.
+  Unchanged expanded brief acceptance62/101,39finalVary failures remain;
+  request-brief-ssr-acceptance-20261007T005911033Z.json SHA425E2EDC1699582725A140BA8E22A629B91E52991DD982975F801195AAEC304B.
+  Private/no-store is mitigation, not a waiver or evidence of customer leakage.
+- Earlier parser/harness failures remain recorded: actual Footer required real
+  Next contexts; article anchors had class beforehref; Tools observer needed
+  async main, the CollectionPage graph and actual publiccanonical instead of
+  loopback. After actual main gainedclass, its parser acceptsattributes only;
+  no feature/language/header assertion relaxed. Old b22DE RED and development
+  5/7->7/7 are preserved; original b22 gates are not final acceptance evidence.
+- Same owned server51233 was deliberately stopped before rebuild (Ctrl-Cexit1,
+  not application failure); fresh owned server74775 serves loopback3190. Standard
+  next-start/standalone preview warning is retained, not a deployed-runtime claim.
+  EN preference and default1280 viewport restored; same tab marked for handoff.
+- Independent final immutable reviewer /root/customer_product_audit gives scoped
+  copy/physical-mobile GO for33711ad/xiBnrMnlkXu9Ndx4I6w4y, no newP0/P1/P2.
+  Reviewer read fresh logs/receipts and independently inspected DE mobile,
+  TR laptop/cards, ZH mobile, EN laptop and preserved oldDE RED. GUIhash matches.
+  OverallPARTIAL/NO-GO and taskInProgress remain due real document/header failures.
+  Whole goal active; no Done/Preview/Production or globally perfect copy claim. Shared
+  footer/request-brief semantics and floating language text overlap remain separate.
+  Bounded pinned-header review is in the existing proposal; no more unsafe prototypes.
+  Primary owner checkout, live Ads/site, auth/payment/schema/data/env untouched.
+
+## 2026-10-07 00:49 UTC — Real mobile copy clipping repaired before final acceptance
+
+- First frozen source b22faa6 / build GtqnZKu1JocBZ6U2jBp3T passed targeted24,
+  lint/fulltypes/full1938/prebuild37/build/strictassets/performance/2emitted.
+  Same139-route manifest hash and brief firstHTML12 are intact. Strict brief
+  acceptance62/101 and Tools14/37 retain actual finalVary/openinglang failures.
+- Fresh native EN laptop/mobile and DE mobile screenshots were saved, then main
+  inspected the DE mobile at original detail: workflow and card text genuinely
+  clip. Document375px masks main496px because root overflow-x-hidden; no GUI
+  pass is claimed. Independent reviewer acknowledged this P2 supersedes b22
+  source-only GO. Old receipts and three screenshots remain unchanged.
+- Bounded repair: only Tools Page inherits overflow-wrap:anywhere, main/grid
+  items get min-w-0, feature text uses a min-w-0 flex child. Fonts/spacing/design,
+  allfive tools/fifteen bullets/four workflow links/English content stay intact.
+  Reviewer Spanish P3 integridad ambiguity now uses Puntuación de completitud
+  in the existing tuple. No other weak shared/footer translations changed.
+- Actual-page tests first failed5/7 on these two missing contracts; after repair
+  7/7 PASS. Main parsers now allow real main attributes; assertions are unchanged
+  or stronger, not a language/header waiver. Fresh frozen full validation and
+  eight-view GUI are still required; task and goal stay In Progress/active.
+
+## 2026-10-07 00:21 UTC — Tools hub native copy quality started locally
+
+- Previous goal turn is progress: focused source3cff2dd, full1932/strictHTML12
+  and139-prerender/GUI evidence; docs receipt5972dc6. Goal remains active.
+- Revalidated clean attached managed worktree and existing live owned server47772;
+  no restart on silence. Local branch codex/tools-localization-quality-20261007.
+  Main read AGENTS, all11constitution, skill/references, current project/queue/
+  roadmap/inbox/history/Git/package scripts. OS configs/CLI still absent.
+- Actual All tools link and native ZH menu reproduced ten English feature labels,
+  Tools navigation and literal cleaning-request meaning. Independent audit confirms
+  missing scoped rows plus uncollected features/customer-catalog gate mismatch.
+  Selecting one bounded native copy task; no global fallback or waiver.
+- Parallel read-only installed/pinned-framework final-header review is bounded;
+  no repeated prototype or next-source monkeypatch. Existing SSR acceptance stays
+  RED until supported final-response evidence, not merely private/no-store.
+- Primary checkout/live site/Ads/payment/auth/schema/data/env are untouched.
+  Implementation and fresh validation pending; no Done/release/perfection claim.
+
 ## 2026-10-07 — Request brief first-document language verified; strict final-header acceptance remains RED
 
 - One local bounded candidate 3cff2ddcffb1d0c4bf0e062d0c382d545b4ce512,

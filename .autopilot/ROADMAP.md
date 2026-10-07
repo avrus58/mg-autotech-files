@@ -83,6 +83,19 @@
   (for example Practical next actions and Copy-ready brief) despite the source
   checker passing. This is observed runtime copy debt, not proof of complete
   translations or permission to waive the localization contract.
+- Scoped successor33711ad/buildxiBnrMnlkXu9Ndx4I6w4y now proves all15features
+  andTools header in their actual scope across12 firstHTML bodies; full1939 and
+  8native mobile/laptop views pass after repairing genuinely clippedDE496px
+  main to375px. Cumulative5files; source/feature collectors strengthened.
+  No global native-copy perfection claim: Tools11openinglang and12finalVary
+  remainRED; both brief dependent tasks and this copy task stayInProgress.
+- Next-cycle read-only audit on33711ad confirmed existing item4's exact gap:
+  four distinct already-translated serviceIntentGuides render prefixless, but
+  locale route/i18nRoutes/sitemap only recognize thelegacy5service family.
+  All180guide phrase occurrences have11nonEN tuple slots, not linguistic proof.
+  Plan separate exact guide-family dispatch/locale metadata/reciprocal discovery,
+  keeping core5model andguide facts/CTA intents untouched. No implementation
+  or invented indexing/customer outcome in this cycle.
 - This sequence is bounded initial product work, not a redefinition of the goal
   or a claim that five packages exhaust every requirement. Reassess uncovered
   requirements after each accepted package; keep the thread goal active until

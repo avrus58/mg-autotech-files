@@ -24,6 +24,54 @@ Receipt: `docs/production-release-2026-10-01-address.md`.
 
 ## In Progress
 
+### MANUAL-20261007-TOOLS-HUB-COPY-QUALITY [P2] Make public tool choices understandable in every supported language
+
+Fingerprint: `public-tools|hub-feature-copy|scoped-runtime-english-leak-and-literal-request-meaning|native-all-locale-tool-selection`
+
+Origin: observed under the owner's active local-first excellence milestone.
+Fresh native ZH Tools navigation on 5972dc6/build WpzO54pyZuc84KH_DZqOz shows
+10 English feature labels plus Tools, and the hero mistranslates clearer
+requests as cleaning requirements. Source confirms absent scoped catalog rows;
+both collectors omit features and the route-scope test can borrow customer
+translations which this public renderer never uses. AUTO-045 added a workflow,
+not this copy closure. Business3/User4/Admin2/Strategic4/Confidence5/Effort2/Risk1;
+value15. One bounded local implementation; no fictional OS controller lifecycle.
+
+Boundary: tools hub model's exact typed feature union, public-tools tuple catalog,
+the two existing source collectors, a dedicated actual-page/header SSR regression,
+and these task/status/history/roadmap records. Keep all five tools/fifteen bullets,
+four workflow links, existing English sources, layout, privacy and gated Studio
+destination. Refine only the hub hero/brief/workflow wording; no new capability,
+claim, dependency, global translator fallback, unrelated shared/footer copy,
+price/auth/API/data/env or external write.
+
+Fresh b22/Gtqn browser acceptance found a real P2: DE390x844 has a375px
+document but496px main content, with long German workflow/card compounds clipped
+by the existing root overflow-x-hidden. Preserved de-mobile.png is RED evidence;
+documentWidth alone is insufficient. Same bounded task includes Page-only
+min-width/overflow-wrap/flex-text containment and exact actual-page regression;
+keep fonts, spacing, cards, links and copy intact. Reviewer Spanish completeness
+P3 is corrected in its existing tuple, not a new capability or file-validation claim.
+
+Acceptance: every current feature and header label resolves in the actual
+core/tools runtime scope for all12 locales, with native meaning and unchanged
+Nm/RPM/kW/HP/PS. Actual page+header initial rendering and metadata/schema agree;
+source collection detects feature values without using customer dictionaries.
+Full mandatory gates/fresh build/performance and EN/DE/TR/ZH laptop/mobile
+native menus/reload/link checks plus immutable independent review required.
+Existing Tools prefixless opening-language/final-header debt must be measured
+and preserved RED, not hidden by these body-copy assertions or relabelled Done.
+
+Final scoped source33711ad/buildxiBnrMnlkXu9Ndx4I6w4y passes25targeted/full1939/
+prebuild37/lint/fulltypes/build/assets/performance/2emitted. Actual8-view native
+GUI measures main/card/text containment, including DE496px->375px mobile repair;
+console0 and realZHbrief/All-tools/back-forward/reload pass after destination
+heading commits. Root viewed all8 plusTRcards. Firstbody copy12/12 and brief
+strictfirstHTML12/12 pass; all139prerender keys AND baselinehash unchanged.
+Overall In Progress/PARTIAL/NO-GO: Tools11openinglang+12Vary and brief39Vary
+failures are preserved. Independent immutable successor source+physical-GUI GO,
+no newP0/P1/P2; reviewer boundsource/build/GUIhash and keptoverallNO-GO. No release.
+
 ### MANUAL-20261007-REQUEST-BRIEF-SSR-LANGUAGE [P1] Resolve the request brief document language without de-prerendering static pages
 
 Fingerprint: `public-tools|request-brief-document-shell|native-body-with-english-opening-html|exact-runtime-locale-param-routing-pilot`

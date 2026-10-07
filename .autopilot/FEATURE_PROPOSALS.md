@@ -27,6 +27,27 @@
   header contract. Preserve failed evidence; assess a scoped real final-response
   boundary before broad migration. No framework monkeypatch, header-test waiver
   or test-only proxy may be represented as an application fix.
+- Bounded two-agent supported-options review on 7 October converged, without
+  more prototypes: installed 16.2.11 app-page/module.js136-146 computes fixed
+  RSC Vary and template445-446 overwrites config/Proxy. Pinned Proxy documentation
+  confirms both configuration headers and Proxy run before Page render. A Route
+  Handler controls only its own Response, conflicts with a Page at the same path
+  and does not preserve its layouts/native navigation. Request headers(), after()
+  and build adapter hooks are not final Page-response setters. Main re-read the
+  installed overwrite and pinned Proxy/route-resolution docs. Existing EN control
+  and the unchanged strict101 receipt remain decisive RED, not a cache-leak claim.
+- No supported in-place final-header implementation was proved within that
+  one-route/standalone boundary. Reopen only with a supported reviewed framework
+  fix or an explicitly scoped real final-response layer. Existing documented
+  Caddy -> file-service:3000 makes a separate edge-layer design plausible, not
+  implemented/authorized here; a fake local gateway cannot pass the preserved
+  direct-Next gate. No dependency/custom-server/Next monkeypatch or validator
+  relaxation. Stop repetitive prototypes and continue other safe product work.
+- Pinned option references:
+  [16.2.11 Proxy order](https://raw.githubusercontent.com/vercel/next.js/v16.2.11/docs/01-app/03-api-reference/03-file-conventions/proxy.mdx),
+  [16.2.11 route resolution](https://raw.githubusercontent.com/vercel/next.js/v16.2.11/docs/01-app/01-getting-started/15-route-handlers.mdx).
+  These references were used to reject unsafe shortcuts, not to assert a later
+  framework version or a completed infrastructure remedy.
 - Rejected shortcuts: whole-root request headers that remove static prerendering,
   post-render regex/HTML mutation, duplicate html tags, script-only/no-JS waivers,
   unchecked query locale values, new libraries or newly indexable alias pages.
