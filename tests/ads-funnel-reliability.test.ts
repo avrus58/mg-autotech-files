@@ -228,7 +228,7 @@ test("ECU-platform campaign links stay English-only and invalid locale values fa
   }
   // The typed caller excludes these; still prove malformed runtime values do
   // not acquire a supported path or an English fallback.
-  for (const locale of ["invalid", "DE", "de-DE", "cn", "", "../de"] as LocaleCode[]) {
+  for (const locale of ["invalid", "DE", "de-DE", "cn", "", "../de"] as unknown as LocaleCode[]) {
     for (const guide of localizedCampaignGuides) {
       assert.equal(googleAdsDestinationSupportsLocale(guide.destination, locale), false);
       assert.equal(buildGoogleAdsCampaignUrl({ locale, destination: guide.destination, campaign: "stage2_de" }), null);
