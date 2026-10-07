@@ -4,6 +4,26 @@
 
 ## Ready
 
+## Completed manual releases
+
+### MANUAL-20261001-CURRENT-BUSINESS-ADDRESS [P1] Synchronize the owner-confirmed Asperg address
+
+Fingerprint: `business-location|public-footer-contact-legal-schema|outdated-stuttgart-address|owner-confirmed-asperg-address`
+
+Status: **Done — published and verified on 1 October 2026.**
+Address-only source `dec7f5be3197` is live as the healthy app/analyzer pair.
+All 12 locale copies, shared Organization/footer/contact address and exact legal
+recipients agree. Full tests 1,794/1,794; i18n, lint, types, both production
+builders and the unchanged Webpack performance gate pass. Immediate GET-only
+release smoke 33/33, independent address checks 65/65, browser journeys 39/39
+and retained assets 20/20 pass. Prior pair `01ba96a9fe00` remains available.
+Known unchanged prefixless initial-language and copyright contrast issues are
+explicitly deferred, not relabelled as fixed or green.
+No policy, payment, auth, customer-data, migration or environment change.
+Receipt: `docs/production-release-2026-10-01-address.md`.
+
+## In Progress
+
 ### MANUAL-20261007-CAMPAIGN-GUIDE-LOCALE-PARITY [P2] Match offline campaign links to existing localized service guides
 
 Fingerprint: `advertising-readiness|campaign-destination-builder|localized-reviewed-guides-still-english-only|locale-matched-offline-campaign-links`
@@ -29,27 +49,7 @@ proof of lost customers, current Ads failure, acquisition or revenue.
 Acceptance: all 36 locale/guide URL cases, retained EN-only rejection and exact
 token/URL/privacy contracts; existing guide regressions, i18n, lint, full types,
 full tests/build and local EN/DE/TR/ZH destination/CTA browser evidence, followed
-by immutable independent review. Ready for the next bounded cycle only.
-
-## Completed manual releases
-
-### MANUAL-20261001-CURRENT-BUSINESS-ADDRESS [P1] Synchronize the owner-confirmed Asperg address
-
-Fingerprint: `business-location|public-footer-contact-legal-schema|outdated-stuttgart-address|owner-confirmed-asperg-address`
-
-Status: **Done — published and verified on 1 October 2026.**
-Address-only source `dec7f5be3197` is live as the healthy app/analyzer pair.
-All 12 locale copies, shared Organization/footer/contact address and exact legal
-recipients agree. Full tests 1,794/1,794; i18n, lint, types, both production
-builders and the unchanged Webpack performance gate pass. Immediate GET-only
-release smoke 33/33, independent address checks 65/65, browser journeys 39/39
-and retained assets 20/20 pass. Prior pair `01ba96a9fe00` remains available.
-Known unchanged prefixless initial-language and copyright contrast issues are
-explicitly deferred, not relabelled as fixed or green.
-No policy, payment, auth, customer-data, migration or environment change.
-Receipt: `docs/production-release-2026-10-01-address.md`.
-
-## In Progress
+by immutable independent review. Local implementation and verification underway.
 
 ### MANUAL-20261007-TOOLS-HUB-COPY-QUALITY [P2] Make public tool choices understandable in every supported language
 

@@ -80,8 +80,7 @@ Initial review groups:
 1. Stage 1 file service: localized `/services/stage-1`.
 2. Broad ECU/TCU file service: localized `/file-service`.
 3. Workflow/trust support: localized `/how-it-works`.
-4. TCU file service: English `/services/tcu-tuning` only until a
-   localized destination exists.
+4. TCU file service: localized `/services/tcu-tuning`.
 
 Begin with exact and phrase match. Expand only after search-term quality and
 verified requests are visible. Keep policy-sensitive diagnostic/emissions
@@ -126,8 +125,11 @@ The six audited UK/Ireland sitelink destinations are:
 | TCU | `/services/tcu-tuning` |
 | How It Works | `/how-it-works` |
 
-All six are represented by the allowlisted URL builder. ECU Platforms and TCU
-are English-only until matching localized destinations exist.
+All six are represented by the allowlisted URL builder. Stage 2, ECU File Check
+and TCU now have matching destinations in all 12 supported languages, as do
+Stage 1 and How It Works. ECU Platforms remains English-only until matching
+localized destinations exist. Destination availability does not authorize a
+new campaign or waive the launch, consent and policy-review gates above.
 
 ## Audited paused-account snapshot
 

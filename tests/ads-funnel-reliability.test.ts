@@ -8,9 +8,13 @@ import {
   googleAdsDestinationSupportsLocale,
   googleAdsLanguageDestinations,
 } from "../src/lib/googleAds/campaignLinks";
-import { supportedLocales } from "../src/lib/i18nConfig";
+import { supportedLocales, type LocaleCode } from "../src/lib/i18nConfig";
+import { getLocalizedPublicPath } from "../src/lib/i18nRoutes";
 import { publicServiceSlugs } from "../src/lib/seo";
-import { serviceIntentGuideSlugs } from "../src/lib/serviceIntentGuides";
+import {
+  isServiceIntentGuideSlug,
+  serviceIntentGuideSlugs,
+} from "../src/lib/serviceIntentGuideRoutes";
 import {
   buildNewRequestPath,
   getPublicServiceRequestIntent,
@@ -58,7 +62,7 @@ test("allowlisted public service intents resolve only to existing request servic
   assert.equal(buildNewRequestPath(null), "/new-request");
 });
 
-test("Google Ads exposes the real TCU landing only for its English page", () => {
+test("Google Ads retains the exact English TCU campaign URL contract", () => {
   const url = buildGoogleAdsCampaignUrl({
     locale: "en",
     destination: "tcu",
@@ -73,25 +77,169 @@ test("Google Ads exposes the real TCU landing only for its English page", () => 
   assert.equal(parsed.searchParams.get("utm_campaign"), "tcu_uk_ie");
   assert.equal(parsed.searchParams.has("utm_content"), false);
   assert.equal(googleAdsDestinationSupportsLocale("tcu", "en"), true);
-  assert.equal(googleAdsDestinationSupportsLocale("tcu", "de"), false);
   assert.equal(
-    googleAdsLanguageDestinations.find((item) => item.locale === "de")?.paths.tcu,
-    undefined
+    url,
+    "https://file.mgautotech.de/services/tcu-tuning?utm_source=google&utm_medium=cpc&utm_campaign=tcu_uk_ie"
   );
-  assert.equal(
-    buildGoogleAdsCampaignUrl({
-      locale: "de",
-      destination: "tcu",
-      campaign: "tcu_de",
-    }),
-    null
+});
+
+const localizedCampaignGuides = [
+  { destination: "stage2", slug: "stage-2", label: "Stage 2 file service" },
+  { destination: "ecu_file_check", slug: "ecu-file-check", label: "ECU file check" },
+  { destination: "tcu", slug: "tcu-tuning", label: "TCU file service" },
+] as const;
+
+test("campaign destination and language inventories retain their exact reviewed scope", () => {
+  assert.deepEqual(
+    supportedLocales.map(({ code }) => code),
+    ["nl", "en", "de", "fr", "it", "ru", "es", "tr", "pt", "zh", "pl", "sq"]
   );
+  assert.deepEqual(
+    googleAdsDestinationDefinitions.map(({ key }) => key),
+    ["stage1", "stage2", "ecu_file_check", "ecu_platforms", "tcu", "file_service", "how_it_works"]
+  );
+  assert.deepEqual(
+    googleAdsLanguageDestinations.map(({ locale, language }) => ({ locale, language })),
+    supportedLocales.map(({ code, name }) => ({ locale: code, language: name }))
+  );
+  for (const language of googleAdsLanguageDestinations) {
+    const prefix = language.locale === "en" ? "" : `/${language.locale}`;
+    assert.deepEqual(language.paths, {
+      stage1: `${prefix}/services/stage-1`,
+      stage2: `${prefix}/services/stage-2`,
+      ecu_file_check: `${prefix}/services/ecu-file-check`,
+      ...(language.locale === "en" ? { ecu_platforms: "/ecu-platforms" } : {}),
+      tcu: `${prefix}/services/tcu-tuning`,
+      file_service: `${prefix}/file-service`,
+      how_it_works: `${prefix}/how-it-works`,
+    }, language.locale);
+  }
+  for (const guide of localizedCampaignGuides) {
+    const definition = googleAdsDestinationDefinitions.find(({ key }) => key === guide.destination);
+    assert.ok(definition);
+    assert.equal(definition.label, guide.label);
+    assert.equal(definition.path, `/services/${guide.slug}`);
+    assert.equal("locale" in definition, false, guide.destination);
+    assert.equal(isServiceIntentGuideSlug(guide.slug), true, guide.slug);
+  }
+  assert.deepEqual(
+    googleAdsDestinationDefinitions.filter((definition) => "locale" in definition),
+    [{ key: "ecu_platforms", label: "ECU platform library (English only)", path: "/ecu-platforms", locale: "en" }]
+  );
+});
+
+for (const { code } of supportedLocales) {
+  for (const guide of localizedCampaignGuides) {
+    test(`Google Ads ${code}:${guide.destination} selects the existing localized guide with exact attribution`, () => {
+      // Expected paths are independent literals, not derived from the definitions
+      // or the localized-path helper which the campaign builder itself uses.
+      const canonicalPath = `/services/${guide.slug}`;
+      const expectedPath = code === "en" ? canonicalPath : `/${code}${canonicalPath}`;
+      const campaign = `${guide.destination}_uk_ie_${code}`;
+      const language = googleAdsLanguageDestinations.find(({ locale }) => locale === code);
+      assert.ok(language, code);
+      assert.equal(language.paths[guide.destination], expectedPath);
+      assert.equal(googleAdsDestinationSupportsLocale(guide.destination, code), true);
+      assert.equal(getLocalizedPublicPath(canonicalPath, code), expectedPath);
+
+      const url = buildGoogleAdsCampaignUrl({
+        locale: code,
+        destination: guide.destination,
+        campaign,
+      });
+      assert.equal(
+        url,
+        `https://file.mgautotech.de${expectedPath}?utm_source=google&utm_medium=cpc&utm_campaign=${campaign}`
+      );
+      assert.ok(url);
+      const parsed = new URL(url);
+      assert.equal(parsed.origin, "https://file.mgautotech.de");
+      assert.equal(parsed.pathname, expectedPath);
+      assert.equal(parsed.username, "");
+      assert.equal(parsed.password, "");
+      assert.equal(parsed.hash, "");
+      assert.deepEqual([...parsed.searchParams], [
+        ["utm_source", "google"],
+        ["utm_medium", "cpc"],
+        ["utm_campaign", campaign],
+      ]);
+    });
+  }
+}
+
+test("localized guide links keep campaign normalization and privacy rejection unchanged", () => {
+  const rejectedCampaigns = [
+    "",
+    "ab",
+    "customer@example.com",
+    "alice_smith",
+    "stage2_alice_smith",
+    "stage2_uk_ie_de_fr_it",
+    "stage2_uk_",
+    "stage2_1",
+    "stage2_de-DE",
+    "stage2_uk?email=customer@example.com",
+    "stage2_uk&gclid=private",
+    "stage2_uk#gclid=private",
+    "https://example.test/redirect",
+    "../../dashboard/credits",
+    "stage3_de",
+    `stage2_${"a".repeat(65)}`,
+  ];
+  for (const { code } of supportedLocales) {
+    for (const guide of localizedCampaignGuides) {
+      for (const campaign of rejectedCampaigns) {
+        assert.equal(
+          buildGoogleAdsCampaignUrl({ locale: code, destination: guide.destination, campaign }),
+          null,
+          `${code}:${guide.destination}:${campaign}`
+        );
+      }
+      const path = code === "en" ? `/services/${guide.slug}` : `/${code}/services/${guide.slug}`;
+      for (const namespace of ["file_service", "stage1", "stage2", "tcu", "ecu_file_check", "ecu_platforms", "how_it_works"]) {
+        const campaign = `${namespace}_uk_ie_de_fr`;
+        assert.equal(
+          buildGoogleAdsCampaignUrl({
+            locale: code,
+            destination: guide.destination,
+            campaign: `  ${campaign.toUpperCase()}  `,
+          }),
+          `https://file.mgautotech.de${path}?utm_source=google&utm_medium=cpc&utm_campaign=${campaign}`
+        );
+      }
+    }
+  }
+});
+
+test("ECU-platform campaign links stay English-only and invalid locale values fail closed", () => {
+  for (const { code } of supportedLocales) {
+    const expected = code === "en" ? "/ecu-platforms" : undefined;
+    assert.equal(
+      googleAdsLanguageDestinations.find(({ locale }) => locale === code)?.paths.ecu_platforms,
+      expected
+    );
+    assert.equal(googleAdsDestinationSupportsLocale("ecu_platforms", code), code === "en");
+    assert.equal(
+      buildGoogleAdsCampaignUrl({ locale: code, destination: "ecu_platforms", campaign: "ecu_platforms_uk_ie" }),
+      code === "en"
+        ? "https://file.mgautotech.de/ecu-platforms?utm_source=google&utm_medium=cpc&utm_campaign=ecu_platforms_uk_ie"
+        : null
+    );
+  }
+  // The typed caller excludes these; still prove malformed runtime values do
+  // not acquire a supported path or an English fallback.
+  for (const locale of ["invalid", "DE", "de-DE", "cn", "", "../de"] as LocaleCode[]) {
+    for (const guide of localizedCampaignGuides) {
+      assert.equal(googleAdsDestinationSupportsLocale(guide.destination, locale), false);
+      assert.equal(buildGoogleAdsCampaignUrl({ locale, destination: guide.destination, campaign: "stage2_de" }), null);
+    }
+  }
 });
 
 test("every Google Ads language destination resolves to an existing route contract", () => {
   const localizedStaticPaths = new Set(["/file-service", "/how-it-works"]);
   const localizedServicePaths = new Set(
-    publicServiceSlugs.map((slug) => `/services/${slug}`)
+    [...publicServiceSlugs, ...serviceIntentGuideSlugs].map((slug) => `/services/${slug}`)
   );
   const canonicalPaths = new Set([
     "/ecu-platforms",
@@ -180,11 +328,11 @@ test("every Google Ads language destination resolves to an existing route contra
 
     assert.equal(
       language.paths.stage2,
-      language.locale === "en" ? "/services/stage-2" : undefined
+      language.locale === "en" ? "/services/stage-2" : `/${language.locale}/services/stage-2`
     );
     assert.equal(
       language.paths.ecu_file_check,
-      language.locale === "en" ? "/services/ecu-file-check" : undefined
+      language.locale === "en" ? "/services/ecu-file-check" : `/${language.locale}/services/ecu-file-check`
     );
     assert.equal(
       language.paths.stage1,

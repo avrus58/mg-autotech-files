@@ -7,15 +7,13 @@ export const googleAdsDestinationDefinitions = [
   { key: "stage1", label: "Stage 1 file service", path: "/services/stage-1" },
   {
     key: "stage2",
-    label: "Stage 2 file service (English only)",
+    label: "Stage 2 file service",
     path: "/services/stage-2",
-    locale: "en",
   },
   {
     key: "ecu_file_check",
-    label: "ECU file check (English only)",
+    label: "ECU file check",
     path: "/services/ecu-file-check",
-    locale: "en",
   },
   {
     key: "ecu_platforms",
@@ -25,9 +23,8 @@ export const googleAdsDestinationDefinitions = [
   },
   {
     key: "tcu",
-    label: "TCU file service (English only)",
+    label: "TCU file service",
     path: "/services/tcu-tuning",
-    locale: "en",
   },
   { key: "file_service", label: "ECU / TCU file service", path: "/file-service" },
   { key: "how_it_works", label: "How the workflow works", path: "/how-it-works" },
