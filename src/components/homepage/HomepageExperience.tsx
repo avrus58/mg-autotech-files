@@ -973,7 +973,7 @@ function HomepageHeader({
               <summary className="flex min-h-10 cursor-pointer list-none items-center gap-2 rounded-xl border border-white/10 bg-white/[0.035] px-3 text-xs font-black marker:hidden">
                 <LayoutDashboard className="h-4 w-4 text-red-400" /> My Account <ChevronDown className="h-3.5 w-3.5 text-zinc-600 transition group-open:rotate-180" />
               </summary>
-              <div className="absolute right-0 top-[calc(100%+.5rem)] w-64 rounded-xl border border-white/10 bg-[#0b0b0d] p-2 shadow-2xl">
+              <div className="absolute right-0 top-[calc(100%+.5rem)] z-50 w-64 rounded-xl border border-white/10 bg-[#0b0b0d] p-2 shadow-2xl">
                 <div className="truncate px-3 py-2 text-[0.68rem] text-zinc-400">{userEmail}</div>
                 <Link href="/dashboard" className="flex min-h-10 items-center rounded-lg px-3 text-xs font-black hover:bg-white/[0.05]"><LayoutDashboard className="mr-2 h-4 w-4 text-red-400" /> Customer Dashboard</Link>
                 <button type="button" onClick={() => void onLogout()} className="flex min-h-10 w-full items-center rounded-lg px-3 text-left text-xs font-black text-zinc-400 hover:bg-white/[0.05] hover:text-white"><LogOut className="mr-2 h-4 w-4" /> Logout</button>
@@ -991,7 +991,7 @@ function HomepageHeader({
         </Link>
         <details className="group relative shrink-0 lg:hidden">
           <summary aria-label="Open navigation" className="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-xl border border-white/10 bg-white/[0.035] marker:hidden"><Menu className="h-5 w-5" /></summary>
-          <div className="absolute right-0 top-[calc(100%+.55rem)] w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-white/10 bg-[#0b0b0d] p-2 shadow-2xl">
+          <div className="absolute right-0 top-[calc(100%+.55rem)] z-50 w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-white/10 bg-[#0b0b0d] p-2 shadow-2xl">
             {nav.map((item) => (
               <Link key={item.href} href={item.href} onClick={closeMobileMenu} className="flex min-h-11 items-center rounded-xl px-3 text-sm font-black text-zinc-300 hover:bg-white/[0.05]">{item.label}</Link>
             ))}

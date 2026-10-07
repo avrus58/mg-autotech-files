@@ -452,6 +452,20 @@ test("all four opted-in actual headers render exactly one normal-flow utility ro
 });
 
 test("placement remains exact-file inventoried and does not introduce root request reads or duplicate owner mounts", () => {
+  const homepageAst = ts.createSourceFile("HomepageExperience.tsx", source("src/components/homepage/HomepageExperience.tsx"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const header = homepageAst.statements.find((statement) => ts.isFunctionDeclaration(statement) && statement.name?.text === "HomepageHeader");
+  assert.ok(header, "inspect the actual native header branches, not a replacement fixture");
+  const nativePanelClasses: string[] = [];
+  function inspectNativePanels(node: ts.Node) {
+    if (ts.isJsxOpeningElement(node) && node.tagName.getText(homepageAst) === "div") {
+      const attribute = node.attributes.properties.find((property) => ts.isJsxAttribute(property) && property.name.getText(homepageAst) === "className");
+      if (attribute && ts.isJsxAttribute(attribute) && attribute.initializer && ts.isStringLiteral(attribute.initializer) && attribute.initializer.text.startsWith("absolute right-0 top-")) nativePanelClasses.push(attribute.initializer.text);
+    }
+    ts.forEachChild(node, inspectNativePanels);
+  }
+  inspectNativePanels(header);
+  assert.equal(nativePanelClasses.length, 2, "preserve both native account and mobile navigation panel branches");
+  for (const panel of nativePanelClasses) assert.ok(panel.split(/\s+/u).includes("z-50"), "native panels must paint above later closed utility triggers, below the z-80 language menu");
   const inventory = source("scripts/check-customer-i18n.ts");
   assert.match(inventory, /"src\/components\/PublicUtilityBar\.tsx"/u);
   for (const file of ["src/app/layout.tsx", "src/app/page.tsx", "src/components/RootDocument.tsx", "src/components/PublicUtilityBar.tsx", "src/lib/publicUtilityHosts.ts"]) assert.doesNotMatch(source(file), /next\/headers|\bheaders\s*\(|\bcookies\s*\(|\bgetServerLocale\s*\(/u, file);
