@@ -24,6 +24,7 @@ import {
   websiteJsonLd,
 } from "@/lib/seo";
 import type { ServiceIntentGuide } from "@/lib/serviceIntentGuides";
+import { businessAudienceTypeByLocale } from "@/lib/structuredDataI18n";
 import {
   localizeRuntimePublicJsonLd,
   runtimePublicInLanguage,
@@ -106,7 +107,7 @@ export function ServiceIntentPage({
         provider: { "@id": `${absoluteUrl("/")}#organization` },
         audience: {
           "@type": "BusinessAudience",
-          audienceType: "Automotive workshops and tuning professionals",
+          audienceType: businessAudienceTypeByLocale[locale],
         },
         areaServed: ["Germany", "Europe"],
         url: pageUrl,
@@ -124,7 +125,7 @@ export function ServiceIntentPage({
       {
         "@type": "ItemList",
         "@id": `${pageUrl}#requirements`,
-        name: `${guide.name} request requirements`,
+        name: "Required request context",
         itemListElement: guide.requiredInputs.map((item, index) => ({
           "@type": "ListItem",
           position: index + 1,

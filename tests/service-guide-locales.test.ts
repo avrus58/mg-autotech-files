@@ -178,6 +178,41 @@ test("actual guide FAQ disclosures and requirements are consistent with their tr
   }
 });
 
+test("all 48 actual guide schemas use reviewed native requirement labels and workshop audience wording", async () => {
+  // Independent literals from the existing reviewed catalogs. Catalog lookup
+  // alone previously missed an unmatched interpolated requirements label and
+  // the English BusinessAudience prose in otherwise translated guide schemas.
+  const labels: Record<LocaleCode, { requirements: string; audience: string }> = {
+    en: { requirements: "Required request context", audience: "Automotive workshops and tuning professionals" },
+    de: { requirements: "Erforderlicher Anfragekontext", audience: "Kfz-Werkstätten und professionelle Tuner" },
+    tr: { requirements: "Gerekli talep bağlamı", audience: "Otomotiv servisleri ve profesyonel tuning uzmanları" },
+    nl: { requirements: "Vereiste aanvraagcontext", audience: "Autowerkplaatsen en professionele tuners" },
+    fr: { requirements: "Contexte requis pour la demande", audience: "Ateliers automobiles et préparateurs professionnels" },
+    it: { requirements: "Contesto richiesto per la richiesta", audience: "Officine automobilistiche e preparatori professionisti" },
+    es: { requirements: "Contexto necesario de la solicitud", audience: "Talleres de automoción y preparadores profesionales" },
+    pt: { requirements: "Contexto necessário do pedido", audience: "Oficinas automóveis e preparadores profissionais" },
+    pl: { requirements: "Wymagany kontekst zlecenia", audience: "Warsztaty samochodowe i profesjonalni tunerzy" },
+    ru: { requirements: "Необходимый контекст запроса", audience: "Автомобильные мастерские и профессиональные тюнеры" },
+    zh: { requirements: "请求所需信息", audience: "汽车维修厂和专业调校技师" },
+    sq: { requirements: "Konteksti i kërkuar i kërkesës", audience: "Servise automobilistike dhe specialistë të tunimit" },
+  };
+  const pages = await rendered;
+  for (const { code } of supportedLocales) {
+    for (const guide of serviceIntentGuides) {
+      const nodes = graph(pages.get(`${code}:${guide.slug}`)!);
+      const requirements = nodes.find((entry) => entry["@type"] === "ItemList")!;
+      assert.equal(requirements.name, labels[code].requirements, `${code}:${guide.slug}: native schema requirements label`);
+      const service = nodes.find((entry) => entry["@type"] === "Service")!;
+      assert.deepEqual(service.audience, { "@type": "BusinessAudience", audienceType: labels[code].audience }, `${code}:${guide.slug}: native workshop audience`);
+      if (code !== "en") {
+        assert.notEqual(requirements.name, labels.en.requirements);
+        assert.notEqual((service.audience as Record<string, unknown>).audienceType, labels.en.audience);
+        assert.doesNotMatch(String(requirements.name), /request requirements/u);
+      }
+    }
+  }
+});
+
 test("actual route metadata and graph identities use matching locale canonicals and reciprocal alternates", async () => {
   const pages = await rendered;
   for (const { code } of supportedLocales) {
