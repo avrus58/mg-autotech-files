@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { runInNewContext } from "node:vm";
+import * as icons from "lucide-react";
+import * as React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import * as jsxRuntime from "react/jsx-runtime";
 import ts from "typescript";
 import * as draftHelpers from "../src/lib/adminCustomerDraft";
 import { hasAdminSnapshotRegression } from "../src/lib/adminDataStability";
@@ -145,10 +149,12 @@ type AppForm = Record<string, unknown> & {
   global_custom_unit_price_eur: string; effective_custom_unit_price_eur: string;
 };
 type AppEditor = draftHelpers.AdminCustomerDraft<AppForm>;
+type ProfileFeedback = { customerId: string; instanceId: number; tone: "success" | "error"; text: string };
 type ResponsePayload = Record<string, unknown>;
 type State = Record<string, unknown> & {
   selectedCustomer: Profile | null; customers: Profile[]; customerEditor: AppEditor | null;
   customerPricingLoadState: string; customerPricingUpdatedAt: string | null;
+  customerProfileFeedback: ProfileFeedback | null;
 };
 type Request = {
   url: string; init: { method?: string; body?: string };
@@ -162,6 +168,8 @@ type Actions = {
   loadCustomerPricing(customerId: string): Promise<void>;
   saveCustomerPricing(): Promise<void>;
   saveCustomerSettings(): Promise<void>;
+  modalProfileFeedback: ProfileFeedback | null;
+  modalSaving: boolean;
 };
 
 const source = readFileSync("src/app/admin/page.tsx", "utf8");
@@ -183,27 +191,101 @@ const callbackDeclarations = page.body.statements.filter((node) =>
 );
 assert.equal(callbackDeclarations.length, callbackNames.length + 2, "extract the real draft setter and full refresh callback");
 let closeExpression: ts.Expression | undefined;
+let feedbackExpression: ts.Expression | undefined;
+let savingExpression: ts.Expression | undefined;
 function findClose(node: ts.Node) {
   if (ts.isJsxSelfClosingElement(node) && node.tagName.getText(ast) === "CustomerDetailModal") {
-    const attribute = node.attributes.properties.find((property): property is ts.JsxAttribute => ts.isJsxAttribute(property) && property.name.getText(ast) === "onClose");
-    if (attribute?.initializer && ts.isJsxExpression(attribute.initializer)) closeExpression = attribute.initializer.expression;
+    for (const property of node.attributes.properties) {
+      if (!ts.isJsxAttribute(property) || !property.initializer || !ts.isJsxExpression(property.initializer)) continue;
+      if (property.name.getText(ast) === "onClose") closeExpression = property.initializer.expression;
+      if (property.name.getText(ast) === "profileFeedback") feedbackExpression = property.initializer.expression;
+      if (property.name.getText(ast) === "saving") savingExpression = property.initializer.expression;
+    }
   }
   ts.forEachChild(node, findClose);
 }
 findClose(page);
 assert.ok(closeExpression, "execute the actual modal close callback");
+assert.ok(feedbackExpression && savingExpression, "evaluate the actual editor-bound modal props, not a copied identity filter");
 const namedClose = ts.isIdentifier(closeExpression)
   ? page.body.statements.find((node): node is ts.FunctionDeclaration => ts.isFunctionDeclaration(node) && node.name?.text === closeExpression?.getText(ast))
   : undefined;
 const compiled = ts.transpileModule(`
 ${topDeclarations.map((node) => node.getText(ast)).join("\n")}
 exports.makeCustomerForm = makeCustomerForm;
-exports.render = function(customerEditor, customerForm, selectedCustomer, customerPricingLoadState, customerPricingUpdatedAt) {
+exports.render = function(customerEditor, customerForm, selectedCustomer, customerPricingLoadState, customerPricingUpdatedAt, customerProfileFeedback, customerSavingId) {
   ${callbackDeclarations.map((node) => node.getText(ast)).join("\n")}
   ${namedClose?.getText(ast) ?? ""}
   const closeCustomerModal = ${closeExpression.getText(ast)};
-  return { openCustomer, closeCustomerModal, setCustomerForm, loadAdminData, loadCustomerPricing, saveCustomerPricing, saveCustomerSettings };
+  return { openCustomer, closeCustomerModal, setCustomerForm, loadAdminData, loadCustomerPricing, saveCustomerPricing, saveCustomerSettings,
+    modalProfileFeedback: ${feedbackExpression.getText(ast)},
+    modalSaving: selectedCustomer ? (${savingExpression.getText(ast)}) : false };
 };`, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
+
+// Render the exact sticky-header JSX from the real modal. This excludes the
+// unrelated security/pricing subtrees and never imports AdminPage/auth clients.
+const modal = ast.statements.find((node): node is ts.FunctionDeclaration => ts.isFunctionDeclaration(node) && node.name?.text === "CustomerDetailModal");
+assert.ok(modal?.body);
+const stickyHeaders: ts.JsxElement[] = [];
+function findStickyHeader(node: ts.Node) {
+  if (ts.isJsxElement(node) && node.openingElement.attributes.properties.some((property) =>
+    ts.isJsxAttribute(property) && property.name.getText(ast) === "className"
+    && property.initializer && ts.isStringLiteral(property.initializer)
+    && /^sticky top-0\b/u.test(property.initializer.text))) stickyHeaders.push(node);
+  ts.forEachChild(node, findStickyHeader);
+}
+findStickyHeader(modal);
+assert.equal(stickyHeaders.length, 1, "the feedback must render inside the actual sticky modal header");
+const accountLabel = modal.body.statements.find((node) => ts.isVariableStatement(node)
+  && node.declarationList.declarations.some((declaration) => ts.isIdentifier(declaration.name) && declaration.name.text === "accountCreatedLabel"));
+assert.ok(accountLabel);
+const headerHelperNames = ["statusLabel", "accountStatusClass", "customerTagClass", "customerTagLabel", "formatDate"];
+const headerHelpers = ast.statements.filter((node) =>
+  ts.isFunctionDeclaration(node) && headerHelperNames.includes(node.name?.text ?? "")
+  || ts.isVariableStatement(node) && node.declarationList.declarations.some((declaration) => ts.isIdentifier(declaration.name) && declaration.name.text === "customerTagOptions"));
+assert.equal(headerHelpers.length, headerHelperNames.length + 1);
+type HeaderProps = { customer: Profile; form: AppForm; saving: boolean; profileFeedback: ProfileFeedback | null };
+const headerExports: { renderHeader?: (props: HeaderProps) => React.ReactElement } = {};
+const headerCompiled = ts.transpileModule(`
+${headerHelpers.map((node) => node.getText(ast)).join("\n")}
+exports.renderHeader = function({ customer, form, saving, profileFeedback }) {
+  ${accountLabel.getText(ast)}
+  const canManageCredits = false, canViewCustomerIntelligence = false;
+  return (${stickyHeaders[0].getText(ast)});
+};`, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
+const noHeaderInteraction = () => { throw new Error("Static modal-header rendering must not invoke handlers or browser work."); };
+runInNewContext(headerCompiled, {
+  exports: headerExports, ...icons, onSave: noHeaderInteraction, onClose: noHeaderInteraction, onCopyValue: noHeaderInteraction,
+  require(name: string) {
+    assert.equal(name, "react/jsx-runtime", "allow only the installed real React JSX renderer dependency");
+    return jsxRuntime;
+  },
+});
+assert.ok(headerExports.renderHeader);
+
+function renderProfileHeader(app: ReturnType<typeof appHarness>) {
+  assert.ok(app.state.selectedCustomer);
+  const actions = app.actions();
+  return renderToStaticMarkup(React.createElement(headerExports.renderHeader!, {
+    customer: app.state.selectedCustomer, form: app.form(),
+    saving: actions.modalSaving, profileFeedback: actions.modalProfileFeedback,
+  }));
+}
+
+function assertVisibleProfileFeedback(app: ReturnType<typeof appHarness>, tone: ProfileFeedback["tone"], text: string) {
+  assert.ok(app.state.customerEditor);
+  assert.deepEqual(plain(app.state.customerProfileFeedback), {
+    customerId: app.state.customerEditor.customerId, instanceId: app.state.customerEditor.instanceId, tone, text,
+  });
+  assert.deepEqual(plain(app.actions().modalProfileFeedback), plain(app.state.customerProfileFeedback));
+  const markup = renderProfileHeader(app);
+  const escaped = renderToStaticMarkup(React.createElement("span", null, text)).slice(6, -7);
+  assert.ok(markup.includes(escaped), "the settled callback outcome must reach actual visible sticky-header JSX");
+  assert.match(markup, tone === "error" ? /role="alert"/u : /role="status"/u);
+  assert.match(markup, /class="sticky top-0\b/u);
+  assert.match(markup, /aria-busy="false"/u);
+  return markup;
+}
 
 function syntheticProfile(suffix = "A", extra: Partial<Profile> = {}): Profile {
   return {
@@ -236,6 +318,7 @@ function appHarness() {
     customerPricingLoadState: "idle", customerPricingUpdatedAt: null,
     customerPricingError: "", customerPricingMessage: "", message: "",
     customerSavingId: null, customerPricingSavingId: null,
+    customerProfileFeedback: null,
   };
   const requests: Request[] = [];
   const access: StaffAccess = { role: "admin", staffRole: "owner", permissions: ["customers.view", "customers.manage", "credits.manage"] };
@@ -276,9 +359,9 @@ function appHarness() {
   const moduleExports = context.exports as { render?: (...args: unknown[]) => Actions; makeCustomerForm?: (profile: Profile) => AppForm };
   runInNewContext(compiled, context);
   assert.ok(moduleExports.render && moduleExports.makeCustomerForm);
-  const actions = () => moduleExports.render!(state.customerEditor, state.customerEditor?.draft ?? null, state.selectedCustomer, state.customerPricingLoadState, state.customerPricingUpdatedAt);
+  const actions = () => moduleExports.render!(state.customerEditor, state.customerEditor?.draft ?? null, state.selectedCustomer, state.customerPricingLoadState, state.customerPricingUpdatedAt, state.customerProfileFeedback, state.customerSavingId);
   return {
-    state, requests, refs, actions, makeCustomerForm: moduleExports.makeCustomerForm,
+    state, requests, refs, access, actions, makeCustomerForm: moduleExports.makeCustomerForm,
     form: () => { assert.ok(state.customerEditor); return state.customerEditor.draft; },
     edit: (changes: Partial<AppForm>) => actions().setCustomerForm((current) => ({ ...current, ...changes })),
     async open(profile = syntheticProfile(), payload = pricingPayload(profile.id)) {
@@ -337,6 +420,7 @@ test("actual profile save retains post-click edits, accepts confirmed normalizat
   assert.equal(app.state.customerEditor?.baseline.city, "Submitted city");
   assert.equal(app.form().commercial_custom_unit_price_override_eur, "2");
   assert.equal(app.state.customerSavingId, null);
+  assertVisibleProfileFeedback(app, "success", "FIXTURE-A updated.");
 });
 
 test("actual commercial save retains post-click package edits independently and preserves dirty profile fields", async () => {
@@ -513,6 +597,167 @@ test("a delayed pricing read started before save cannot undo accepted commercial
   assert.equal(app.form().commercial_package_price_overrides_eur.credits_10, "30");
   assert.equal(app.state.customerEditor?.baseline.commercial_package_price_overrides_eur.credits_10, "30");
   assert.equal(app.state.customerPricingUpdatedAt, "2026-10-06T04:00:00.000Z");
+});
+
+for (const outcome of ["server-error", "empty-server-error", "invalid-error", "null-server-error", "missing-server-error", "wrong-customer", "absent-customer", "null-customer", "network-error", "permission"] as const) {
+  test(`actual current profile ${outcome} is visible in its own modal without losing draft/baseline`, async () => {
+    const app = appHarness(); await app.open(); app.edit({ full_name: "Unsaved profile", city: "Local city" });
+    const before = plain(app.state.customerEditor);
+    const requestCount = app.requests.length;
+    if (outcome === "permission") {
+      app.access.role = "staff";
+      app.access.staffRole = "support";
+      app.access.permissions = ["customers.view"];
+      assert.equal(hasStaffPermission(app.access, "customers.manage"), false);
+    }
+    const pending = app.actions().saveCustomerSettings();
+    let expected: string;
+    if (outcome === "permission") {
+      expected = "Your staff role cannot update customer profiles.";
+      assert.equal(app.requests.length, requestCount, "denied saves must not issue profile transport");
+    } else {
+      assert.equal(app.requests.length, requestCount + 1);
+      const request = app.requests.at(-1)!;
+      if (outcome === "server-error") {
+        expected = "Synthetic profile conflict"; request.resolve({ error: expected }, 409);
+      } else if (outcome === "empty-server-error" || outcome === "invalid-error" || outcome === "null-server-error" || outcome === "missing-server-error") {
+        expected = "Customer profile could not be saved.";
+        request.resolve(outcome === "missing-server-error" ? {} : {
+          error: outcome === "empty-server-error" ? "  " : outcome === "null-server-error" ? null : { unexpected: "object" },
+        }, 500);
+      } else if (outcome === "wrong-customer") {
+        expected = "Customer profile could not be saved. Check the connection and retry.";
+        request.resolve({ customer: { id: "synthetic-B", full_name: "Wrong account" } });
+      } else if (outcome === "absent-customer" || outcome === "null-customer") {
+        expected = "Customer profile could not be saved. Check the connection and retry.";
+        request.resolve(outcome === "null-customer" ? { customer: null } : {});
+      } else {
+        expected = "Customer profile could not be saved. Check the connection and retry.";
+        request.reject(new Error("Synthetic offline transport"));
+      }
+    }
+    await pending;
+    assert.deepEqual(plain(app.state.customerEditor), before);
+    assert.equal(app.state.customerSavingId, null);
+    assert.equal(app.state.message, expected, "retain the existing global outcome as well as the scoped result");
+    assertVisibleProfileFeedback(app, "error", expected);
+  });
+}
+
+for (const tone of ["success", "error"] as const) {
+  test(`dashboard refresh clears global text but retains the actual modal's ${tone} profile outcome`, async () => {
+    const app = appHarness(); await app.open(); app.edit({ full_name: "Saved profile" });
+    const pending = app.actions().saveCustomerSettings();
+    const expected = tone === "success" ? "FIXTURE-A updated." : "Synthetic current conflict";
+    app.requests.at(-1)!.resolve(tone === "success"
+      ? { customer: { id: "synthetic-A", full_name: "Saved profile" } }
+      : { error: expected }, tone === "success" ? 200 : 409);
+    await pending;
+    const feedback = plain(app.state.customerProfileFeedback);
+    for (let index = 0; index < 2; index += 1) {
+      await app.refresh([syntheticProfile("A", { full_name: "Saved profile", city: `Refreshed city ${index}` })]);
+      assert.equal(app.state.message, "");
+      assert.deepEqual(plain(app.state.customerProfileFeedback), feedback);
+      assertVisibleProfileFeedback(app, tone, expected);
+    }
+  });
+}
+
+test("retry clears the old scoped error while pending and actual Save profile exposes busy/disabled state", async () => {
+  const app = appHarness(); await app.open(); app.edit({ city: "Submitted city" });
+  const failed = app.actions().saveCustomerSettings();
+  app.requests.at(-1)!.resolve({ error: "Synthetic retryable conflict" }, 409); await failed;
+  assertVisibleProfileFeedback(app, "error", "Synthetic retryable conflict");
+  const retry = app.actions().saveCustomerSettings(); const request = app.requests.at(-1)!;
+  assert.equal(app.state.customerProfileFeedback, null);
+  assert.equal(app.actions().modalProfileFeedback, null);
+  assert.equal(app.state.message, "");
+  assert.equal(app.state.customerSavingId, "synthetic-A");
+  const markup = renderProfileHeader(app);
+  assert.doesNotMatch(markup, /role="(?:alert|status)"/u);
+  const saveButton = [...markup.matchAll(/<button\b([^>]*)>([\s\S]*?)<\/button>/gu)].find((match) => match[2].includes("Save profile"));
+  assert.ok(saveButton);
+  assert.match(saveButton[1], /disabled=""/u);
+  assert.match(saveButton[1], /aria-busy="true"/u);
+  app.edit({ city: "Edited during retry" });
+  request.resolve({ customer: { id: "synthetic-A", city: "Submitted city" } }); await retry;
+  assert.equal(app.form().city, "Edited during retry");
+  assert.equal(app.state.customerEditor?.baseline.city, "Submitted city");
+  assertVisibleProfileFeedback(app, "success", "FIXTURE-A updated.");
+});
+
+test("actual modal prop rejects another customer or editor instance and open/close clear the settled outcome", async () => {
+  const app = appHarness(); await app.open();
+  const current = { customerId: "synthetic-A", instanceId: app.state.customerEditor!.instanceId, tone: "error" as const, text: "Synthetic bound error" };
+  for (const wrong of [{ ...current, customerId: "synthetic-B" }, { ...current, instanceId: current.instanceId - 1 }]) {
+    app.state.customerProfileFeedback = wrong;
+    assert.equal(app.actions().modalProfileFeedback, null);
+    assert.doesNotMatch(renderProfileHeader(app), /Synthetic bound error|role="alert"/u);
+  }
+  app.state.customerProfileFeedback = current;
+  assertVisibleProfileFeedback(app, "error", current.text);
+  await app.open(syntheticProfile("B"), pricingPayload("synthetic-B"));
+  assert.equal(app.state.customerProfileFeedback, null);
+  assert.equal(app.actions().modalProfileFeedback, null);
+  const save = app.actions().saveCustomerSettings();
+  app.requests.at(-1)!.resolve({ customer: { id: "synthetic-B" } }); await save;
+  assertVisibleProfileFeedback(app, "success", "FIXTURE-B updated.");
+  app.actions().closeCustomerModal();
+  assert.equal(app.state.customerProfileFeedback, null);
+  assert.equal(app.state.customerEditor, null);
+  await app.open(syntheticProfile("B"), pricingPayload("synthetic-B"));
+  assert.equal(app.actions().modalProfileFeedback, null);
+  assert.doesNotMatch(renderProfileHeader(app), /FIXTURE-B updated\.|role="status"/u);
+});
+
+for (const transition of ["A-B-A", "close-reopen"] as const) {
+  for (const staleOutcome of ["success", "server-error", "network-error"] as const) {
+    test(`stale profile ${staleOutcome} after ${transition} cannot overwrite the new editor's settled outcome`, async () => {
+      const app = appHarness(); await app.open();
+      const oldSave = app.actions().saveCustomerSettings(); const oldRequest = app.requests.at(-1)!;
+      if (transition === "A-B-A") await app.open(syntheticProfile("B"), pricingPayload("synthetic-B"));
+      else app.actions().closeCustomerModal();
+      await app.open(); app.edit({ full_name: "Newest draft" });
+      const newSave = app.actions().saveCustomerSettings();
+      app.requests.at(-1)!.resolve({ error: "Current editor's own outcome" }, 409); await newSave;
+      const before = plain(app.state.customerEditor);
+      const feedback = plain(app.state.customerProfileFeedback);
+      if (staleOutcome === "success") oldRequest.resolve({ customer: { id: "synthetic-A", full_name: "Stale profile" } });
+      else if (staleOutcome === "server-error") oldRequest.resolve({ error: "Stale conflict" }, 409);
+      else oldRequest.reject(new Error("Stale offline transport"));
+      await oldSave;
+      assert.deepEqual(plain(app.state.customerEditor), before);
+      assert.deepEqual(plain(app.state.customerProfileFeedback), feedback);
+      assert.equal(app.state.message, "Current editor's own outcome");
+      assert.equal(app.state.customerSavingId, null);
+      assertVisibleProfileFeedback(app, "error", "Current editor's own outcome");
+    });
+  }
+}
+
+test("a superseded same-editor save cannot restore old feedback or release a newer save's busy state", async () => {
+  const app = appHarness(); await app.open();
+  const oldSave = app.actions().saveCustomerSettings(); const oldRequest = app.requests.at(-1)!;
+  app.edit({ city: "Newest submitted city" });
+  const newSave = app.actions().saveCustomerSettings(); const newRequest = app.requests.at(-1)!;
+  oldRequest.resolve({ error: "Superseded conflict" }, 409); await oldSave;
+  assert.equal(app.state.customerProfileFeedback, null);
+  assert.equal(app.state.customerSavingId, "synthetic-A");
+  assert.equal(app.state.message, "");
+  newRequest.resolve({ customer: { id: "synthetic-A", city: "Newest submitted city" } }); await newSave;
+  assertVisibleProfileFeedback(app, "success", "FIXTURE-A updated.");
+});
+
+test("actual sticky-header feedback is escaped, focusable and bounded for long unbroken server errors", async () => {
+  const app = appHarness(); await app.open();
+  const text = `<script>synthetic-only</script> ${"x".repeat(600)}`;
+  const save = app.actions().saveCustomerSettings(); app.requests.at(-1)!.resolve({ error: text }, 400); await save;
+  const markup = assertVisibleProfileFeedback(app, "error", text);
+  assert.doesNotMatch(markup, /<script>/u);
+  assert.match(markup, /role="alert" tabindex="0"/u);
+  assert.match(markup, /max-h-24 min-w-0 overflow-y-auto/u);
+  assert.match(markup, /\[overflow-wrap:anywhere\]/u);
+  assert.match(markup, /focus-visible:ring-2/u);
 });
 
 test("recorded baseline refresh callback demonstrates the original loss invariant", () => {

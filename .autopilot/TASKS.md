@@ -4,6 +4,26 @@
 
 ## Ready
 
+## Completed manual releases
+
+### MANUAL-20261001-CURRENT-BUSINESS-ADDRESS [P1] Synchronize the owner-confirmed Asperg address
+
+Fingerprint: `business-location|public-footer-contact-legal-schema|outdated-stuttgart-address|owner-confirmed-asperg-address`
+
+Status: **Done — published and verified on 1 October 2026.**
+Address-only source `dec7f5be3197` is live as the healthy app/analyzer pair.
+All 12 locale copies, shared Organization/footer/contact address and exact legal
+recipients agree. Full tests 1,794/1,794; i18n, lint, types, both production
+builders and the unchanged Webpack performance gate pass. Immediate GET-only
+release smoke 33/33, independent address checks 65/65, browser journeys 39/39
+and retained assets 20/20 pass. Prior pair `01ba96a9fe00` remains available.
+Known unchanged prefixless initial-language and copyright contrast issues are
+explicitly deferred, not relabelled as fixed or green.
+No policy, payment, auth, customer-data, migration or environment change.
+Receipt: `docs/production-release-2026-10-01-address.md`.
+
+## In Progress
+
 ### MANUAL-20261007-ADMIN-PROFILE-FEEDBACK [P2] Show editor-bound profile save outcomes inside the open form
 
 Fingerprint: `admin-operations|customer-profile-save-feedback|modal-hides-and-refresh-clears-save-result|editor-bound-visible-profile-outcome`
@@ -25,26 +45,6 @@ Acceptance: actual visible success/error, retained failed draft/reachable retry,
 post-click edits and stale-result isolation; mobile/laptop native feedback,
 focus/scroll plus full same-source gates and independent immutable review.
 This is separate from the accepted draft-retention task, not its hidden failure.
-
-## Completed manual releases
-
-### MANUAL-20261001-CURRENT-BUSINESS-ADDRESS [P1] Synchronize the owner-confirmed Asperg address
-
-Fingerprint: `business-location|public-footer-contact-legal-schema|outdated-stuttgart-address|owner-confirmed-asperg-address`
-
-Status: **Done — published and verified on 1 October 2026.**
-Address-only source `dec7f5be3197` is live as the healthy app/analyzer pair.
-All 12 locale copies, shared Organization/footer/contact address and exact legal
-recipients agree. Full tests 1,794/1,794; i18n, lint, types, both production
-builders and the unchanged Webpack performance gate pass. Immediate GET-only
-release smoke 33/33, independent address checks 65/65, browser journeys 39/39
-and retained assets 20/20 pass. Prior pair `01ba96a9fe00` remains available.
-Known unchanged prefixless initial-language and copyright contrast issues are
-explicitly deferred, not relabelled as fixed or green.
-No policy, payment, auth, customer-data, migration or environment change.
-Receipt: `docs/production-release-2026-10-01-address.md`.
-
-## In Progress
 
 ### MANUAL-20261007-TOOLS-HUB-COPY-QUALITY [P2] Make public tool choices understandable in every supported language
 

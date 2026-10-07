@@ -252,6 +252,13 @@ type CustomerForm = {
   effective_custom_unit_price_eur: string;
 };
 
+type CustomerProfileFeedback = {
+  customerId: string;
+  instanceId: number;
+  tone: "success" | "error";
+  text: string;
+};
+
 const customerProfileFormKeys = [
   "full_name", "account_type", "company_name", "phone", "street", "postal_code",
   "city", "country", "vat_id", "invoice_email", "preferred_contact",
@@ -694,6 +701,7 @@ export default function AdminPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [creditUpdatingIds, setCreditUpdatingIds] = useState<Set<string>>(() => new Set());
   const [customerSavingId, setCustomerSavingId] = useState<string | null>(null);
+  const [customerProfileFeedback, setCustomerProfileFeedback] = useState<CustomerProfileFeedback | null>(null);
   const [customerPricingSavingId, setCustomerPricingSavingId] = useState<string | null>(null);
   const [customerPricingLoadState, setCustomerPricingLoadState] = useState<CustomerPricingLoadState>("idle");
   const [customerPricingError, setCustomerPricingError] = useState("");
@@ -1343,6 +1351,7 @@ export default function AdminPage() {
     customerPricingSaveRequestRef.current += 1;
     selectedCustomerIdRef.current = customer.id;
     setCustomerSavingId(null);
+    setCustomerProfileFeedback(null);
     setCustomerPricingSavingId(null);
     setSelectedCustomer(customer);
     setCustomerEditor(createAdminCustomerDraft({ customerId: customer.id, instanceId }, makeCustomerForm(customer)));
@@ -1358,6 +1367,7 @@ export default function AdminPage() {
     setSelectedCustomer(null);
     setCustomerEditor(null);
     setCustomerSavingId(null);
+    setCustomerProfileFeedback(null);
     setCustomerPricingLoadState("idle");
     setCustomerPricingError("");
     setCustomerPricingMessage("");
@@ -1627,7 +1637,12 @@ export default function AdminPage() {
 
   async function saveCustomerSettings() {
     if (!hasStaffPermission(adminAccess, "customers.manage")) {
-      setMessage("Your staff role cannot update customer profiles.");
+      const text = "Your staff role cannot update customer profiles.";
+      setMessage(text);
+      const identity = { customerId: selectedCustomer?.id ?? "", instanceId: customerEditorInstanceRef.current };
+      if (selectedCustomerIdRef.current === identity.customerId && isAdminCustomerDraftIdentity(customerEditor, identity)) {
+        setCustomerProfileFeedback({ ...identity, tone: "error", text });
+      }
       return;
     }
     if (!selectedCustomer || !customerForm) return;
@@ -1640,7 +1655,13 @@ export default function AdminPage() {
     const requestId = ++customerProfileSaveRequestRef.current;
     customerProfileSnapshotRevisionRef.current += 1;
     setCustomerSavingId(customerId);
+    setCustomerProfileFeedback(null);
     setMessage("");
+
+    const reportProfileOutcome = (tone: CustomerProfileFeedback["tone"], text: string) => {
+      setMessage(text);
+      setCustomerProfileFeedback({ ...editorIdentity, tone, text });
+    };
 
     const updatePayload = {
       full_name: customerForm.full_name.trim() || null,
@@ -1684,11 +1705,14 @@ export default function AdminPage() {
       ) return;
 
       if (!profileResponse.ok) {
-        setMessage(profilePayload.error || "Customer profile could not be saved.");
+        const text = typeof profilePayload?.error === "string" && profilePayload.error.trim()
+          ? profilePayload.error
+          : "Customer profile could not be saved.";
+        reportProfileOutcome("error", text);
         return;
       }
-      if (profilePayload.customer?.id !== customerId) {
-        setMessage("Customer profile could not be saved. Check the connection and retry.");
+      if (profilePayload?.customer?.id !== customerId) {
+        reportProfileOutcome("error", "Customer profile could not be saved. Check the connection and retry.");
         return;
       }
 
@@ -1712,14 +1736,14 @@ export default function AdminPage() {
       setCustomerEditor((current) => current
         ? acceptAdminCustomerSubmittedFields(current, editorIdentity, submittedForm, makeCustomerForm(updatedCustomer), submittedProfileKeys)
         : current);
-      setMessage(`${customerSnapshot.customer_id ?? customerSnapshot.email ?? "Customer"} updated.`);
+      reportProfileOutcome("success", `${customerSnapshot.customer_id ?? customerSnapshot.email ?? "Customer"} updated.`);
     } catch {
       if (
         customerProfileSaveRequestRef.current === requestId &&
         selectedCustomerIdRef.current === customerId &&
         customerEditorInstanceRef.current === instanceId
       ) {
-        setMessage("Customer profile could not be saved. Check the connection and retry.");
+        reportProfileOutcome("error", "Customer profile could not be saved. Check the connection and retry.");
       }
     } finally {
       if (
@@ -2312,6 +2336,7 @@ export default function AdminPage() {
           }}
           creditUpdating={creditUpdatingIds.has(selectedCustomer.id)}
           saving={customerSavingId === selectedCustomer.id}
+          profileFeedback={customerProfileFeedback && isAdminCustomerDraftIdentity(customerEditor, customerProfileFeedback) ? customerProfileFeedback : null}
           onClose={closeCustomer}
           onSave={saveCustomerSettings}
           pricingLoadState={customerPricingLoadState}
@@ -2946,7 +2971,7 @@ function CustomersPanel({
   );
 }
 
-function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditInput, creditNote, setCreditNote, creditUpdating, saving, onClose, onSave, pricingLoadState, pricingError, pricingMessage, pricingUpdatedAt, pricingSaving, pricingWritesEnabled, onReloadPricing, onSavePricing, onQuickAdjust, onCustomAdjust, onCopyValue, canManageSecurity, canManageCredits, canViewCustomerIntelligence, canReplacePassword }: {
+function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditInput, creditNote, setCreditNote, creditUpdating, saving, profileFeedback, onClose, onSave, pricingLoadState, pricingError, pricingMessage, pricingUpdatedAt, pricingSaving, pricingWritesEnabled, onReloadPricing, onSavePricing, onQuickAdjust, onCustomAdjust, onCopyValue, canManageSecurity, canManageCredits, canViewCustomerIntelligence, canReplacePassword }: {
   customer: Profile;
   form: CustomerForm;
   setForm: React.Dispatch<React.SetStateAction<CustomerForm | null>>;
@@ -2956,6 +2981,7 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
   setCreditNote: (value: string) => void;
   creditUpdating: boolean;
   saving: boolean;
+  profileFeedback: CustomerProfileFeedback | null;
   onClose: () => void;
   onSave: () => void;
   pricingLoadState: CustomerPricingLoadState;
@@ -3042,10 +3068,19 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
             <div className="flex max-w-full shrink-0 flex-wrap gap-1.5 xl:max-w-[45%]">
               {canViewCustomerIntelligence && <Link href={`/admin/growth/customers/${customer.id}`} className="inline-flex min-h-11 items-center rounded-lg border border-cyan-800/40 bg-cyan-950/20 px-3 text-xs font-black text-cyan-200 transition hover:bg-cyan-950/40 lg:h-9 lg:min-h-0"><HeartHandshake className="mr-1.5 h-4 w-4" />Customer 360</Link>}
               <button onClick={() => onCopyValue(customer.customer_id || customer.id, "Customer ID")} className="min-h-11 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-xs font-black text-white transition hover:bg-white/10 lg:h-9 lg:min-h-0"><Copy className="mr-1.5 inline h-4 w-4" />Copy ID</button>
-              <button onClick={onSave} disabled={saving} className="min-h-11 rounded-lg bg-[#b1121b] px-3 text-xs font-black text-white transition hover:bg-[#c91824] disabled:opacity-50 lg:h-9 lg:min-h-0">{saving ? <Loader2 className="mr-1.5 inline h-4 w-4 animate-spin" /> : <Save className="mr-1.5 inline h-4 w-4" />}Save profile</button>
+              <button onClick={onSave} disabled={saving} aria-busy={saving} className="min-h-11 rounded-lg bg-[#b1121b] px-3 text-xs font-black text-white transition hover:bg-[#c91824] disabled:opacity-50 lg:h-9 lg:min-h-0">{saving ? <Loader2 className="mr-1.5 inline h-4 w-4 animate-spin" /> : <Save className="mr-1.5 inline h-4 w-4" />}Save profile</button>
               <button onClick={onClose} className="min-h-11 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-xs font-black text-white transition hover:bg-white/10 lg:h-9 lg:min-h-0"><X className="mr-1.5 inline h-4 w-4" />Close</button>
             </div>
           </div>
+          {profileFeedback && (
+            <div
+              role={profileFeedback.tone === "error" ? "alert" : "status"}
+              tabIndex={0}
+              className={`mt-3 max-h-24 min-w-0 overflow-y-auto rounded-lg border px-3 py-2.5 text-xs font-bold leading-5 [overflow-wrap:anywhere] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 ${profileFeedback.tone === "error" ? "border-red-700/50 bg-red-950/30 text-red-100" : "border-emerald-700/40 bg-emerald-950/20 text-emerald-200"}`}
+            >
+              {profileFeedback.text}
+            </div>
+          )}
         </div>
         <div className="grid gap-4 p-3 sm:p-4 xl:grid-cols-[minmax(0,1fr)_280px]">
           <div className="min-w-0 space-y-4">
