@@ -1,5 +1,80 @@
 # Otonom calisma gunlugu
 
+## 2026-10-07 — Public header utility placement accepted locally; separate tool form P2 stays open
+
+- One bounded MANUAL-20261007-PUBLIC-UTILITY-PLACEMENT cycle in the owned
+  acquisition-recovery worktree; dirty owner primary untouched. Fingerprint:
+  public-chrome|shared-header-utility-controls|fixed-language-and-status-obstruct-arbitrary-scroll-content|normal-flow-header-owned-single-controls.
+  Frozen source658977b8b436b4ae4fa1c01582129dc8ebb0a3a6;
+  test SHA256b80dcdbc289f29be9bcb45c04106da22e7e628246cc265dd6a960aed1fa14ec7;
+  buildialpFw3aQcowOg5JX63cP. Source package13 product/test/inventory files plus
+  initialTASKS record; four audit files updated only after immutable acceptance
+  (17 distinct cumulative files from d1794aa). Later audit commit is not a new
+  compiled product source. No push, Preview, Production, Ads or live backend action.
+- Four public header families now own the same existing language selector,
+  compact consent trigger and schedule status in a normal flow utility row.
+  Exact-node registry preserves singleton/replacement/unmount behavior without
+  DOM discovery or observers. Neutral SSR host placeholder suppresses duplicate
+  pending globe; existing fallback remains for auth/customer/unhosted headers.
+  Host-specific menus retain keyboard/focus and >=44px options. Public wrapper
+  containment preserves sticky headers and wrapped localized introductions;
+  Tools hub retains its actual896px reading maximum. Native homepage dropdown
+  panels have explicit z50 so Services links clear closed utility controls.
+  Existing all12 copy, schedule facts, privacy decisions, native routes/locale
+  transactions, request intents, features and consent dialog logic unchanged.
+- All nine receipts bind clean/unchanged source658977b and the exact test hash:
+
+  - public-utility-targeted-20261007T034823426Z.json:70/70;
+  - public-utility-tests-20261007T034822965Z.json:1972/1972;
+  - public-utility-lint-20261007T034825395Z.json:PASS;
+  - public-utility-types-20261007T034827088Z.json:web/uploader full types PASS;
+  - public-utility-geometry-20261007T034827823Z.json:15/15;
+  - public-utility-build-20261007T034822567Z.json:mandatory prebuild i18n37/37,
+    all12 scoped inventory/no clean English fallback,Webpack337 pages,strict
+    assets/auth401/PNG+PDF/external-fetch0 PASS;
+  - public-utility-performance-20261007T035441005Z.json:homepage16.3KB/80KB
+    gzip,worker6.5KB/12KB,187 exact prerenders/no missing or invalid languages;
+  - public-utility-emitted-20261007T035441456Z.json:2/2;
+  - public-utility-http-20261007T035441855Z.json:194/194; detail
+    service-guide-http-20261007T035444552Z.json,48 guides/44 redirects,
+    187 exact routes/182 sitemap/3 unknown404. All synthetic localhost only.
+- Immutable final physical browser receipt:
+  runtime/public-utility-browser-658977b-20261007/browser-658977b.json,
+  SHA25631f7d2986259744f3380b0647c75148b5122790ada5057097be45c5d14b6103f.
+  40 unique EN/DE/TR/ZH representative public-header cases, actual390x844 or
+  1280x720 asserted for every case; initial+scroll PASS. Scope is utility/header
+  placement, not every Tools body.48 accepted browser records INCLUDE12 actual
+  JSX/compiled-CSS inert privacy geometry and6 script-free compiled SSR fixtures;
+  remaining30 accepted checks are not a claim of48 independent native actions.
+  Former mobile hit-interception point now resolves the actual Services anchor;
+  native coordinate activation reaches/#services and closes the menu. Actual320
+  keyboard End option remains within menu.137 unique screenshot hashes and all
+  nine gate receipts independently recomputed/checked; console warnings/errors0.
+  Independent source, physical-image and final receipt scoped GO/no scoped P0-P2.
+- Retained negative lineage:67f5665 JSX slot metadata guard RED;e0c8482 actual
+  Tools sticky ancestor RED;6381cd9 DE introduction clipping RED;5409be6 hub
+  reading-width collateral rejected;edd27e5 actual native menu hit interception
+  RED. Each correction was gated at current658 source, not borrowed from old
+  green runs. Eight wrong-viewport prechecks and short-screen prechecks excluded;
+  actual sizes, not viewport-setting labels, determine acceptance. Delayed
+  keyboard scroll and nonexistent prefixed/services fixture setup are not product
+  passes. Old blocked dev probe preserved; no browser/security bypass.
+- Extra actual DE390x844 /tools/ecu-read-method-advisor has main375px/scroll414px
+  and form/result card right413.61px; header/singleton/full H1 PASS. This genuine
+  separate body P2 is not waived. Page/component unchanged since d1794aa does
+  not prove baseline runtime causality. Screens verified-extra-DE-read-method-
+  mobile-{initial,scrolled}.png retained in the final manifest. Deduplicated
+  MANUAL-20261007-READ-ADVISOR-FORM-CONTAINMENT added Ready for the next narrow
+  product cycle, not implemented in this cycle.
+- Remaining OPEN: auth/customer/unhosted fallback, authenticated account GUI
+  (AST only), configured live consent/backend, strict prefixless Tools/brief
+  first HTML/final Vary, known legacy Tools branding/copy and admin interactive
+  acceptance. Availability is schedule-derived, not staffing proof. Goal remains
+  active; no global perfection/indexing/Ads/customer/revenue outcome claim.
+  Compiled localhost3190 retained with EN preview; inert fixture3193 stopped,
+  owned temporary tab closed. Local audit-only diff checked; no heavy rerun for
+  documentation because frozen source/test/build bytes remain unchanged.
+
 ## 2026-10-07 — Compact guide entry accepted locally; prior guide first-screen HOLD closed
 
 - One bounded MANUAL-20261007-SERVICE-GUIDE-COMPACT-ENTRY product cycle in the

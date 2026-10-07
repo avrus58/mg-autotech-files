@@ -4,6 +4,31 @@
 
 ## Ready
 
+### MANUAL-20261007-READ-ADVISOR-FORM-CONTAINMENT [P2] Keep localized ECU read-method forms inside compact screens
+
+Fingerprint: `public-tools|ecu-read-method-advisor-form-grid|de-mobile-intrinsic-controls-expand-cards-to414px|bounded-single-column-and-minimum-width-containment`
+
+Origin: actual compiled source658977b/buildialpFw3aQcowOg5JX63cP, DE390x844,
+native /tools/ecu-read-method-advisor. Main client width375px but scroll width
+414px; form/result card right413.61px. Header controls and full wrapped H1 pass.
+Evidence: runtime/public-utility-browser-658977b-20261007/browser-658977b.json
+and verified-extra-DE-read-method-mobile-{initial,scrolled}.png. Component and
+page are unchanged since d1794aa; baseline runtime causality is not established.
+Queue/history/roadmap/inbox and matching Git subjects checked: no duplicate.
+Business3/User4/Admin1/Strategic2/Confidence5/Effort2/Risk2; next manual cycle.
+
+Boundary: existing EcuReadMethodAdvisor form grid/cards/control minimum-width
+containment only. Preserve all12 typed copy, options, calculations, scoring,
+state, read-method facts, request handoff and desktop behavior. No catalog,
+pricing, auth, customer data, dependency, environment or external release.
+
+Acceptance: native EN/DE/TR/ZH mobile/compact laptop with actual viewport
+assertions, including unchanged empty/selection/result states; form headings,
+selects, actions and results readable without horizontal page expansion.
+Required i18n, targeted tests, lint, full types/tests/build and independent
+immutable source/physical-GUI review. Do not borrow header-only acceptance or
+claim baseline causality from unchanged source. Local only; not implemented.
+
 ## Completed manual releases
 
 ### MANUAL-20261001-CURRENT-BUSINESS-ADDRESS [P1] Synchronize the owner-confirmed Asperg address
@@ -23,34 +48,6 @@ No policy, payment, auth, customer-data, migration or environment change.
 Receipt: `docs/production-release-2026-10-01-address.md`.
 
 ## In Progress
-
-### MANUAL-20261007-PUBLIC-UTILITY-PLACEMENT [P2] Keep closed public utility controls out of the reading area
-
-Fingerprint: `public-chrome|shared-header-utility-controls|fixed-language-and-status-obstruct-arbitrary-scroll-content|normal-flow-header-owned-single-controls`
-
-Origin: current compiled d1794aa mobile guide scroll physically shows the language
-pill above the Stage1 hardware text; retained screenshot under runtime/utility-
-placement-before-d1794aa-20261007. Existing roadmap explicitly leaves arbitrary
-scroll obstruction open. No matching task/commit found in queue/history/roadmap.
-Business3/User4/Admin1/Strategic3/Confidence5/Effort3/Risk2; local manual cycle.
-
-Boundary: one shared public header utility row, exact-node portal host registry,
-the existing single root selector/compact consent trigger and existing status
-display, wired to PublicSeoHeader, ToolsHeader, HomepageHeader and the localized
-file-service header. Preserve all12 copy, locale transactions/native links,
-schedule facts, consent decisions/dialog logic, document/static routing and all
-existing page features. No root scroll rewrite, request reads, dependency, auth,
-payment, data, env, Ads or release action. Auth/customer and other unhosted
-headers retain their current fallback and remain explicitly OPEN; this is not a
-global overlay closure. Open menus/dialogs remain intentional overlays.
-
-Acceptance: neutral SSR host placeholder without a redundant floating pending
-globe; one actual selector after hydration; connected-host replacement/unmount
-falls back safely; >=44px header controls with no clipped text/overlap across
-EN/DE/TR/ZH mobile/compact laptop. Native menu/keyboard/history/resize/scroll and
-loading/error contracts retained. Exact i18n inventory, relevant behavioral
-regressions, full required gates/build/performance and immutable independent
-source/physical-GUI review required before this scoped task is Done. Local only.
 
 ### MANUAL-20261007-TOOLS-HUB-COPY-QUALITY [P2] Make public tool choices understandable in every supported language
 
@@ -489,6 +486,42 @@ Remediation: Batch with a future documentation/source-comment maintenance pass a
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
+
+### MANUAL-20261007-PUBLIC-UTILITY-PLACEMENT [P2] Keep closed public utility controls out of the reading area
+
+Fingerprint: `public-chrome|shared-header-utility-controls|fixed-language-and-status-obstruct-arbitrary-scroll-content|normal-flow-header-owned-single-controls`
+
+Done locally, not published. Origin: retained d1794aa mobile guide screenshot
+shows the floating language pill over Stage1 hardware text. One bounded public
+header-family cycle; Business3/User4/Admin1/Strategic3/Confidence5/Effort3/Risk2.
+PublicSeoHeader, ToolsHeader, HomepageHeader and localized file-service header
+now own the single existing selector/compact consent trigger/status in a normal
+flow row. Exact connected-node registry safely handles replacement/unmount;
+neutral SSR placeholder avoids a redundant floating pending globe. Existing
+all12 copy, native locale links/transactions, schedule facts, consent decisions,
+dialog behavior, static routes and page features remain intact. Native homepage
+panels now clear closed utility triggers; open menus/dialogs intentionally overlay.
+
+Frozen source658977b8b436b4ae4fa1c01582129dc8ebb0a3a6, test SHA256
+b80dcdbc289f29be9bcb45c04106da22e7e628246cc265dd6a960aed1fa14ec7,
+buildialpFw3aQcowOg5JX63cP. Nine same-source clean/unchanged gates pass:
+70 targeted,1972 full,15 geometry,37 prebuild i18n,lint,full types,Webpack
+build/strict assets,performance,2 emitted and194 HTTP.187 exact prerenders.
+Final browser receipt runtime/public-utility-browser-658977b-20261007/
+browser-658977b.json SHA25631f7d2986259744f3380b0647c75148b5122790ada5057097be45c5d14b6103f:
+40 actual-viewport EN/DE/TR/ZH header-placement cases, initial+scrolled PASS;
+48 accepted browser records INCLUDE12 inert privacy geometry and6 script-free
+SSR fixture records (30 other accepted checks, not48 separate native actions).
+Zero console warnings/errors;137 PNG hashes independently recomputed/matched.
+Independent immutable source/physical-GUI/final-receipt scoped GO, no scoped P0-P2.
+Earlier RED lineage and excluded wrong-viewport/invalid-route setups retained.
+
+Separate actual DE ECU read-advisor form375/414px body P2 remains OPEN and Ready
+as MANUAL-20261007-READ-ADVISOR-FORM-CONTAINMENT; baseline causality unproved.
+Auth/customer/unhosted fallback, authenticated account GUI, live consent,
+prefixless Tools/brief first-HTML/Vary and admin acceptance remain OPEN. No
+auth/payment/catalog/customer/env/dependency/Ads/release change, global overlay
+closure, customer acquisition outcome or milestone completion claim.
 
 ### MANUAL-20261007-SERVICE-GUIDE-COMPACT-ENTRY [P2] Keep guide request entry and translated navigation usable on compact screens
 

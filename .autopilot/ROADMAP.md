@@ -14,10 +14,12 @@
   admin experience, conversion-oriented content and preparation, SEO discovery,
   advertising readiness, usability, accessibility and reliability. Keep all work
   local; no push, Preview, Production or Ads account/spend changes in this phase.
-- Current verified local source:0a55d547, build-rWBvfpAWFA01d1qFc_AM; three accepted
-  homepage packages, five-service/all12-locale compact experience and four-guide
-  locale discovery/compact first-screen entry. Prior accepted core source2a98f865
-  and buildJnRpeAAvSidfUgVRbdTFs remain audit evidence, not the current artifact.
+- Current verified local source:658977b8b436b4ae4fa1c01582129dc8ebb0a3a6,
+  buildialpFw3aQcowOg5JX63cP; three accepted homepage packages, five-service/all12
+  compact experience, four-guide locale discovery/compact entry and bounded
+  shared public-header utility placement. Prior0a55d547/build-rWBvfpAWFA01d1qFc_AM
+  and core2a98f865/buildJnRpeAAvSidfUgVRbdTFs remain audit evidence, not the current
+  artifact. Header placement acceptance is not all Tools body containment.
   Tested admin draft source8fa6853 still awaits interactive acceptance.
   Owner primary checkout is dirty and must remain untouched. Previous turn is
   concrete progress (source commits and bounded evidence), not idle.
@@ -80,13 +82,24 @@
   5. Finish public catalog/content and offline advertising message-match review,
      then customer/admin cross-flow quality sweep. Select concrete remaining
      gaps from new evidence rather than repeatedly repainting the homepage.
-- Explicit global usability followup: existing floating language/availability
-  widgets can overlap mobile content. Historical b7 TRfilecheck primary
-  obstruction18.1% is closed at initial entry by0a55d547 (all48 measured request
-  and compare actions have0overlap). Arbitrary-scroll positioning remains open:
-  compact hero movement is not a global overlay fix;
-  preserve language features and review a coherent unobstructed control placement.
-  Core-service scoped acceptance does not close this or authenticated admin QA.
+- Public-family arbitrary-scroll utility placement accepted locally at658977b:
+  PublicSeoHeader,ToolsHeader,HomepageHeader and localized file-service header
+  own the existing singleton language/privacy/status controls in normal flow.
+  40 actual EN/DE/TR/ZH mobile/laptop header-placement cases and independent
+  immutable receipt/source/image GO;48 accepted records include12 inert privacy
+  geometry and6 script-free SSR fixtures, not48 separate native interactions.
+  Receipt runtime/public-utility-browser-658977b-20261007/browser-658977b.json
+  SHA25631f7d2986259744f3380b0647c75148b5122790ada5057097be45c5d14b6103f.
+  Historical guide first-entry obstruction and native menu interception remain
+  retained negative evidence. Auth/customer/unhosted placement and authenticated
+  admin QA remain OPEN; this is not a global overlay closure.
+- Next bounded usability work: MANUAL-20261007-READ-ADVISOR-FORM-CONTAINMENT Ready.
+  ActualDE390x844 /tools/ecu-read-method-advisor main375px/scroll414px with card
+  right413.61px, despite passing header/H1 containment. Separate body P2 retained
+  in final receipt and screenshots. Source unchanged since d1794aa is not
+  baseline runtime causality proof. Preserve tool copy/state/calculations/facts
+  and solve only minimum-width/form containment; do not claim all public pages
+  are defect-free or expand the accepted header package.
 - Existing request-brief copy needs a later native semantic sweep (ToolsHeader
   Tools in TR/ZH, literal brief nouns and German not-provided meaning). This
   behavioral fix reuses unchanged copy, not a claim that translation quality is
