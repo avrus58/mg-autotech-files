@@ -4,6 +4,33 @@
 
 ## Ready
 
+### MANUAL-20261007-CAMPAIGN-GUIDE-LOCALE-PARITY [P2] Match offline campaign links to existing localized service guides
+
+Fingerprint: `advertising-readiness|campaign-destination-builder|localized-reviewed-guides-still-english-only|locale-matched-offline-campaign-links`
+
+Origin: frozen f4cd512 campaignLinks.ts:8-30 still restricts Stage 2, ECU File
+Check and TCU to English. Its filter and builder reject 33 now-valid non-English
+guide/destination combinations. Existing guide registry and actual route/render
+tests already support all 12 locales; guide request intent and review boundary
+are intact. Launch plan's forward-looking TCU restriction is stale. Independent
+audit and main source review checked queue/history/roadmap/inbox/proposals and
+recent Git: this is not the completed guide-route discovery task.
+Business4/User4/Admin3/Strategic4/Confidence5/Effort2/Risk2; local manual cycle.
+
+Boundary: campaignLinks.ts, focused builder tests and only forward-looking
+destination-support paragraphs of the campaign launch plan. Remove three
+obsolete EN restrictions/labels through existing localized-path behavior.
+Retain ECU Platforms EN-only, all seven destination keys, campaign-token
+allowlist, UTM/privacy rules and launch/consent/legal gates. No Stage 3 addition,
+new campaign, spend, live Ads action, business claim, dependency or backend change.
+Historical account snapshots remain untouched. This is offline readiness, not
+proof of lost customers, current Ads failure, acquisition or revenue.
+
+Acceptance: all 36 locale/guide URL cases, retained EN-only rejection and exact
+token/URL/privacy contracts; existing guide regressions, i18n, lint, full types,
+full tests/build and local EN/DE/TR/ZH destination/CTA browser evidence, followed
+by immutable independent review. Ready for the next bounded cycle only.
+
 ## Completed manual releases
 
 ### MANUAL-20261001-CURRENT-BUSINESS-ADDRESS [P1] Synchronize the owner-confirmed Asperg address
@@ -23,33 +50,6 @@ No policy, payment, auth, customer-data, migration or environment change.
 Receipt: `docs/production-release-2026-10-01-address.md`.
 
 ## In Progress
-
-### MANUAL-20261007-READ-ADVISOR-FORM-CONTAINMENT [P2] Keep localized ECU read-method forms inside compact screens
-
-Fingerprint: `public-tools|ecu-read-method-advisor-form-grid|de-mobile-intrinsic-controls-expand-cards-to414px|bounded-single-column-and-minimum-width-containment`
-
-Origin: actual compiled source658977b/buildialpFw3aQcowOg5JX63cP, DE390x844,
-native /tools/ecu-read-method-advisor. Main client width375px but scroll width
-414px; form/result card right413.61px. Header controls and full wrapped H1 pass.
-Fresh f65 docs-only base observation confirms375/414 at actual390x844; visible
-form screenshot runtime/read-advisor-before-f65-20261007/de-mobile-form-overflow-visible.png.
-Prior page/component unchanged since d1794aa; baseline causal proof unavailable.
-Queue/history/roadmap/inbox and matching Git subjects checked: no duplicate.
-Business3/User4/Admin1/Strategic2/Confidence5/Effort2/Risk2; local manual cycle.
-
-Boundary: existing EcuReadMethodAdvisor form grid/cards/control minimum-width
-containment only. Preserve all12 typed copy, options, calculations, scoring,
-state, read-method facts, request handoff and desktop behavior. No catalog,
-pricing, auth, customer data, dependency, environment or external release.
-
-Acceptance: native EN/DE/TR/ZH mobile/compact laptop with actual viewport
-assertions, including unchanged empty/selection/result states; form headings,
-selects, actions and results inside the page without horizontal expansion.
-Long native single-line selected labels retain full accessible/options values;
-do not claim native closed selectors display74 characters without truncation.
-Required i18n, targeted tests, lint, full types/tests/build and independent
-immutable source/physical-GUI review. Do not borrow header-only acceptance or
-claim baseline causality from unchanged source. Local only; implementation underway.
 
 ### MANUAL-20261007-TOOLS-HUB-COPY-QUALITY [P2] Make public tool choices understandable in every supported language
 
@@ -488,6 +488,47 @@ Remediation: Batch with a future documentation/source-comment maintenance pass a
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
+
+### MANUAL-20261007-READ-ADVISOR-FORM-CONTAINMENT [P2] Keep localized ECU read-method forms inside compact screens
+
+Fingerprint: `public-tools|ecu-read-method-advisor-form-grid|de-mobile-intrinsic-controls-expand-cards-to414px|bounded-single-column-and-minimum-width-containment`
+
+Done locally, not published. Actual DE390 baseline main375/scroll414 and card
+right413.61px retained in the visible before-f65 form screenshot; causal history
+since d1794aa remains unproved. Business3/User4/Admin1/Strategic2/Confidence5/
+Effort2/Risk2. Exactly 26 className-only changes contain grid tracks, controls,
+text, icons and result/action cards. Removing className attributes leaves base
+and candidate component equivalent after Git line normalization. All 12 copy,
+17 option tokens, seven state hooks, calculations, scores and two links intact.
+No feature removal, catalog, price, auth, data, dependency or external action.
+
+Frozen source f4cd512a90b2d182d2e2a52e71f4d5753899a892;
+test SHA256 37349cc47d6e185564f8c0ac44c2b6fddf8b207be73ac9c7fc5023e9dbbee9cf;
+component SHA256 6025e313f1c03152c480e1c896ec6ad1a1e19dde137b9a70ac9780ab06c869ec;
+build jxEseGeFkmCoevqtWEcwb. Same-source clean/unchanged gates: 46 targeted,
+1976 full, 37 mandatory prebuild i18n, lint, full web/uploader types, Webpack
+337-page build/strict assets, performance and two emitted tests PASS.
+Four new actual-TSX tests exercise actual select/checkbox handlers across all
+12 real catalogs, not a copied engine; structural evidence is not GUI geometry.
+
+Final browser receipt runtime/read-advisor-browser-f4cd512-20261007/
+browser-f4cd512.json SHA256
+ffd89c01737f385c3cf8f0c13a1ba83a0b37ecc300e219bc321f009ecf67d0bc.
+60 actual-viewport native states and 60 exact copy checks PASS: EN/DE/TR/ZH at
+390x844 and1280x720, plus DE1024x768 and confirmed DE320x568, six states each.
+DE390 main375/375, DE320 main305/305; contained full warnings and both mobile
+CTAs. Captured inspected-tab warning/error logs empty. Independent final
+source/gates/receipt and 21 positive physical frames scoped GO, no scoped P0-P2;
+37 screenshot hashes/MIME and all seven gate hashes independently matched.
+Screenshot .png filenames contain actual JPEG bytes; CSS viewport is authoritative.
+
+Excluded prechecks retain three wrong-locale images/six raw320 rows, viewport
+activation and object-key-order observer errors. Fresh EN-to-DE transaction and
+reload proves confirmed DE320 only; cross-tab locale behavior remains OPEN.
+Native closed selects remain single-line with full option/accessibility values;
+74-character closed-label visibility and perfect DE1024 final-S line breaking
+are not promised. Prefixless Tools first-HTML/Vary/footer, auth/customer/admin
+and whole-goal acceptance remain OPEN. Next: offline campaign-guide locale parity.
 
 ### MANUAL-20261007-PUBLIC-UTILITY-PLACEMENT [P2] Keep closed public utility controls out of the reading area
 

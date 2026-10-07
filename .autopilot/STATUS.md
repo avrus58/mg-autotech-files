@@ -1,5 +1,72 @@
 # Otonom calisma gunlugu
 
+## 2026-10-07 — ECU read-advisor compact form accepted locally; campaign-guide locale parity queued
+
+- One bounded MANUAL-20261007-READ-ADVISOR-FORM-CONTAINMENT cycle in the owned
+  acquisition-recovery worktree; owner primary untouched. Frozen product source
+  f4cd512a90b2d182d2e2a52e71f4d5753899a892, build jxEseGeFkmCoevqtWEcwb;
+  test SHA256 37349cc47d6e185564f8c0ac44c2b6fddf8b207be73ac9c7fc5023e9dbbee9cf;
+  component SHA256 6025e313f1c03152c480e1c896ec6ad1a1e19dde137b9a70ac9780ab06c869ec.
+  Changed product/test: src/components/tools/EcuReadMethodAdvisor.tsx and
+  tests/ecu-read-advisor-layout.test.ts. Audit: TASKS, STATUS, HISTORY and ROADMAP.
+  Two product/test files plus initial TASKS record, then four audit records only
+  after acceptance: six distinct cumulative files from f65cd226. Later docs-only
+  HEAD is not a newly compiled product source. No push, Preview, Production,
+  Ads/spend, auth/backend, database, customer, secret or dependency action;
+  no environment configuration/file change. Runtime uses isolated dummy values.
+- Exactly 26 className replacements bound grid tracks, controls, wrapped text,
+  stable icons and result/CTA cards. Base/candidate component is equivalent after
+  removing className attributes and normalizing Git lines. Existing 12-locale
+  copy, 17 options, seven state hooks, scoring, warnings, method facts and links
+  unchanged. Four new actual-TSX tests use actual handlers/copy; no duplicate
+  scoring engine. They prove contracts, not native layout.
+- Seven required receipts all bind clean/unchanged f4cd512 and exact hashes:
+  targeted-042030804Z 46/46; lint-042029835Z PASS; types-042030334Z full web/
+  uploader PASS; tests-042031463Z 1976/1976 (zero skipped/cancelled);
+  build-042033535Z mandatory prebuild i18n37/37 and scoped all12/43-source checks,
+  2495 reviewed rows/zero clean English fallbacks, Webpack337/337, strict43 assets,
+  fonts5/PDFKit30/sharp8, compiled auth401/valid PNG+PDF/external-fetch0 PASS;
+  performance-043034544Z homepage16.3/80KB gzip, worker6.5/12KB raw, locale payload
+  maximum22.7KB raw/6.8KB gzip, 187 exact prerenders/no missing or invalid langs;
+  emitted-043035138Z 2/2. Names are read-advisor-*-20261007T*.json in runtime.
+  Gate window04:20:29-04:30:40 UTC; actual GUI began04:30:54. Optional real-copy
+  fixture copy-042321189Z PASS; initial wrong-relative-path helper attempt retained
+  as setup failure, not product acceptance. Dummy local-only environment allowlist
+  and env-file presence guard; not a hermetic/container/networkless claim.
+- Immutable browser receipt runtime/read-advisor-browser-f4cd512-20261007/
+  browser-f4cd512.json SHA256
+  ffd89c01737f385c3cf8f0c13a1ba83a0b37ecc300e219bc321f009ecf67d0bc.
+  60 unique native cases/60 exact copy checks: six representative states in
+  EN/DE/TR/ZH390x844 and1280x720, plus DE1024x768 and confirmed DE320x568.
+  Actual viewport, complete17 options, native selects/checkboxes, scores31/39/
+  64/72/79/100, methods/warnings and two translated CTA hrefs/44px targets checked.
+  Main widths375/375,1265/1265,1009/1009,305/305 respectively; lower mobile warning
+  and both CTA frames physically reviewed. Independent final immutable source,
+  all gates/37 screenshot hashes+actual MIME/60 bounds+copy rows and21 positive
+  physical frames scoped GO, no scoped P0-P2. Current inspected-tab warning/error
+  logs empty. .png screenshot filenames are captured JPEG containers; resized
+  image pixels are not the actual CSS viewport. Native screenshots stay local.
+- Preserved negative lineage: visible before-f65 DE390 form375/414px/card413.61px;
+  earlier FAQ-only image is not form proof. Requested-but-unapplied viewport
+  cases, object-key-order comparison and six DE-labelled320 rows with Chinese
+  control copy/document lang de excluded; three associated images retained.
+  Native EN-to-DE transaction plus fresh reload passes real DE320, but does not
+  close cross-tab locale behavior. Single-line closed selectors do not promise
+  all74 characters visible; DE1024 caption's isolated final S is a known contained
+  typography rough edge. Prefixless Tools/brief first-HTML/final-Vary/footer,
+  auth/customer/unhosted and admin interactive acceptance remain OPEN.
+- Independent next-gap audit and main source review prove campaignLinks.ts still
+  blocks33 valid translated Stage2/TCU/file-check combinations despite accepted
+  guide routes. Deduplicated MANUAL-20261007-CAMPAIGN-GUIDE-LOCALE-PARITY queued
+  Ready only, not implemented this cycle. Keep ECU Platforms EN-only, existing
+  keys/token/UTM/launch gates and historical account snapshots unchanged. This is
+  offline preparation, not current campaign/customer/revenue evidence.
+- Autopilot skill's newer OS/policy/CLI files are absent here; manual bounded
+  workflow used, no fictional unattended-controller lifecycle. Goal stays active.
+  Local compiled3190 server retained, viewport override reset, preview/handoff
+  tabs preserved and owned temporary tabs closed. Four-file audit diff checked;
+  no heavy rerun for docs-only changes because frozen product/test/build unchanged.
+
 ## 2026-10-07 — Public header utility placement accepted locally; separate tool form P2 stays open
 
 - One bounded MANUAL-20261007-PUBLIC-UTILITY-PLACEMENT cycle in the owned

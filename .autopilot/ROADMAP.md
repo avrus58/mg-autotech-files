@@ -14,10 +14,11 @@
   admin experience, conversion-oriented content and preparation, SEO discovery,
   advertising readiness, usability, accessibility and reliability. Keep all work
   local; no push, Preview, Production or Ads account/spend changes in this phase.
-- Current verified local source:658977b8b436b4ae4fa1c01582129dc8ebb0a3a6,
-  buildialpFw3aQcowOg5JX63cP; three accepted homepage packages, five-service/all12
-  compact experience, four-guide locale discovery/compact entry and bounded
-  shared public-header utility placement. Prior0a55d547/build-rWBvfpAWFA01d1qFc_AM
+- Current verified local source:f4cd512a90b2d182d2e2a52e71f4d5753899a892,
+  buildjxEseGeFkmCoevqtWEcwb; three accepted homepage packages, five-service/all12
+  compact experience, four-guide locale discovery/compact entry, bounded shared
+  public-header utility placement and ECU read-advisor form containment.
+  Prior658977b/buildialpFw3aQcowOg5JX63cP,0a55d547/build-rWBvfpAWFA01d1qFc_AM
   and core2a98f865/buildJnRpeAAvSidfUgVRbdTFs remain audit evidence, not the current
   artifact. Header placement acceptance is not all Tools body containment.
   Tested admin draft source8fa6853 still awaits interactive acceptance.
@@ -93,13 +94,25 @@
   Historical guide first-entry obstruction and native menu interception remain
   retained negative evidence. Auth/customer/unhosted placement and authenticated
   admin QA remain OPEN; this is not a global overlay closure.
-- Next bounded usability work: MANUAL-20261007-READ-ADVISOR-FORM-CONTAINMENT Ready.
-  ActualDE390x844 /tools/ecu-read-method-advisor main375px/scroll414px with card
-  right413.61px, despite passing header/H1 containment. Separate body P2 retained
-  in final receipt and screenshots. Source unchanged since d1794aa is not
-  baseline runtime causality proof. Preserve tool copy/state/calculations/facts
-  and solve only minimum-width/form containment; do not claim all public pages
-  are defect-free or expand the accepted header package.
+- MANUAL-20261007-READ-ADVISOR-FORM-CONTAINMENT accepted locally at f4cd512:
+  className-only changes preserve all copy/state/calculations/options/facts.
+  Actual DE390 main375/414 repaired to375/375; DE320 main305/305. Same-source
+  46 targeted/1976 full/i18n/lint/full types/build/assets/performance/two emitted
+  gates and60 native state/copy cases pass, with21 independently viewed positive
+  frames and final immutable source/receipt GO. Browser SHA256
+  ffd89c01737f385c3cf8f0c13a1ba83a0b37ecc300e219bc321f009ecf67d0bc.
+  Native closed selectors retain full options, not74-character closed-label
+  visibility. DE1024 final-S wrap remains a contained typography rough edge.
+  Three wrong-locale images/six initial DE-labelled320 rows retained/excluded;
+  confirmed reload passes DE320 only, cross-tab locale observation remains OPEN.
+  Prefixless first-HTML/Vary/footer and other product gates stay OPEN.
+- Next Ready: MANUAL-20261007-CAMPAIGN-GUIDE-LOCALE-PARITY. Actual campaign builder
+  still restricts three now-localized reviewed guide families to EN, blocking33
+  valid non-English combinations. Small offline hookup via existing localized
+  paths and exact URL/token regressions; preserve ECU Platforms EN-only, all keys,
+  UTM/privacy/launch gates and historical account snapshots. No new campaign,
+  Stage3, spend or live account action. Readiness value is not customer/revenue
+  proof; implement in the next separate bounded cycle after current closure.
 - Existing request-brief copy needs a later native semantic sweep (ToolsHeader
   Tools in TR/ZH, literal brief nouns and German not-provided meaning). This
   behavioral fix reuses unchanged copy, not a claim that translation quality is
