@@ -4,31 +4,6 @@
 
 ## Ready
 
-### MANUAL-20261007-READ-ADVISOR-FORM-CONTAINMENT [P2] Keep localized ECU read-method forms inside compact screens
-
-Fingerprint: `public-tools|ecu-read-method-advisor-form-grid|de-mobile-intrinsic-controls-expand-cards-to414px|bounded-single-column-and-minimum-width-containment`
-
-Origin: actual compiled source658977b/buildialpFw3aQcowOg5JX63cP, DE390x844,
-native /tools/ecu-read-method-advisor. Main client width375px but scroll width
-414px; form/result card right413.61px. Header controls and full wrapped H1 pass.
-Evidence: runtime/public-utility-browser-658977b-20261007/browser-658977b.json
-and verified-extra-DE-read-method-mobile-{initial,scrolled}.png. Component and
-page are unchanged since d1794aa; baseline runtime causality is not established.
-Queue/history/roadmap/inbox and matching Git subjects checked: no duplicate.
-Business3/User4/Admin1/Strategic2/Confidence5/Effort2/Risk2; next manual cycle.
-
-Boundary: existing EcuReadMethodAdvisor form grid/cards/control minimum-width
-containment only. Preserve all12 typed copy, options, calculations, scoring,
-state, read-method facts, request handoff and desktop behavior. No catalog,
-pricing, auth, customer data, dependency, environment or external release.
-
-Acceptance: native EN/DE/TR/ZH mobile/compact laptop with actual viewport
-assertions, including unchanged empty/selection/result states; form headings,
-selects, actions and results readable without horizontal page expansion.
-Required i18n, targeted tests, lint, full types/tests/build and independent
-immutable source/physical-GUI review. Do not borrow header-only acceptance or
-claim baseline causality from unchanged source. Local only; not implemented.
-
 ## Completed manual releases
 
 ### MANUAL-20261001-CURRENT-BUSINESS-ADDRESS [P1] Synchronize the owner-confirmed Asperg address
@@ -48,6 +23,33 @@ No policy, payment, auth, customer-data, migration or environment change.
 Receipt: `docs/production-release-2026-10-01-address.md`.
 
 ## In Progress
+
+### MANUAL-20261007-READ-ADVISOR-FORM-CONTAINMENT [P2] Keep localized ECU read-method forms inside compact screens
+
+Fingerprint: `public-tools|ecu-read-method-advisor-form-grid|de-mobile-intrinsic-controls-expand-cards-to414px|bounded-single-column-and-minimum-width-containment`
+
+Origin: actual compiled source658977b/buildialpFw3aQcowOg5JX63cP, DE390x844,
+native /tools/ecu-read-method-advisor. Main client width375px but scroll width
+414px; form/result card right413.61px. Header controls and full wrapped H1 pass.
+Fresh f65 docs-only base observation confirms375/414 at actual390x844; visible
+form screenshot runtime/read-advisor-before-f65-20261007/de-mobile-form-overflow-visible.png.
+Prior page/component unchanged since d1794aa; baseline causal proof unavailable.
+Queue/history/roadmap/inbox and matching Git subjects checked: no duplicate.
+Business3/User4/Admin1/Strategic2/Confidence5/Effort2/Risk2; local manual cycle.
+
+Boundary: existing EcuReadMethodAdvisor form grid/cards/control minimum-width
+containment only. Preserve all12 typed copy, options, calculations, scoring,
+state, read-method facts, request handoff and desktop behavior. No catalog,
+pricing, auth, customer data, dependency, environment or external release.
+
+Acceptance: native EN/DE/TR/ZH mobile/compact laptop with actual viewport
+assertions, including unchanged empty/selection/result states; form headings,
+selects, actions and results inside the page without horizontal expansion.
+Long native single-line selected labels retain full accessible/options values;
+do not claim native closed selectors display74 characters without truncation.
+Required i18n, targeted tests, lint, full types/tests/build and independent
+immutable source/physical-GUI review. Do not borrow header-only acceptance or
+claim baseline causality from unchanged source. Local only; implementation underway.
 
 ### MANUAL-20261007-TOOLS-HUB-COPY-QUALITY [P2] Make public tool choices understandable in every supported language
 

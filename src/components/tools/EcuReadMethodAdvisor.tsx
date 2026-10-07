@@ -114,74 +114,74 @@ export function EcuReadMethodAdvisor({ copy }: { copy: EcuReadAdvisorCopy }) {
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-14 sm:py-20">
-      <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-        <div className="border border-white/10 bg-[#0b0c0e] p-5 sm:p-6">
+      <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+        <div className="min-w-0 max-w-full border border-white/10 bg-[#0b0c0e] p-5 [overflow-wrap:anywhere] sm:p-6">
           <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-lg border border-red-900/50 bg-red-950/30 text-red-400">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-red-900/50 bg-red-950/30 text-red-400">
               <Cable className="h-5 w-5" />
             </span>
-            <div>
+            <div className="min-w-0">
               <div className="text-xs font-black uppercase tracking-[0.16em] text-red-400">{t("Read planning")}</div>
               <h2 className="text-2xl font-black">{t("Choose the safest read preparation path")}</h2>
             </div>
           </div>
 
-          <div className="mt-6 grid gap-4">
+          <div className="mt-6 grid min-w-0 grid-cols-1 gap-4">
             <SelectField copy={copy} label="Control unit type" value={vehicleType} onChange={(value) => setVehicleType(value as VehicleType)} options={vehicleTypes} />
             <SelectField copy={copy} label="Known read access" value={readAccess} onChange={(value) => setReadAccess(value as ReadAccess)} options={readAccessOptions} />
             <SelectField copy={copy} label="Tool / file source" value={toolStatus} onChange={(value) => setToolStatus(value as ToolStatus)} options={toolOptions} />
             <SelectField copy={copy} label="Original file status" value={fileStatus} onChange={(value) => setFileStatus(value as FileStatus)} options={fileOptions} />
 
             <label className="flex items-center gap-3 rounded-lg border border-white/10 bg-black/30 p-3 text-sm font-bold text-zinc-200">
-              <input type="checkbox" checked={hasEcuLabel} onChange={(event) => setHasEcuLabel(event.target.checked)} />
+              <input className="shrink-0" type="checkbox" checked={hasEcuLabel} onChange={(event) => setHasEcuLabel(event.target.checked)} />
               {t("ECU/TCU label or software details are available.")}
             </label>
             <label className="flex items-center gap-3 rounded-lg border border-white/10 bg-black/30 p-3 text-sm font-bold text-zinc-200">
-              <input type="checkbox" checked={hasBatterySupport} onChange={(event) => setHasBatterySupport(event.target.checked)} />
+              <input className="shrink-0" type="checkbox" checked={hasBatterySupport} onChange={(event) => setHasBatterySupport(event.target.checked)} />
               {t("Stable battery support is available during the read.")}
             </label>
             <label className="flex items-center gap-3 rounded-lg border border-white/10 bg-black/30 p-3 text-sm font-bold text-zinc-200">
-              <input type="checkbox" checked={hasFaultCodes} onChange={(event) => setHasFaultCodes(event.target.checked)} />
+              <input className="shrink-0" type="checkbox" checked={hasFaultCodes} onChange={(event) => setHasFaultCodes(event.target.checked)} />
               {t("Fault codes or diagnostic symptoms are known.")}
             </label>
           </div>
         </div>
 
-        <div className="space-y-4">
-          <div className={`border ${result.tone.border} ${result.tone.bg} p-6`}>
+        <div className="min-w-0 max-w-full space-y-4 [overflow-wrap:anywhere]">
+          <div className={`min-w-0 max-w-full border ${result.tone.border} ${result.tone.bg} p-6`}>
             <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-              <div>
+              <div className="min-w-0">
                 <div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-400">{t("Preparation score")}</div>
                 <div className={`mt-2 text-5xl font-black ${result.tone.tone}`}>{result.score}%</div>
                 <div className="mt-2 text-2xl font-black">{result.tone.label}</div>
               </div>
-              <div className="h-4 w-full overflow-hidden rounded-full bg-black/50 sm:w-52">
+              <div className="h-4 w-full shrink-0 overflow-hidden rounded-full bg-black/50 sm:w-52">
                 <div className="h-full bg-[#b1121b]" style={{ width: `${result.score}%` }} />
               </div>
             </div>
             <p className="mt-5 text-sm leading-7 text-zinc-300">{t(result.primaryMethod)}</p>
           </div>
 
-          <div className="border border-white/10 bg-[#0b0c0e] p-6">
+          <div className="min-w-0 max-w-full border border-white/10 bg-[#0b0c0e] p-6">
             <div className="flex items-center gap-3">
-              <ClipboardList className="h-5 w-5 text-emerald-400" />
-              <h2 className="text-xl font-black">{t("Read preparation checklist")}</h2>
+              <ClipboardList className="h-5 w-5 shrink-0 text-emerald-400" />
+              <h2 className="min-w-0 text-xl font-black">{t("Read preparation checklist")}</h2>
             </div>
             <div className="mt-5 space-y-3">
               {result.checklist.map((item) => (
                 <div key={item} className="flex gap-3 text-sm leading-6 text-zinc-300">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
-                  <span>{t(item)}</span>
+                  <span className="min-w-0">{t(item)}</span>
                 </div>
               ))}
             </div>
           </div>
 
           {result.warnings.length > 0 && (
-            <div className="border border-amber-800/40 bg-amber-950/15 p-6">
+            <div className="min-w-0 max-w-full border border-amber-800/40 bg-amber-950/15 p-6">
               <div className="flex items-center gap-3">
-                <AlertTriangle className="h-5 w-5 text-amber-300" />
-                <h2 className="text-xl font-black">{t("Review before upload")}</h2>
+                <AlertTriangle className="h-5 w-5 shrink-0 text-amber-300" />
+                <h2 className="min-w-0 text-xl font-black">{t("Review before upload")}</h2>
               </div>
               <div className="mt-5 space-y-3">
                 {result.warnings.map((warning) => (
@@ -191,17 +191,17 @@ export function EcuReadMethodAdvisor({ copy }: { copy: EcuReadAdvisorCopy }) {
             </div>
           )}
 
-          <div className="border border-white/10 bg-[#070707] p-6">
+          <div className="min-w-0 max-w-full border border-white/10 bg-[#070707] p-6">
             <div className="flex items-start gap-3 text-sm leading-6 text-zinc-400">
               <Info className="mt-0.5 h-5 w-5 shrink-0 text-red-400" />
               {t("This advisor does not read files, open a file picker, modify binaries or create a request. It only helps you prepare safer information before using the secure MG AutoTech workflow.")}
             </div>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <Link href="/tools/request-brief-builder" className="inline-flex items-center justify-center rounded-lg bg-[#b1121b] px-5 py-3 text-sm font-black hover:bg-[#c91824]">
+            <div className="mt-6 flex min-w-0 flex-col flex-wrap gap-3 sm:flex-row">
+              <Link href="/tools/request-brief-builder" className="inline-flex min-w-0 max-w-full items-center justify-center rounded-lg bg-[#b1121b] px-5 py-3 text-center text-sm font-black [overflow-wrap:anywhere] hover:bg-[#c91824]">
                 {t("Build Request Brief")}
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <ArrowRight className="ml-2 h-4 w-4 shrink-0" />
               </Link>
-              <Link href="/new-request" className="inline-flex items-center justify-center rounded-lg border border-white/15 bg-white/[0.04] px-5 py-3 text-sm font-black hover:bg-white/10">
+              <Link href="/new-request" className="inline-flex min-w-0 max-w-full items-center justify-center rounded-lg border border-white/15 bg-white/[0.04] px-5 py-3 text-center text-sm font-black [overflow-wrap:anywhere] hover:bg-white/10">
                 {t("Start Secure Request")}
               </Link>
             </div>
@@ -231,9 +231,9 @@ function SelectField({
   options: Array<[string, string]>;
 }) {
   return (
-    <label className="block text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
+    <label className="block min-w-0 max-w-full text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
       {toolT(copy, label)}
-      <select value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 h-12 w-full rounded-lg border border-white/10 bg-black/40 px-4 text-sm font-bold normal-case text-white outline-none focus:border-red-700">
+      <select value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 h-12 w-full min-w-0 max-w-full rounded-lg border border-white/10 bg-black/40 px-4 text-sm font-bold normal-case text-white outline-none focus:border-red-700">
         {options.map(([optionValue, optionLabel]) => (
           <option key={optionValue} value={optionValue}>{toolT(copy, optionLabel)}</option>
         ))}
