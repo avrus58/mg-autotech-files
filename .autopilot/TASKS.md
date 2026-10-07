@@ -24,39 +24,6 @@ Receipt: `docs/production-release-2026-10-01-address.md`.
 
 ## In Progress
 
-### MANUAL-20261007-CHAT-HISTORY-RECONCILIATION [P1] Keep acknowledged messages visible while older history completes
-
-Fingerprint: `customer-workflow|request-chat-history|same-context-snapshot-removes-acknowledged-send|stale-history-fence-and-fresh-reconciliation`
-
-Selected7October10:04:39UTC at clean6e39e575a96133f5f17b787b465a572c98814206
-under the active local-first owner milestone. Previous turn changed authoritative
-product source and completed scoped native/reviewer acceptance, not idle.
-Fresh full component/test/API reads and independent dedup show no equivalent fix:
-6996's draft/context settlement explicitly left this race OPEN. Current
-RequestChat216 returns an old in-flight GET;254/261 replace history/known IDs;
-successful POST421-444 appends acknowledged text then reuses that GET. A frozen
-pre-ack body can therefore remove the stored row from current UI. This is client
-display loss/support risk, not evidence of database deletion. Fresh actual-handler
-baseline RED17tests/16pass/1failure reproduced the missing acknowledged row on
-unchanged6e39 source before implementation; no accepted-fix claim yet.
-Value17(B3/U5/A4/S4/C5/Urg4/E2/R2), reversible local GREEN. One bounded task:
-src/components/RequestChat.tsx and tests/request-chat-hardening.test.ts only,
-plus these four audit records at closure. Unique-context acknowledgement revision
-and one coalesced fresh read after the owning lock releases, not permanent union
-or new callback dependencies that reset drafts. OS/config/CLI absent; manual
-local implementation fallback, not fabricated unattended lifecycle.
-Acceptance: stale creation-time/deferred JSON cannot erase acknowledged rows or
-regress metadata/known IDs/scroll; prompt coalesced fresh reconciliation must
-actually start; multiple acknowledgements remain unique/ordered; fresh omission/
-visibility/latest200 remains authoritative; stale failure/abort/timeout cannot
-steal current state/locks; failed POST adds no generation or reload; request/role/
-A-B-A/unmount, newer draft, duplicate send,4000limit, Enter/ShiftEnter, sound/
-unread/reconnect/empty/history_limited and all12 copy/layout/wire/auth preserved.
-Full unchanged gates on frozen source, actual native deferred-body EN/DE/TR/ZH
-mobile/laptop/state proof and immutable independent review required. No dependency,
-API/auth/schema/business/env/customer/service/push/Preview/Production changes.
-Other read-error/SSR/whole-goal debts stay OPEN; do not repeat Next prototypes.
-
 ### MANUAL-20261007-TOOLS-HUB-COPY-QUALITY [P2] Make public tool choices understandable in every supported language
 
 Fingerprint: `public-tools|hub-feature-copy|scoped-runtime-english-leak-and-literal-request-meaning|native-all-locale-tool-selection`
@@ -457,6 +424,39 @@ Remediation: Batch with a future documentation/source-comment maintenance pass a
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
+
+### MANUAL-20261007-CHAT-HISTORY-RECONCILIATION [P1] Keep acknowledged messages visible while older history completes
+
+Fingerprint: `customer-workflow|request-chat-history|same-context-snapshot-removes-acknowledged-send|stale-history-fence-and-fresh-reconciliation`
+
+Done locally after independent GO_SCOPED_LOCAL; no publication/global completion.
+Selected10:04:39UTC at6e39e57, frozen candidatec3aa26b178bced503d4a244f4f356de81cb11f87,
+buildp23QBM8b7K8KwF8dnvP2c. Value17(B3/U5/A4/S4/C5/Urg4/E2/R2).
+Two scoped product/test paths plus four audit records only; primary untouched.
+Unique-context acknowledgement generation fences stale JSON/error/finally/scroll;
+exact owning lock releases before one coalesced fresh read. Fresh authoritative
+omission/visibility/latest200 preserved; no union/cache or callback-dependency
+reset. JSX/copy/all12/runtime/date/sound/API/auth/timers unchanged. Existing16
+chat tests retained plus10 actual-handler regressions; sound not exercised natively.
+Final2090full FIRST/ALONE/128targeted(26chat)/38i18n/lint/fulltypes/build337/
+strict43assets/performance/emitted2 PASS. Original17/16/1 row-loss RED and first
+candidate2089/2090 registration-only RED remain; unchanged isolated3/3 and full
+2090/2090 follow, without assertion/timer/concurrency/rule waiver or proven cause.
+Native29 durable cases/56 assembly checks PASS/19 MIME-bound frames, physically
+reviewed by root and reviewer; EN/DE/TR/ZH1280x720+390x844, canonicalzh-CN.
+Delayed G5 excludes ack; G6 includes it and starts3.1ms after aborted owning tail,
+2380.5ms off native12s poll. Ack exactly once/newer draft/onePOST, current503/
+failedPOST/periodic recovery/fresh empty/A-tail vs B/loading/unavailable/admin/
+unmount quiet19.425s verified. Final GET22/POST3, all observed latest tails settled;
+final bounded observer omits16 older GETs explicitly. Console0, fixtures closed,
+viewport reset, real local3190 preview restored.34 ignored lint files restored
+identically. Refused/unsupported observer/performance and expired native retry
+attempts retained, not product failures or retry PASS. Native packet93367457...33919,
+binding6787eaa2...5e91/review9a77b239...5d542b; ignored chat-history envelope.
+Manual local fallback, not unattended OS lifecycle. No backend/RLS/SSR/full-shell/
+sound/revenue/perfection proof; separate read-error/locale/Vary debts remain OPEN.
+Recorded broader goal is paused and unchanged; this bounded owner task alone is
+closed. No push/Preview/Production/live Ads/payment/env/secret/customer changes.
 
 ### MANUAL-20261007-PRIVATE-MENU-STACKING [P2] Keep the language menu usable beside an open notification panel
 

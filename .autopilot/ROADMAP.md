@@ -8,21 +8,24 @@
   olarak en iyi olana kadar calismaya devam et, reklamlar seolar tasarim yazilar
   hersey akilna gelebilecek hersey en iyisi olsun, once herseyi local olarak tut,
   en iyisi derken yillarca calisma ama bir hedefimiz olsun gercekten iyi birseyler
-  ortaya cikartalim". This full objective remains active, not satisfied by the
+  ortaya cikartalim". This full objective remains unfinished, not satisfied by the
   already accepted homepage alone. No global ranking/perfection claim is made.
+  Recorded goal state was paused during7October recovery; this bounded owner
+  request does not resume or complete the wider automated goal.
 - Scope: File Service product in this repository; coherent public/auth/customer/
   admin experience, conversion-oriented content and preparation, SEO discovery,
   advertising readiness, usability, accessibility and reliability. Keep all work
   local; no push, Preview, Production or Ads account/spend changes in this phase.
-- Current verified local source:44d05225c3e001fa5fc53e440e7cf4a1daee2df0,
-  buildBnyhD5lgf6FgUHxO504-m; three accepted homepage packages, five-service/all12
+- Current verified local source:c3aa26b178bced503d4a244f4f356de81cb11f87,
+  buildp23QBM8b7K8KwF8dnvP2c; three accepted homepage packages, five-service/all12
   compact experience, four-guide locale discovery/compact entry, bounded shared
   public-header utility placement, ECU read-advisor form containment and offline
   campaign-guide locale parity, context/revision-bound customer chat sends and
   native order-conversation heading semantics and bounded synthetic admin draft
   acceptance plus editor-visible profile-save outcomes and account-bound customer
-  notifications and scoped private notification/language overlay coexistence.
-  Prior6bbd1740/buildCEW45b0JQrBID3s1otp3-,fbed9128/buildigyBKEmpaCzdsDUCiwrzr,0c5c04f/build
+  notifications, scoped private notification/language overlay coexistence and
+  generation-bound acknowledged-chat history reconciliation.
+  Prior44d05225/buildBnyhD5lgf6FgUHxO504-m,6bbd1740/buildCEW45b0JQrBID3s1otp3-,fbed9128/buildigyBKEmpaCzdsDUCiwrzr,0c5c04f/build
   Rpf2o5C0nRFu6PDhH6ykM and aa913611/buildn3TbXrsmbViLKp4PgI0nS,
   6996a0a/buildLE9ntJ-sLtJE6XtCTFf7N,
   bd8281/buildtzbd0d05cUiiuW4BIXkqx,f4cd512/buildjxEseGeFkmCoevqtWEcwb,
@@ -193,6 +196,25 @@
   honesty and supported-layer Tools/brief initial-language/final-Vary debt stay
   OPEN separately. Next turn must recheck/deduplicate these evidenced gaps;
   do not repeat unsafe installed-Next response-layer prototypes.
+- MANUAL-20261007-CHAT-HISTORY-RECONCILIATION accepted locally atc3aa26b:
+  unique owning acknowledgement generation fences old JSON/error/finally/scroll;
+  exact GET lock releases before one coalesced fresh projection. No union/cache,
+  callback reset, JSX/copy/all12/auth/API/timer change.2090full FIRST/ALONE/
+  128targeted(26chat)/38i18n/lint/fulltypes/build337/strict43assets/performance/
+  emitted2 PASS. Native29durable cases/56assembly checks/19physical images with
+  independent170artifact-hash/raw-state GO; eight EN/DE/TR/ZH laptop/mobile finals.
+  Creation-time G5 lacks ack; immediate G6 includes ack3.1ms after aborted-tail
+  release/offpoll2380.5ms. Once-only acknowledgement/newer draft, current503/send
+  failure/recovery/authoritativeempty/context-tail/loading/error/admin/unmount
+  quiet19.425s verified. FinalGET22/POST3 observations settled; bounded final
+  window omits16olderGETs. Original baseline/registration/observer/expired-retry
+  negatives retained; no proven registration timing cause or gate waiver.
+  Packet93367457...33919/binding6787eaa2...5e91/review9a77b239...5d542b,
+  ignored chat-history envelope; fixture closed/reset/local3190 restored.
+  This closes only the separately evidenced stale-history acknowledgement race;
+  actual auth/RLS/backend/fullshell/SSR/audio/conversion/revenue and broader
+  milestone remain unaccepted. Mark-read structured-error honesty and supported-
+  layer Tools/brief first-language/final-Vary debts stay OPEN. Goal state unchanged.
 - Existing request-brief copy needs a later native semantic sweep (ToolsHeader
   Tools in TR/ZH, literal brief nouns and German not-provided meaning). This
   behavioral fix reuses unchanged copy, not a claim that translation quality is

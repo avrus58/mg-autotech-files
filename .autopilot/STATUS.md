@@ -1,5 +1,64 @@
 # Otonom calisma gunlugu
 
+## 2026-10-07 — Acknowledged chat history reconciliation accepted locally
+
+- MANUAL-20261007-CHAT-HISTORY-RECONCILIATION completed after immutable
+  GO_SCOPED_LOCAL at c3aa26b178bced503d4a244f4f356de81cb11f87/build
+  p23QBM8b7K8KwF8dnvP2c. Root reviewed component diff and read final reviewer
+  receipt fully before closure. Only RequestChat and its actual-handler test
+  changed; these four audit records follow. Primary dirty checkout untouched.
+- Owning POST advances a unique context generation/queues reconciliation before
+  display/known-ID updates. A real new GET captures generation only after dedup;
+  stale JSON/catch/refresh-finally/queued scrolling cannot mutate the newer view.
+  Exact owning cleanup releases the lock before one coalesced fresh read. Named
+  callback-local recursion retains hook identity; finally-derived rejection is
+  observed. Fresh projection remains authoritative, not an append-only cache.
+  JSX/copy/all12/date/sound/props/API/auth/payload/timers/dependencies unchanged.
+- Fresh final gates, sequential on unchanged clean c3aa:2090/2090 full tests
+  FIRST/ALONE,128/128 targeted(26chat; original16 plus10 regressions),unchanged
+  lint, web+uploader renderer/electron/node types,38/38i18n(all12/43sources/
+  2495rows/zero clean non-EN fallback), mandatory prebuild38/Webpack337pages,
+  strict43assets(valid PNG/PDF/compiled synthetic401/external-fetch0), performance
+  home16.4/80KB gzip/worker6.5/12KBraw/maxlocale6.8KB/187prerenders/emitted2 PASS.
+- Source/build fixture binds56 actual modules/10 helpers plus separate assembler,
+  4actual CSS/11fonts; main fully read every helper before execution. Synthetic
+  creation-time DTOs/roles/navigation and ephemeral storage only, no real SDK/
+  account/backend. Genuine12s timers retained; delayed JSON deliberately survives
+  abort. Native29 durable cases/56 assembly checks PASS/19 hash+MIME images;
+  root and reviewer physically viewed all19 including eight EN/DE/TR/ZH laptop/
+  mobile finals. Mirror samples genuine online/visibility at native events and
+  transport commits with version/date provenance; it is not server/SSR evidence.
+- Race G5 snapshot lacks ack and its signal is aborted before release. G6 starts
+  3.099999994ms after owning release,2380.5ms away from native poll phase and
+  includes ack. Message remains once/newer unsent draft preserved/only onePOST.
+  Current503 reconnect, failedPOST/newer draft, genuine periodic recovery, fresh
+  authoritative empty, oldA tail vs newB loading/unavailable/periodic recovery,
+  fixed-EN internal admin and queued-owning-tail/unmount verified. After unmount
+  19.425s no newGET; GET total22/POST3, latest observations of IDs1–22 settled.
+  Final observer window itself omits16 older GETs, not an exhaustive final ledger.
+- Packet93367457...33919/binding6787eaa2...5e91/review9a77b239...5d542b;
+  independent reviewer checked170 distinct artifact hashes/all raw states and
+  chrono plus all19 physical frames. Ignored runtime/chat-history-reconciliation-
+  envelope-c3aa26b-20261007.json retains exact receipt/source identities/limits.
+- Negatives kept: baseline unchanged6e39 row-loss17/16/1; first c3aa full2090/
+  2089/1 existing registration50ms assertion. Unchanged isolated3/3 and second
+  full2090/2090 are separate; contention cause remains unproven. No product/test
+  assertion/timeout/skip/concurrency/rule waiver. Legacy shell launch policy
+  refused before execution; reviewed unchanged-lint helper ran in existing shell,
+  34 ignored fixtures restored identical. Original CUA Function refused, literal
+  navigator and later performance read unsupported; no property/permission bypass.
+  Genuine browser-state DOM mirror resolved observation. Expired B TryAgain click
+  was followed by observed periodic recovery, not falsely accepted native retry.
+- Fixture tab22 closed, viewport reset, fixture5309/3195 CtrlC expectedexit1;
+  real local61764/3190 restarted with reviewed dummy-env runner and retained tab10
+  reloaded/marked deliverable. Next-start standalone warning retained, not a
+  production-runner claim. Console warning/error0 in the native fixture. No push,
+  Preview, deploy, liveAds/spend, DB, customer, env/secret, payment/e-mail/dependency
+  or auth-policy operation. No authenticated/RLS/backend/full-shell/SSR/sound/
+  conversion/revenue/global-perfection acceptance. Read-error and supported-layer
+  locale/Vary debts remain OPEN. get_goal returned paused during recovery; not
+  changed/resumed/completed here. Only this current owner-requested task is closed.
+
 ## 2026-10-07 — Same-context chat history reconciliation selected; validation pending
 
 - Started10:04:39UTC at clean6e39e57, one evidence-backed P1 selected after
