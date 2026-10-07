@@ -14,13 +14,14 @@
   admin experience, conversion-oriented content and preparation, SEO discovery,
   advertising readiness, usability, accessibility and reliability. Keep all work
   local; no push, Preview, Production or Ads account/spend changes in this phase.
-- Current verified local source:fbed9128ea412baca8f113a7402be80d100a4ad6,
-  buildigyBKEmpaCzdsDUCiwrzr; three accepted homepage packages, five-service/all12
+- Current verified local source:6bbd17400eadcc9de8835899ecce0e0a85ed13f4,
+  buildCEW45b0JQrBID3s1otp3-; three accepted homepage packages, five-service/all12
   compact experience, four-guide locale discovery/compact entry, bounded shared
   public-header utility placement, ECU read-advisor form containment and offline
   campaign-guide locale parity, context/revision-bound customer chat sends and
   native order-conversation heading semantics and bounded synthetic admin draft
-  acceptance plus editor-visible profile-save outcomes. Prior0c5c04f/build
+  acceptance plus editor-visible profile-save outcomes and account-bound customer
+  notifications. Priorfbed9128/buildigyBKEmpaCzdsDUCiwrzr,0c5c04f/build
   Rpf2o5C0nRFu6PDhH6ykM and aa913611/buildn3TbXrsmbViLKp4PgI0nS,
   6996a0a/buildLE9ntJ-sLtJE6XtCTFf7N,
   bd8281/buildtzbd0d05cUiiuW4BIXkqx,f4cd512/buildjxEseGeFkmCoevqtWEcwb,
@@ -28,8 +29,8 @@
   and core2a98f865/buildJnRpeAAvSidfUgVRbdTFs remain audit evidence, not the current
   artifact. Header placement acceptance is not all Tools body containment.
   Admin draft helper/reconciliation source8fa6853 is unchanged; prior37 actual
-  React states/12 laptop/mobile frames closed its client-draft UX gate. Current
-  profile-feedback successor preserves those semantics with fresh2050full/
+  React states/12 laptop/mobile frames closed its client-draft UX gate. The prior
+  accepted profile-feedback successor preserves those semantics with2050full/
   72targeted/all gates;37new actual React states/22JPEG files/20distinct hashes,
   independent23raw-state checks and physical22frames close only visible-outcome
   UX. Long messages cap at96px and remain keyboard-readable; newer drafts and
@@ -159,14 +160,27 @@
   is source-proven, not authenticated GUI proof. Inherited DE-TCU final-n line
   wrap remains a nonblocking rough edge. No new campaign/spend/live account/
   conversion/customer/revenue outcome or whole-goal closure claim.
-- Next P1: resume existing MANUAL-20261006-ADMIN-CUSTOMER-DRAFTS, not a new task.
-  Source8fa6853 remains byte-identical in current admin/helper/regression paths;
-  original synthetic callbacks pass but real React interaction is still pending.
-  Read-only7October triage specifies actual modal/field/callback AST extraction,
-  exact source/build binding, synthetic dashboard/profile/pricing responses,
-  repeated sync, late save/edit, A-B-A/close-reopen and mobile/laptop focus/scroll.
-  Do not bypass genuinely disabled pricing controls or infer native package edits
-  during saving from callback tests. Other full-milestone gates remain OPEN.
+- MANUAL-20261007-NOTIFICATION-ACCOUNT-ISOLATION accepted locally at6bbd1740:
+  synchronous clearance and lifecycle identity fence prior feed/toast and late
+  initial session/authority/SELECT/channel/poll/actions/timers, including batched
+  A-B-A. Same-user own-feed/dedup and original copy/classes/all12/runtime/query/
+  write/channel/auth contracts preserved.2071full/123targeted(21new)/38i18n/
+  lint/fulltypes/build337/strict43assets/performance/emitted2 PASS; full tests
+  alone,120ms types/i18n receipt overlap retained. Native47rows/44assertions
+  (40PASS+4retainedFALSE),31hashed PNGs/eight independently viewed EN/DE/TR/ZH
+  laptop/mobile frames; finalpending/console/blocked0 and cleanup. Scoped review
+  6c795620...1f7cb64/native dff50ad8...a1817d/bindingc69eb306...5c20de, ignored
+  notification-account-isolation envelope. This is synthetic client lifecycle
+  acceptance, not real auth/RLS/backend/SSR/live customer or whole-goal proof.
+  Formal suppression-shape/lint/nullable-context REDs fixed without waivers.
+- Next bounded Ready P2 MANUAL-20261007-PRIVATE-MENU-STACKING is grounded in
+  native observation33: an open notification panel intercepts a Deutsch menu
+  click and triggers an own-file action. Closed-panel retake34 is successful
+  translation evidence, not defect closure. Original stacking classes untouched;
+  tall toast+panel can also exceed720px. Preserve existing state/copy/public
+  placement and repair private overlay coexistence only. RequestChat same-context
+  acknowledged-send reconciliation, mark-read structured-error honesty and
+  Tools/brief strict initial-language/final-Vary debt remain OPEN separately.
 - Existing request-brief copy needs a later native semantic sweep (ToolsHeader
   Tools in TR/ZH, literal brief nouns and German not-provided meaning). This
   behavioral fix reuses unchanged copy, not a claim that translation quality is

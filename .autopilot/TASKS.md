@@ -4,6 +4,21 @@
 
 ## Ready
 
+### MANUAL-20261007-PRIVATE-MENU-STACKING [P2] Keep the language menu usable beside an open notification panel
+
+Fingerprint: `customer-chrome|notification-and-language-menus|notification-panel-intercepts-language-choice|independently-operable-overlays`
+
+Native bound6bbd observation33: with both actual panels open, clicking Deutsch
+activates the overlaid own notification link and leaves EN selected. Screenshot
+and mark-read ledger7 prove the interception; panel-closed retake34 succeeds.
+Existing classes are unchanged by the isolation task. Client fixture evidence
+only, not an authenticated Production claim. Value13 (B3/U4/A1/S3/C5/E2/R1).
+Next bounded local UI task: preserve all copy, locale catalogs, panel contents,
+actions, auth/account fences and public header placement; repair only private
+overlay coexistence/reachability. Validate keyboard/pointer access, full unchanged
+gates and EN/DE/TR/ZH compact laptop/mobile. Do not absorb chat, mark-read outcome,
+SSR or business changes. No dependencies, live services or publication.
+
 ## Completed manual releases
 
 ### MANUAL-20261001-CURRENT-BUSINESS-ADDRESS [P1] Synchronize the owner-confirmed Asperg address
@@ -23,23 +38,6 @@ No policy, payment, auth, customer-data, migration or environment change.
 Receipt: `docs/production-release-2026-10-01-address.md`.
 
 ## In Progress
-
-### MANUAL-20261007-NOTIFICATION-ACCOUNT-ISOLATION [P1] Keep customer notifications bound to their current account
-
-Fingerprint: `customer-experience|notification-bell|account-change-retains-previous-customer-feed-and-toast|account-bound-state-and-async-lifecycle`
-
-Local-only, one bounded product task. Clean baseline26bd69a: actual auth effect
-reproduction changes A to B but retains A feed/toast after B authority resolves,
-before B SELECT. This is retained client UI, not a proved live/RLS breach.
-Value17 (B4/U5/A3/S5/C4/E2/R2); YELLOW/auth-adjacent. Account-bound state and
-late authority/SELECT/timer fences only; preserve SDK/auth policies, projection,
-RLS/user_id query/write/channel scopes, private runtime routes and existing copy.
-Accept synchronous clearance, A-B-A/logout/unmount/suppression, stale initial
-session fencing and same-user refresh; actual-component regressions, unchanged
-full gates, native EN/DE/TR/ZH compact laptop/mobile and immutable review.
-No dependencies, schema, backend, secrets, live services, push or deployment.
-Chat stale-snapshot and mark-read outcome gaps remain separate, not silently
-accepted by this task. OS controller unavailable: manual local fallback.
 
 ### MANUAL-20261007-TOOLS-HUB-COPY-QUALITY [P2] Make public tool choices understandable in every supported language
 
@@ -441,6 +439,31 @@ Remediation: Batch with a future documentation/source-comment maintenance pass a
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
+
+### MANUAL-20261007-NOTIFICATION-ACCOUNT-ISOLATION [P1] Keep customer notifications bound to their current account
+
+Fingerprint: `customer-experience|notification-bell|account-change-retains-previous-customer-feed-and-toast|account-bound-state-and-async-lifecycle`
+
+Done locally7October; independent scoped GO, not published/global completion.
+Baseline26bd69a retained prior A feed/toast after B authority, before B SELECT;
+client retained UI only, not a proved live/RLS breach. Value17/YELLOW.
+Frozen6bbd17400eadcc9de8835899ecce0e0a85ed13f4/buildCEW45b0JQrBID3s1otp3-:
+synchronous account clearance, unique lifecycle identity, late initial/session/
+authority/SELECT/realtime/action/toast fences including batched A-B-A; same-user
+own-feed/dedup retention with original fail-closed reclassification. Existing
+copy/classes/all12 catalogs/projection/SDK/auth/query/write/channel scopes unchanged.
+Two product/test files;21 new actual-component regressions. Final2071full/
+123targeted/38i18n, unchanged lint/web+desktop types, build337/strictassets43,
+performance/emitted2 PASS. Full tests alone; types/i18n receipt overlap120ms retained.
+Native47rows/44assertions:40PASS+4retainedFALSE,31hashed PNGs,8selected final
+EN/DE/TR/ZH1280x720/390x844 frames; console/blocked/finalpending0 and cleanup.
+Independent source/helper/gate/log/native/binding/image GO receipt6c795620...1f7cb64;
+envelope `runtime/notification-account-isolation-envelope-6bbd1740-20261007.json`.
+Formal7aadde full,afc36 lint,8e50 types RED history retained, not waived. New menu
+interception observation33 and tall720px panel remain OPEN, as do chat snapshot,
+mark-read outcomes and SSR/Vary. Synthetic client, not authenticated backend or
+SSR proof. OS absent/manual local fallback; no dependency/schema/env/service/
+customer/payment/auth-policy change, push or release. Broader milestone OPEN.
 
 ### MANUAL-20261007-ADMIN-PROFILE-FEEDBACK [P2] Show editor-bound profile save outcomes inside the open form
 

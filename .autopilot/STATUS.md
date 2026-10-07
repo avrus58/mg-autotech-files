@@ -1,5 +1,51 @@
 # Otonom calisma gunlugu
 
+## 2026-10-07 — Account-bound customer notifications accepted locally
+
+- One P1 MANUAL-20261007-NOTIFICATION-ACCOUNT-ISOLATION completed locally at
+  frozen6bbd17400eadcc9de8835899ecce0e0a85ed13f4/buildCEW45b0JQrBID3s1otp3-.
+  Owned worktree only; primary untouched. Two product/test files plus these four
+  audit records. OS controller absent/manual local fallback; broader goal OPEN.
+- Account changes synchronously invalidate old feed/toast/loading/error/open/
+  dedup state before deferred authority work. Unique context fences initial
+  session, held JSON/SELECT, channel/poll/action/timer work, including batched
+  A-B-A. Same-user reclassification preserves its own feed/dedup and baseline
+  fail-closed hiding. Original copy/styles/catalogs/projection/private runtime,
+  SDK/auth policies and user_id query/write/channel scopes stay intact.
+- Final same-source gates:2071/2071 full FIRST/ALONE,123/123 targeted including
+  21 new actual-component regressions, unchanged npm lint, web+desktop types,
+  i18n38/38/all12/43sources/2495rows/zero clean non-EN fallback; mandatory
+  prebuild38/38/build337 and strict43assets PASS; performance home16.3/80KB,
+  worker6.5/12KB,maxlocale6.8KB gzip/187prerenders and emitted2/2 PASS. Types/
+  i18n receipt windows overlap120ms; no universal strict-sequential claim.
+- All11 helpers read before execution. Native binding53product modules/4CSS/
+  11fonts matches final source/build origins. Actual client/native timers with
+  synthetic SDK/auth/context/realtime and ephemeral storage only.47rawrows,
+  44assertions40PASS+4retainedFALSE,31PNG hashes and eight physically inspected
+  final EN/DE/TR/ZH laptop1280x720/mobile390x844 views. Account change/logout/
+  batched transitions/stale initial session/held body/unmount/suppression/foreign
+  rows/current actions/timer ownership pass; client mounts and localized DE
+  loading/error/retry/empty observed. Console/blocked/finalpending0. Tab17closed,
+  viewport reset, fixture5980 stopped by CtrlC(expected1); app22222/3190 and
+  deliverable10 retained, not Production runner evidence.
+- Independent immutable scoped GO binds source/test/helper/all8gate/log/native/
+  image hashes. Native packetdff50ad8...a1817d, bindingc69eb306...5c20de,
+  review6c795620...1f7cb64; ignored envelope
+  runtime/notification-account-isolation-envelope-6bbd1740-20261007.json,
+  SHA256022dffe4...4952f9f9.
+- Earlier formal7aadde2070/2071 suppression-shape RED,afc36 lint refs RED and
+  8e50 TS18047 types RED fixed in source without validator/test/rule/flag waivers.
+  Reviewed relocation restores all34 ignored old fixture files byte-for-byte;
+  no deletion/ignore change. Observer case/periodic-selection/zh-CN expectation
+  negatives and diagnostic filename errors retained. Observation33 is a genuine
+  inherited open notification/language menu interception, NOT an observer pass;
+  closed-panel DE retake34 proves translation only. Queued deduplicated private
+  menu-stacking P2; tall toast+panel can extend below720px. mark-read structured
+  error, chat same-context reconciliation and Tools/brief SSR/Vary stay OPEN.
+- No authenticated backend/RLS/SSR/live customer, indexing, conversion or profit
+  proof. No dependencies, schema, secrets/env, customer data, auth-policy,
+  payment, service, Ads, push, Preview or Production change. No whole-goal claim.
+
 ## 2026-10-07 — Notification account isolation selected; verification pending
 
 - One local P1 task selected at clean26bd69a after exact-effect synthetic
