@@ -4,45 +4,38 @@
 
 ## Ready
 
-## In Progress — current bounded manual cycle
+### MANUAL-20261007-ORDER-CHAT-HEADING [P2] Describe the order conversation naturally in every language
 
-### MANUAL-20261007-CHAT-DRAFT-SETTLEMENT [P1] Preserve newer chat drafts when an older send finishes
+Fingerprint: `customer-workflow|order-chat-heading|order-noun-mistranslated-as-command|native-order-context-in-all-locales`
 
-Fingerprint: `customer-workflow|request-chat-send-lifecycle|late-post-clears-newer-draft|request-and-draft-bound-settlement`
+Origin: actual6996a0a native DE heading "Gespräch bestellen" and TR heading
+"Görüşmeyi sipariş edin"; both ask users to order a conversation. RequestChat503
+raw workspace heading is "Order conversation". Master5296-5307 and generated
+orders-DOM1139-1150 share one11-locale tuple; seven values use a verb/command,
+FR wording is awkward, IT/PT/ZH noun meanings remain valid. This is inherited
+fromd85a911, not introduced by the accepted draft fix. Main verified both rows;
+independent source/native audit and queue/history/roadmap/inbox/proposals/Git
+dedup found no equivalent semantic-heading task. Primary orders catalog does
+not own the row; LanguageSwitcher302-306 loads its orders-DOM companion.
+Business2/User4/Admin1/Strategic4/Confidence5/Effort1/Risk1; value14.
 
-Origin: current bd8281 RequestChat.tsx hash
-984ab6936c7a2a2b1e7cc32d68f41b4d174b5c8c9663550cddd7278d596ab423.
-Textarea608 remains editable during POST; success354 unconditionally clears
-the current draft. Unlike GET198/237/253 and request-reset266, POST327-366 lacks
-context-bound settlement. Customer order1137 and admin3892 share this component.
-Read-only actual-function AST/VM audit with deferred synthetic POST reproduced
-newer-draft loss, normal submitted-draft cleanup, failure draft preservation and
-late-A settlement mutating B UI state/lock. No network or customer data used;
-this is client draft/UI isolation evidence, not server tenant leakage.
-Main independently checked source, consumers and exact orders catalog inventory.
-Queue/history/roadmap/inbox/proposals/Git dedup: earlier chat hardening and
-AUTO-026 length guidance do not cover this send-settlement boundary.
-Business4/User5/Admin3/Strategic4/Confidence5/Effort2/Risk2; next local manual cycle.
+Boundary: only the existing exact row in
+src/lib/i18n/customer-workflow-translations.ts, its generated row in
+src/lib/i18n/customer-workflow-orders-dom-translations.ts and an independent
+12-locale semantic pin in tests/customer-workflow-client-bundles.test.ts.
+Regenerate through the existing generator and reject unrelated generated drift.
+Keep the EN source/key, RequestChat state/JSX/API, primary catalog, inventory,
+baseline, checker, every other string and fixed-EN admin default heading intact.
+No dependency, commercial/legal/auth/backend/data/env or external action.
 
-Boundary: src/components/RequestChat.tsx and tests/request-chat-hardening.test.ts.
-Bind success/error/finally to the originating request/context and submitted
-draft. Keep composer editable during sending; do not evade draft preservation
-by disabling it. Preserve all visible copy/12 locales, API/auth/privacy, payload,
-history/poll/reconnect, 4000-character, Enter/Shift+Enter and duplicate-send rules.
-No backend/schema/price/legal/catalog/storage/dependency or external action.
-
-Acceptance: actual handlers preserve newer edits and clear only the unchanged
-submitted draft; failures retain draft/retry. Old success/error/finally cannot
-mutate another context's messages, draft, status, scroll or send lock, including
-A-B-A and unmount. Test edit-away-and-back identity and overlapping async work,
-not only different strings. Actual synthetic local component/browser interaction
-in EN/DE/TR/ZH mobile/laptop plus targeted i18n, lint/full types/tests/build and
-immutable independent review required. Do not claim authenticated/server outcomes.
-Started 7 October from clean1cdc3d1 in the owned attached worktree, local branch
-codex/chat-draft-settlement-20261007. Prior campaign cycle is completed progress;
-this separate bounded manual cycle does not use the absent OS controller/CLI.
-Root implements the component; a separate agent owns actual-handler regression
-tests. Candidate remains unaccepted until same-SHA gates and independent review.
+Acceptance: all12 outputs describe an order-bound conversation, never an action
+to order a conversation; native grammar/automotive meaning and diacritics remain.
+Master/generated parity alone is insufficient: literal independently reviewed
+expected headings must detect the existing wrong verb meanings. Existing state
+fix, pending drafts, statuses and raw message leaves remain unchanged. Complete
+mandatory gates/fresh build/performance, actual EN/DE/TR/ZH mobile/laptop copy
+and containment plus independent immutable review. Local only, Ready only;
+this cycle does not implement or claim full conversation-copy perfection.
 
 ## Completed manual releases
 
@@ -501,6 +494,31 @@ Remediation: Batch with a future documentation/source-comment maintenance pass a
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
+
+### MANUAL-20261007-CHAT-DRAFT-SETTLEMENT [P1] Preserve newer chat drafts when an older send finishes
+
+Fingerprint: `customer-workflow|request-chat-send-lifecycle|late-post-clears-newer-draft|request-and-draft-bound-settlement`
+
+Done locally, not published. Frozen6996a0a296f79795504c3aca7236a7c977224f02,
+buildLE9ntJ-sLtJE6XtCTFf7N; base1cdc3d1. Unique committed request/role context,
+owned send operation and edit revision preserve newer or edit-away/back drafts;
+only an unchanged submitted draft clears. Late POST success/error/finally and
+their history/scroll descendants cannot mutate another context, A-B-A or unmount.
+Editable composer, all12 copy, rendering/payload/privacy/history/reconnect,
+4000-character and Enter/Shift+Enter/duplicate-send contracts are preserved.
+Two product/test files plus four audit records; no dependencies or external action.
+
+Same-source targeted35/full2027/prebuild37/lint/full types/build337/strict assets/
+performance/2emitted PASS. Actual React fixture with only synthetic transport
+and navigation bridge:8unique EN/DE/TR/ZH mobile/laptop views and18supplemental
+native scenarios. Old aborted G2 JSON cannot replace fresh G5 history or unlock
+held new-A history; only current G4 unlocks it. Inspected console0, viewport reset.
+Native manifest SHA256ad104c6f...8312dfe1, envelope2789bf26...f6ffbcbf and fixture
+bindingb3cd18ef...db383f8. Independent final scoped GO,113hashes independently
+matched,23distinct JPEGs and8final composer+4context/history frames viewed.
+Not authenticated/server isolation, unattended lifecycle, release or whole-goal
+proof. Inherited same-request GET/POST snapshot overwrite and heading copy debt
+stay OPEN; observer ZH shorthand mismatch/header-focused prechecks excluded.
 
 ### MANUAL-20261007-CAMPAIGN-GUIDE-LOCALE-PARITY [P2] Match offline campaign links to existing localized service guides
 

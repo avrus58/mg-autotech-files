@@ -1,5 +1,85 @@
 # Otonom calisma gunlugu
 
+## 2026-10-07 — Local chat draft/context settlement accepted; native heading meaning queued
+
+- Previous goal turn was progress: accepted localized campaign sourcebd8281 and
+  audit1cdc3d1 changed authoritative state with36HTTP/24native proof. This cycle
+  used the owned attached worktree and codex/chat-draft-settlement-20261007;
+  owner primary untouched. One bounded manual task, not the absent OS CLI or
+  fictional unattended/container lifecycle. Focused candidate
+  6996a0a296f79795504c3aca7236a7c977224f02, base1cdc3d1; final build
+  LE9ntJ-sLtJE6XtCTFf7N. Gates05:17:13-05:23:59 UTC, native05:25:11-05:30:57;
+  independent read-only final scoped GO before these audit-only updates.
+- Product/test: src/components/RequestChat.tsx and
+  tests/request-chat-hardening.test.ts. TASKS transition in focused source;
+  final TASKS/STATUS/ROADMAP/TASK_HISTORY audit updates make six distinct files
+  cumulatively. Unique committed context invalidates request/role/A-B-A/unmount
+  continuations before passive effects. Owned operation guards success/error/
+  finally, revision+submitted-value guards draft cleanup, dependent GET/reset/
+  queued scrolls remain context-bound. Composer stays editable while sending;
+  no user-copy/layout/payload/API/privacy/auth policy changes. Exact Git render
+  suffix equals base after removing only the new onChange revision increment.
+- Raw component SHA256
+  e574f6bfe485b5c7de04d7cc4e1d7e53c4f35c5bfbb767c6cd7e4e870e69a5ac;
+  test09e233b0f9c8bd83979851b54ac2cad68bc6ee4afef1904a6f04d23dcd865149.
+  Seven clean unchanged same-SHA receipts under runtime/chat-draft-:
+  targeted-20261007T051713916Z35/35; lint-051714353Z PASS;
+  types-051714889Z full web/uploader PASS; tests-051715337Z2027/2027,
+  no failed/skipped/cancelled/todo; build-051715768Z mandatory i18n37/37,
+  all12/43sources/2495reviewed rows and0clean EN fallback,23dynamic/21signatures,
+ 337static pages and strict43assets/fonts5/PDFKit30/sharp8/compiled-auth401/
+  valid PNG+PDF/externalFetch0 PASS; performance-052347220Z homepage16.3/80KB
+  gzip/47.2raw/3chunks, worker6.5/12KBraw, maxlocale22.7raw/6.8gzip,
+ 187prerenders/no missing or invalid language; emitted-052348691Z2/2 PASS.
+  Manual OS allowlist/dummy settings/env-file-name guard, not hermetic Docker.
+- Root read all ignored helper source before execution. Actual React/ReactDOM,
+  RequestChat, LanguageSwitcher, locale catalogs and four compiled CSS files
+  reused. Only exact auth-transport and next/usePathname bridge are synthetic;
+  graph excludes sensitive modules, loopback3191 static allowlist/CSP connect-src
+  none/window.fetch reject; no auth/backend/customer/credential work. Fixture
+  binding runtime/chat-draft-browser-20261007/
+  compiled-6996a0a296f7-b5d2c323d413/binding.json SHA256
+  b3cd18ef65928f36c5357fb79dff7ecb675e4a97df11f819812346d1cdb383f8.
+  Envelope runtime/chat-draft-envelope-6996a0a-20261007.json SHA256
+  2789bf260f4d9ba7cdfe96dbac86b21b8259f736bbc6b4b70b0e2753f6ffbcbf.
+- Native proof runtime/chat-draft-browser-20261007/native-6996a0a-20261007/
+  browser-6996a0a.json SHA256
+  ad104c6feda2115df1d0168ee05e9faee6709f29476220996faa6db18312dfe1.
+ 8unique final EN/DE/TR/ZH x1280x720/390x844 composer-visible views: actual
+  dimensions/document language/draft/message/control state and horizontal bounds
+  PASS; send/input visible after normal focus.18supplemental actual native
+  scenarios cover unchanged/away-back/retry/POST-body delay/request-role overlap/
+  A-B-A/unmount/remount/locale events/4000/whitespace/ShiftEnter/duplicateEnter.
+  Reviewer identified abort-honouring unit GET double as insufficient; actual
+  fixture then holds creation-time G2 JSON despite abort across A-B-A: old body
+  cannot overwrite fresh G5 content/draft or mark held new-A ready; current G4
+  alone unlocks it. This closes the realReact evidence gap, not server isolation.
+  Captured console warnings/errors0, viewport reset. Locale-event fixture buttons
+  are not application global-selector navigation or first-HTML proof.
+- Independent reviewer recomputed113hashes:16evidence artifacts,23distinct JPEGs
+  with actual MIME magic,6helpers,52product modules,4CSS,11fonts and bundle.
+  Physically inspected all8final composer views plus delayed-GET/role/request
+  frames and all18scenarios; final bounded GO/no new actionable findings. Main
+  also viewed EN/DE desktop,TR/ZH mobile and both GET frames. Initial ZH observer
+  expected shorthandzh but actual properzh-CN; negative precheck retained and
+  fresh corrected case used. Initial state-pass screenshots focused fixture
+  header rather than composer: retained/excluded from final8view acceptance,
+  rerun with normal textarea focus. No product-source drift or gate weakening.
+- No push/Preview/Production/live Ads/spend, payment/e-mail/Supabase/backend/DB/
+  customer/secret/envfile/dependency action or new business outcome claim. Actual
+  authenticated customer/admin and global goal remain unproven. Inherited
+  same-request GET/POST snapshot-overwrite race, prefixless/Vary/footer/cross-tab
+  and admin interactive debts remain OPEN; not labelled fixed by this package.
+  Compiled localhost3190/session1803 retained, owned TR-TCU preview refreshed;
+  fixture34649 is disposable and closed after review. No heavy gate rerun needed
+  for audit-only closure when frozen product/test/build bytes remain unchanged.
+- Native DE/TR heading means ordering a conversation; master5296 and generated
+  orders-DOM1139 confirm inherited7verb/command translations. Main and independent
+  source audit verified provenance, customers workspace/admin default difference,
+  and dedup. MANUAL-20261007-ORDER-CHAT-HEADING queued Ready only, exact row+
+  generated orders-DOM+independent12-locale semantic pin. No implementation in
+  this cycle, no native-copy perfection claim. Goal remains ACTIVE in full.
+
 ## 2026-10-07 — Local campaign-guide locale parity accepted; customer chat draft loss queued
 
 - Previous goal turn was progress: accepted form source f4cd512 and audit2d4973b,

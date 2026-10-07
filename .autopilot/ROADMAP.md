@@ -14,11 +14,12 @@
   admin experience, conversion-oriented content and preparation, SEO discovery,
   advertising readiness, usability, accessibility and reliability. Keep all work
   local; no push, Preview, Production or Ads account/spend changes in this phase.
-- Current verified local source:bd8281cd3af97ab896ebcddb4262f40ec2145f64,
-  buildtzbd0d05cUiiuW4BIXkqx; three accepted homepage packages, five-service/all12
+- Current verified local source:6996a0a296f79795504c3aca7236a7c977224f02,
+  buildLE9ntJ-sLtJE6XtCTFf7N; three accepted homepage packages, five-service/all12
   compact experience, four-guide locale discovery/compact entry, bounded shared
   public-header utility placement, ECU read-advisor form containment and offline
-  campaign-guide locale parity. Priorf4cd512/buildjxEseGeFkmCoevqtWEcwb,
+  campaign-guide locale parity and context/revision-bound customer chat sends.
+  Priorbd8281/buildtzbd0d05cUiiuW4BIXkqx,f4cd512/buildjxEseGeFkmCoevqtWEcwb,
   658977b/buildialpFw3aQcowOg5JX63cP,0a55d547/build-rWBvfpAWFA01d1qFc_AM
   and core2a98f865/buildJnRpeAAvSidfUgVRbdTFs remain audit evidence, not the current
   artifact. Header placement acceptance is not all Tools body containment.
@@ -84,6 +85,17 @@
   5. Finish public catalog/content and offline advertising message-match review,
      then customer/admin cross-flow quality sweep. Select concrete remaining
      gaps from new evidence rather than repeatedly repainting the homepage.
+- MANUAL-20261007-CHAT-DRAFT-SETTLEMENT accepted locally at6996a0a:
+  editable newer/away-back drafts retained, unchanged submitted draft clears,
+  request/role/A-B-A/unmount operations and dependent GET/scrolls context-bound.
+  Exact JSX/copy/layout and wire payload preserved.35targeted/2027full/37prebuild/
+  lint/fulltypes/build/strictassets/performance/2emitted PASS; actual React
+  synthetic fixture8locale/device composer views+18native scenarios/console0.
+  Independent113hashes/23JPEGs/8final+4context frames and scoped GO. No actual
+  authenticated/server/Production claim; same-request snapshot overwrite remains
+  OPEN. Native heading-copy debt separately verified: seven order-as-command
+  translations, exact master/generated row. MANUAL-20261007-ORDER-CHAT-HEADING
+  Ready only for the next cycle; keep the broader milestone gates OPEN.
 - Public-family arbitrary-scroll utility placement accepted locally at658977b:
   PublicSeoHeader,ToolsHeader,HomepageHeader and localized file-service header
   own the existing singleton language/privacy/status controls in normal flow.
