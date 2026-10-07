@@ -67,6 +67,27 @@ function graph(html: string) {
   assert.ok(script, "actual guide Page must emit structured data on first paint");
   return (JSON.parse(script[1]) as { "@graph": Array<Record<string, unknown>> })["@graph"];
 }
+function attribute(attributes: string, name: string) {
+  return attributes.match(new RegExp(`\\b${name}="([^"]*)"`, "u"))?.[1];
+}
+function anchors(html: string) {
+  return [...html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/gu)].map((match) => ({
+    href: attribute(match[1], "href"),
+    classes: new Set((attribute(match[1], "class") ?? "").split(/\s+/u)),
+    label: attribute(match[1], "aria-label"),
+    content: match[2],
+    index: match.index,
+  }));
+}
+function coreCopy(locale: LocaleCode, source: string) {
+  if (locale === "en") return source;
+  const row = publicCoreTranslations[source];
+  assert.ok(row, `${locale}: actual Header core scope missing ${source}`);
+  assert.equal(row.length, 11, source);
+  const copy = row[publicSurfaceLocaleOrder.indexOf(locale)];
+  assert.ok(copy?.trim(), `${locale}: empty Header core label ${source}`);
+  return copy;
+}
 
 test("the four-guide route registry is exact while all reviewed raw facts, dates and ordering remain frozen", () => {
   assert.deepEqual(serviceIntentGuideSlugs, reviewedGuideIds);
@@ -318,6 +339,121 @@ test("actual translated controls keep exact private service intent and only loca
       assert.ok(hrefs.some((match) => match[1] === "/about"));
       assert.ok(hrefs.some((match) => match[1] === localizedPath(code)));
       assert.doesNotMatch(html, /href="\/(?:de|tr|zh)\/(?:new-request|dashboard|tools|about|services)\/?(?:\?|"$)/u);
+    }
+  }
+});
+
+test("all 48 actual guide heroes place exactly two unchanged intent controls after the heading and before the full lead", async () => {
+  const pages = await rendered;
+  for (const { code } of supportedLocales) {
+    for (const guide of serviceIntentGuides) {
+      const html = pages.get(`${code}:${guide.slug}`)!;
+      const hero = html.match(/<section\b[^>]*>([\s\S]*?)<\/section>/u)?.[1];
+      assert.ok(hero, `${code}:${guide.slug}: actual first hero section`);
+      const heading = hero.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/u);
+      assert.ok(heading);
+      assert.equal(heading[1], escapeText(scopedCopy(code, guide.heroTitle)));
+      const request = escapeText(buildNewRequestPath(getPublicServiceRequestIntent(guide.slug)));
+      const controls = anchors(hero).filter(({ href }) => href === request || href === "/services");
+      assert.equal(controls.length, 2, `${code}:${guide.slug}: no duplicate or missing hero action`);
+      assert.deepEqual(controls.map(({ href }) => href), [request, "/services"]);
+      assert.ok(controls[0].content.includes(escapeText(scopedCopy(code, "Create file request"))));
+      assert.ok(controls[1].content.includes(escapeText(scopedCopy(code, "Compare all services"))));
+      const lead = escapeText(scopedCopy(code, guide.lead));
+      assert.equal(hero.split(lead).length - 1, 1, `${code}:${guide.slug}: full reviewed lead remains visible exactly once`);
+      const headingEnd = heading.index! + heading[0].length;
+      assert.ok(headingEnd < controls[0].index && controls[0].index < controls[1].index && controls[1].index < hero.indexOf(lead), `${code}:${guide.slug}: actual H1 -> request -> compare -> unchanged lead hierarchy`);
+      assert.ok(hero.includes(escapeText(scopedCopy(code, "Compatibility is confirmed per request."))));
+      assert.ok(hero.includes(escapeText(scopedCopy(code, "This public page does not inspect, upload, modify or approve a controller file. Exact support depends on the submitted identity, source file and workshop context."))));
+    }
+  }
+});
+
+test("actual guide hero markup has bounded type, compact spacing and accessible 44px action contracts without claiming viewport proof", async () => {
+  // Emitted class/order contracts are regression protection only. Physical
+  // first-fold visibility, text clipping and floating-control obstruction need
+  // the separate native mobile/compact-laptop browser measurements.
+  const pages = await rendered;
+  for (const { code } of supportedLocales) {
+    for (const guide of serviceIntentGuides) {
+      const hero = pages.get(`${code}:${guide.slug}`)!.match(/<section\b[^>]*>([\s\S]*?)<\/section>/u)![1];
+      const heading = hero.match(/<h1\b[^>]*class="([^"]*)"/u)!;
+      const headingClasses = new Set(heading[1].split(/\s+/u));
+      assert.ok(headingClasses.has("text-[clamp(1.875rem,4vw,3rem)]"), `${code}:${guide.slug}: reviewed 30–48px responsive type contract`);
+      assert.ok(headingClasses.has("leading-[1.08]"));
+      assert.ok(headingClasses.has("[overflow-wrap:anywhere]"), "long translated headings must remain wrappable");
+      const grid = hero.match(/^\s*<div\b[^>]*class="([^"]*)"/u)!;
+      const gridClasses = new Set(grid[1].split(/\s+/u));
+      assert.ok(gridClasses.has("py-8") && gridClasses.has("lg:py-10"));
+      assert.ok(gridClasses.has("lg:items-start"), "hero request entry must not be bottom-aligned with the review aside");
+      const request = escapeText(buildNewRequestPath(getPublicServiceRequestIntent(guide.slug)));
+      const controls = anchors(hero).filter(({ href }) => href === request || href === "/services");
+      assert.equal(controls.length, 2);
+      for (const control of controls) {
+        assert.ok(control.classes.has("min-h-11"), `${code}:${guide.slug}: baseline 44px action-height contract`);
+        assert.ok(control.classes.has("focus-visible:ring-2"), `${code}:${guide.slug}: keyboard-visible hero action`);
+        assert.ok(!control.classes.has("hidden") && !control.classes.has("invisible") && !control.classes.has("opacity-0"));
+      }
+    }
+  }
+});
+
+test("all 48 actual shared headers retain nine native crawlable destinations and keyboard-visible controls", async () => {
+  const routes = [
+    ["/file-service", "File service"], ["/services", "Services"], ["/how-it-works", "How it works"],
+    ["/brands", "Vehicle brands"], ["/ecu-platforms", "ECU platforms"], ["/workshop-guides", "Workshop guides"],
+    ["/tools", "Workshop tools"], ["/about", "About"], ["/contact", "Contact"],
+  ] as const;
+  const pages = await rendered;
+  for (const { code } of supportedLocales) {
+    for (const guide of serviceIntentGuides) {
+      const header = pages.get(`${code}:${guide.slug}`)!.match(/<header\b[^>]*>([\s\S]*?)<\/header>/u)![1];
+      const navigation = header.match(/<nav\b([^>]*)>([\s\S]*?)<\/nav>/u)!;
+      assert.equal(attribute(navigation[1], "aria-label"), escapeText(coreCopy(code, "Primary navigation")));
+      const navClasses = new Set((attribute(navigation[1], "class") ?? "").split(/\s+/u));
+      const links = anchors(navigation[2]);
+      assert.equal(links.length, 9, `${code}:${guide.slug}: all original public destinations remain actual anchors`);
+      routes.forEach(([path, label], index) => {
+        const target = path === "/file-service" || path === "/how-it-works" ? localizedPath(code, path) : path;
+        assert.equal(links[index].href, target, `${code}:${guide.slug}:${path}`);
+        assert.equal(links[index].content, escapeText(coreCopy(code, label)));
+        assert.ok(links[index].classes.has("focus-visible:ring-2") || navClasses.has("[&_a]:focus-visible:ring-2"), `${code}:${path}: explicit or inherited visible keyboard focus`);
+        assert.ok(links[index].classes.has("min-h-11") || navClasses.has("[&_a]:min-h-11"));
+      });
+      const headerLinks = anchors(header);
+      for (const href of ["/login", "/new-request"]) {
+        const controls = headerLinks.filter((link) => link.href === href);
+        assert.equal(controls.length, 1, `${code}:${guide.slug}: existing ${href} control`);
+        assert.ok(controls[0].classes.has("min-h-11") && controls[0].classes.has("focus-visible:ring-2"));
+      }
+      const shortcut = headerLinks.find(({ href, label }) => href === "/services" && label === escapeText(coreCopy(code, "Browse ECU file services")));
+      assert.ok(shortcut, `${code}:${guide.slug}: existing localized mobile services shortcut`);
+      assert.ok(shortcut.classes.has("lg:hidden") && shortcut.classes.has("h-11") && shortcut.classes.has("w-11") && shortcut.classes.has("focus-visible:ring-2"));
+    }
+  }
+});
+
+test("actual headers separate nonshrinking brand/actions from an independently wrapping desktop navigation row", async () => {
+  const pages = await rendered;
+  for (const { code } of supportedLocales) {
+    for (const guide of serviceIntentGuides) {
+      const header = pages.get(`${code}:${guide.slug}`)!.match(/<header\b[^>]*>([\s\S]*?)<\/header>/u)![1];
+      const navigation = header.match(/<nav\b([^>]*)>([\s\S]*?)<\/nav>/u)!;
+      const beforeNavigation = header.slice(0, navigation.index);
+      assert.match(beforeNavigation, /<\/div>\s*<\/div>\s*$/u, "actions and top brand row must close before the independent navigation row");
+      const rows = [...beforeNavigation.matchAll(/<div\b[^>]*class="([^"]*)"/gu)];
+      assert.equal(rows.length, 3, "bounded container -> brand/action row -> action group, without a new menu or drawer");
+      const topRowClasses = new Set(rows[1][1].split(/\s+/u));
+      const actionGroupClasses = new Set(rows[2][1].split(/\s+/u));
+      assert.ok(topRowClasses.has("flex-wrap") && topRowClasses.has("justify-between"));
+      assert.ok(actionGroupClasses.has("shrink-0"));
+      const topLinks = anchors(beforeNavigation);
+      assert.equal(topLinks.length, 4, `${code}:${guide.slug}: brand, mobile services, login and request remain in the top row`);
+      const brand = topLinks.find(({ href, label }) => href === localizedPath(code) && label === escapeText(coreCopy(code, "MG AutoTech home")));
+      assert.ok(brand && brand.classes.has("shrink-0") && brand.classes.has("focus-visible:ring-2"), `${code}:${guide.slug}: uncompressed keyboard-accessible brand`);
+      assert.ok(brand.content.includes("MG ") && brand.content.includes("AUTOTECH"));
+      const navClasses = new Set((attribute(navigation[1], "class") ?? "").split(/\s+/u));
+      assert.ok(navClasses.has("hidden") && navClasses.has("lg:flex") && navClasses.has("flex-wrap"), `${code}:${guide.slug}: independent wrapping desktop nav contract`);
     }
   }
 });

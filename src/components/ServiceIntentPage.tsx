@@ -158,9 +158,9 @@ export function ServiceIntentPage({
       <PublicSeoHeader locale={locale} />
 
       <section className="border-b border-white/10 bg-[radial-gradient(circle_at_78%_18%,rgba(177,18,27,0.22),transparent_28%),#050505]">
-        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 lg:grid-cols-[minmax(0,1.15fr)_minmax(300px,.65fr)] lg:items-end lg:py-20">
+        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(280px,.65fr)] lg:items-start lg:py-10">
           <div className="min-w-0">
-            <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-2 text-xs font-bold text-zinc-500">
+            <nav aria-label="Breadcrumb" className="mb-4 flex flex-wrap items-center gap-2 text-xs font-bold text-zinc-500">
               <Link href="/" className="transition hover:text-white">Home</Link>
               <span aria-hidden="true">/</span>
               <Link href="/file-service" className="transition hover:text-white">ECU File Service</Link>
@@ -171,21 +171,21 @@ export function ServiceIntentPage({
               <BadgeCheck className="h-4 w-4 text-red-400" aria-hidden="true" />
               {guide.eyebrow}
             </p>
-            <h1 className="mt-6 max-w-5xl text-[clamp(2.5rem,7vw,5.4rem)] font-black leading-[0.98] [overflow-wrap:anywhere]">
+            <h1 className="mt-4 max-w-5xl text-[clamp(1.875rem,4vw,3rem)] font-black leading-[1.08] [overflow-wrap:anywhere]">
               {guide.heroTitle}
             </h1>
-            <p className="mt-6 max-w-3xl text-base leading-8 text-zinc-300 sm:text-lg">{guide.lead}</p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link href={requestHref} className="inline-flex items-center justify-center rounded-lg bg-[#b1121b] px-6 py-4 text-sm font-black transition hover:bg-[#c91824] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500">
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <Link href={requestHref} className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[#b1121b] px-5 py-3 text-sm font-black transition hover:bg-[#c91824] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500">
                 Create file request<ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
               </Link>
-              <Link href="/services" className="inline-flex items-center justify-center rounded-lg border border-white/15 bg-white/[0.04] px-6 py-4 text-sm font-black transition hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500">
+              <Link href="/services" className="inline-flex min-h-11 items-center justify-center rounded-lg border border-white/15 bg-white/[0.04] px-5 py-3 text-sm font-black transition hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500">
                 Compare all services
               </Link>
             </div>
+            <p className="mt-5 max-w-3xl text-base leading-7 text-zinc-300 sm:text-lg">{guide.lead}</p>
           </div>
 
-          <aside className="border-l-2 border-red-700 bg-black/25 p-6" aria-label="Service review boundary">
+          <aside className="border-l-2 border-red-700 bg-black/25 p-5" aria-label="Service review boundary">
             <CircleAlert className="h-6 w-6 text-amber-300" aria-hidden="true" />
             <p className="mt-4 text-xs font-black uppercase tracking-normal text-red-300">Review-first boundary</p>
             <h2 className="mt-2 text-2xl font-black">Compatibility is confirmed per request.</h2>
