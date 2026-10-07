@@ -193,8 +193,9 @@ export function CustomerNotifications() {
 
   useEffect(() => {
     if (notificationsSuppressed || !userId) return;
-    const context = accountContext.current;
-    if (!context?.active || !context.authorized || context.userId !== userId) return;
+    const pendingContext = accountContext.current;
+    if (!pendingContext?.active || !pendingContext.authorized || pendingContext.userId !== userId) return;
+    const context = pendingContext;
     let active = true;
     const ownsAccount = () => active && context.active && context.authorized && accountContext.current === context;
 
