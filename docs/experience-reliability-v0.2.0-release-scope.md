@@ -53,3 +53,21 @@ No live customer mutation, payment, email, conversion or revenue test is implied
 
 This is manual owner-authorized engineering/release execution. The absent
 Autopilot controller is not replaced with a fabricated lifecycle receipt.
+
+## Native cutover acceptance correction
+
+The first healthy code-only cutover, `129a5dbc8c88`, passed Linux build and
+167 anonymous Production checks, but native guide acceptance found a real P2:
+DE-to-EN selection on the new TCU guide returned to the German route. The
+existing measurement-boundary capture listener forced a fresh document before
+React could save the explicit language preference. Core Stage 1 and homepage
+selection, which do not cross that boundary, worked.
+
+The final package includes a bounded capture-order correction: reuse the
+existing validated locale-intent writer before the already-authorized forced
+document navigation. Measurement route allowlists, consent, Google exposure,
+private-document isolation and all authentication/payment rules stay unchanged.
+The initial healthy cutover and its failed guide interaction are retained as
+separate evidence; they are not final language-transition acceptance. Fresh
+same-source gates, independent review and native guide transitions are required
+for the corrected final release.

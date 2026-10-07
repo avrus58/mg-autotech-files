@@ -1,5 +1,26 @@
 # Otonom calisma gunlugu
 
+## 2026-10-08 — Native release acceptance caught guide locale capture-order defect
+
+- Initial129a5dbc8c88 cutover is healthy as a paired app/analyzer,0restarts.
+  Native Linux build326pages/prebuild38/strict assets/PNG/PDF/compiled401/
+  external-fetch0 passed; immediate GET-only post167/167 and old20assets passed.
+  Caddy/workshop/PostgreSQL IDs,start times and restart counts are unchanged.
+  Version0.2.0/buildLZ3RtuSXcD6G91bRzyRl4; raw0600 deploy log retained on VPS.
+- Actual DE TCU-guide EN selection closes menu but returns toDE URL/body/lang;
+  mouse/nativeAX/keyboard and waitForURL negative preserved. Real coreStage1
+  mouse and homepage keyboard EN selections work. Existing boundary helper
+  returns a forced fresh document only for the guide's false-to-true Google
+  measurement-route transition. Its capture listener stops React propagation
+  before the language intent is saved. This is not waived as inherited behavior.
+- Final scoped package includes only an existing validated preference writer
+  before that forced navigation, plus actual-handler regression coverage.
+  No Google allowlist/config/consent/security weakening or new dependency.
+  Main release remains In Progress pending corrected frozen-source gates,
+  independent review and native/live verification. Stable129a remains serving;
+  this P2 does not demand an emergency rollback of healthy customer access.
+  Initial packet: runtime/experience-release-129a5dbc8c88 and task Temp receipts.
+
 ## 2026-10-08 — Experience & Reliability v0.2.0 release started
 
 - Owner explicitly authorized the complete ready package with `yayinla bakalim

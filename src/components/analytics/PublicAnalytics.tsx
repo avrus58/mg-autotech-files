@@ -95,9 +95,9 @@ function persistCapturedLocaleIntent(anchor: HTMLAnchorElement) {
   const locale = parseSupportedLocale(anchor.dataset.mgLocaleIntent);
   if (!locale) return;
 
-  // The paid-click consent gate runs in capture phase, before React's click
-  // handler. Preserve only the validated language preference so resuming the
-  // sanitized navigation cannot discard an explicit locale choice.
+  // Navigation guards run in capture phase, before React's click handler.
+  // Preserve only the validated language preference so a fresh document or
+  // resumed sanitized navigation cannot discard an explicit locale choice.
   writeStoredLocale(locale);
   writeLocaleCookies(locale);
   writeDocumentLocale(locale);
@@ -527,6 +527,7 @@ export function PublicAnalytics({
       );
       if (!destination) return;
       event.preventDefault();
+      persistCapturedLocaleIntent(anchor);
       event.stopPropagation();
       window.location.assign(destination);
     };

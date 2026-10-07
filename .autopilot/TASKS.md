@@ -36,6 +36,12 @@ responsive browser checks and immediate live GET-only smoke are pending.
 No Ads, payment, schema, customer-data or separate workshop change authorized.
 Existing three pilot tasks below remain incomplete, not silently accepted.
 
+Initial129a cutover passed Linux326/38 and post167/167 with20oldassets, but
+native guide EN selection exposed a P2 capture-order defect. Final acceptance
+requires the bounded existing locale-intent writer before forced fresh-document
+navigation, actual-handler regressions and newly frozen gates/native proof.
+Measurement allowlists, consent and private isolation must remain unchanged.
+
 ### MANUAL-20261007-TOOLS-HUB-COPY-QUALITY [P2] Make public tool choices understandable in every supported language
 
 Fingerprint: `public-tools|hub-feature-copy|scoped-runtime-english-leak-and-literal-request-meaning|native-all-locale-tool-selection`

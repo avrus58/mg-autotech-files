@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import { runInNewContext } from "node:vm";
+import ts from "typescript";
 
 import {
   createAdClickConsentGateController,
@@ -30,6 +32,7 @@ import {
   googleAdsLinkerRevocationStorageKey,
   googleAdsLinkerStorageKey,
   initializeGoogleMeasurement,
+  isGoogleMeasurementScriptPath,
   isGoogleAdsLinkerConfigurationReady,
   measurementConsentDisclosureVersion,
   measurementConsentStorageKey,
@@ -42,6 +45,8 @@ import {
   trackRequestSubmitted,
   writeMeasurementConsent,
 } from "../src/lib/publicAnalytics";
+import { parseSupportedLocale, supportedLocales } from "../src/lib/i18nConfig";
+import { serviceIntentGuideSlugs } from "../src/lib/serviceIntentGuideRoutes";
 
 class MemoryStorage {
   private readonly values = new Map<string, string>();
@@ -77,6 +82,145 @@ class LinkerMutationBlockedStorage extends MemoryStorage {
 const root = process.cwd();
 const source = (...segments: string[]) =>
   readFileSync(path.join(root, ...segments), "utf8");
+
+type CaptureClick = {
+  target: unknown;
+  button: number;
+  defaultPrevented: boolean;
+  metaKey: boolean;
+  ctrlKey: boolean;
+  shiftKey: boolean;
+  altKey: boolean;
+  preventDefault: () => void;
+  stopPropagation: () => void;
+};
+
+function privateDocumentCaptureHarness(input: {
+  current: string;
+  href: string;
+  intent?: string;
+  target?: string;
+  download?: boolean;
+  targetKind?: "anchor-child" | "disabled-control" | "non-element";
+  click?: Partial<Pick<CaptureClick, "button" | "defaultPrevented" | "metaKey" | "ctrlKey" | "shiftKey" | "altKey">>;
+}) {
+  const component = source("src", "components", "analytics", "PublicAnalytics.tsx");
+  const ast = ts.createSourceFile("PublicAnalytics.tsx", component, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const persist = ast.statements.filter((statement): statement is ts.FunctionDeclaration =>
+    ts.isFunctionDeclaration(statement) && statement.name?.text === "persistCapturedLocaleIntent"
+  );
+  const guards: ts.VariableDeclaration[] = [];
+  function visit(node: ts.Node) {
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.name.text === "forcePrivateDocumentNavigation") guards.push(node);
+    ts.forEachChild(node, visit);
+  }
+  visit(ast);
+  assert.equal(persist.length, 1, "execute the actual locale persistence helper");
+  assert.equal(guards.length, 1, "execute the actual capture listener, not a copied navigation model");
+  assert.ok(guards[0].initializer && ts.isArrowFunction(guards[0].initializer));
+  const code = ts.transpileModule(
+    `${persist[0].getText(ast)}\nconst ${guards[0].getText(ast)};\n({ forcePrivateDocumentNavigation, persistCapturedLocaleIntent });`,
+    { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }
+  ).outputText;
+  const effects: string[] = [];
+  class SyntheticElement {
+    constructor(private readonly anchor: SyntheticAnchor | null = null) {}
+    closest(selector: string) {
+      assert.equal(selector, "a[href]");
+      return this instanceof SyntheticAnchor ? this : this.anchor;
+    }
+  }
+  class SyntheticAnchor extends SyntheticElement {
+    readonly href = new URL(input.href, input.current).href;
+    readonly dataset = { mgLocaleIntent: input.intent };
+    getAttribute(name: string) {
+      assert.equal(name, "target");
+      return input.target ?? null;
+    }
+    hasAttribute(name: string) {
+      assert.equal(name, "download");
+      return input.download ?? false;
+    }
+  }
+  const anchor = new SyntheticAnchor();
+  const event: CaptureClick = {
+    target: input.targetKind === "disabled-control" ? new SyntheticElement() : input.targetKind === "non-element" ? {} : new SyntheticElement(anchor),
+    button: 0, defaultPrevented: false, metaKey: false, ctrlKey: false, shiftKey: false, altKey: false,
+    ...input.click,
+    preventDefault: () => { effects.push("preventDefault"); event.defaultPrevented = true; },
+    stopPropagation: () => { effects.push("stopPropagation"); },
+  };
+  const actual = runInNewContext(code, {
+    Element: SyntheticElement, HTMLAnchorElement: SyntheticAnchor,
+    getPrivateDocumentNavigation, isUnmodifiedSelfNavigation, parseSupportedLocale,
+    writeStoredLocale: (locale: string) => { effects.push(`stored:${locale}`); },
+    writeLocaleCookies: (locale: string) => { effects.push(`cookie:${locale}`); },
+    writeDocumentLocale: (locale: string) => { effects.push(`document:${locale}`); },
+    dispatchLocaleChange: (locale: string) => { effects.push(`dispatch:${locale}`); },
+    window: { location: { href: input.current, assign: (destination: string) => { effects.push(`assign:${destination}`); } } },
+  }) as { forcePrivateDocumentNavigation: (event: CaptureClick) => void; persistCapturedLocaleIntent: (anchor: SyntheticAnchor) => void };
+  return { effects, anchor, event, actual };
+}
+
+test("actual fresh-document capture persists every guide locale intent before stopping React and assigning", () => {
+  const origin = "https://file.mgautotech.de";
+  for (const slug of serviceIntentGuideSlugs) {
+    assert.equal(isGoogleMeasurementScriptPath(`/services/${slug}`), true);
+    assert.equal(isGoogleMeasurementScriptPath(`/de/services/${slug}`), false, "preserve the existing measurement route boundary");
+    for (const { code: locale } of supportedLocales) {
+      const destination = `${origin}${locale === "en" ? "" : `/${locale}`}/services/${slug}?view=guide#requirements`;
+      const current = `${origin}${locale === "en" ? "/de" : ""}/services/${slug}`;
+      assert.equal(getPrivateDocumentNavigation(destination, current), destination);
+      const harness = privateDocumentCaptureHarness({ current, href: destination, intent: locale });
+      harness.actual.forcePrivateDocumentNavigation(harness.event);
+      assert.deepEqual(harness.effects, [
+        "preventDefault", `stored:${locale}`, `cookie:${locale}`, `document:${locale}`, `dispatch:${locale}`,
+        "stopPropagation", `assign:${destination}`,
+      ], `${slug}/${locale}: explicit preference must survive the capture-phase fresh-document handoff`);
+    }
+  }
+});
+
+test("actual captured locale helper validates supported aliases and rejects unknown language intents", () => {
+  for (const intent of [undefined, "", "xx", "constructor", "../de", "de?gclid=synthetic"]) {
+    const harness = privateDocumentCaptureHarness({ current: "https://file.mgautotech.de/services/stage-2", href: "/dashboard", intent });
+    harness.actual.persistCapturedLocaleIntent(harness.anchor);
+    assert.deepEqual(harness.effects, [], String(intent));
+  }
+  for (const [intent, locale] of [["EN-GB", "en"], [" zh-CN ", "zh"], ["TR", "tr"]]) {
+    const harness = privateDocumentCaptureHarness({ current: "https://file.mgautotech.de/services/stage-2", href: "/dashboard", intent });
+    harness.actual.persistCapturedLocaleIntent(harness.anchor);
+    assert.deepEqual(harness.effects, [`stored:${locale}`, `cookie:${locale}`, `document:${locale}`, `dispatch:${locale}`]);
+  }
+});
+
+test("actual private-document capture retains ordinary and invalid-intent private navigation without locale writes", () => {
+  for (const intent of [undefined, "", "xx"]) {
+    const harness = privateDocumentCaptureHarness({ current: "https://file.mgautotech.de/services/stage-2", href: "/dashboard/orders?view=active", intent });
+    harness.actual.forcePrivateDocumentNavigation(harness.event);
+    assert.deepEqual(harness.effects, ["preventDefault", "stopPropagation", "assign:https://file.mgautotech.de/dashboard/orders?view=active"]);
+  }
+});
+
+test("actual private-document capture ignores modified, external, disabled non-anchor and no-transition clicks", () => {
+  const base = { current: "https://file.mgautotech.de/services/stage-2", href: "/de/services/stage-2", intent: "de" };
+  const ignored: Array<Parameters<typeof privateDocumentCaptureHarness>[0]> = [
+    ...[{ metaKey: true }, { ctrlKey: true }, { shiftKey: true }, { altKey: true }, { button: 1 }, { defaultPrevented: true }].map(click => ({ ...base, click })),
+    { ...base, target: "_blank" }, { ...base, target: "_parent" }, { ...base, download: true },
+    { ...base, href: "https://example.test/de/services/stage-2" },
+    { ...base, targetKind: "disabled-control" as const }, { ...base, targetKind: "non-element" as const },
+    { ...base, href: "/services/stage-3", intent: "en" },
+    { ...base, href: "/services/stage-2", intent: "en" },
+    { ...base, current: "https://file.mgautotech.de/de/services/stage-2", href: "/tr/services/stage-2", intent: "tr" },
+    { ...base, current: "https://file.mgautotech.de/dashboard", href: "/dashboard/orders" },
+  ];
+  for (const input of ignored) {
+    const harness = privateDocumentCaptureHarness(input);
+    harness.actual.forcePrivateDocumentNavigation(harness.event);
+    assert.deepEqual(harness.effects, [], JSON.stringify(input));
+    assert.equal(harness.event.defaultPrevented, input.click?.defaultPrevented ?? false);
+  }
+});
 
 function deferred() {
   let resolve!: () => void;
