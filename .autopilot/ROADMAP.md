@@ -67,14 +67,23 @@
      global route rewrite. Wider isolation design is still only
      PROPOSAL-20261007-PREFIXLESS-DOCUMENT-LANGUAGE.
   4. Locale discovery for the four already translated newer service guides:
-     current route/sitemap eligibility is legacy-only. Add genuine locale URLs
-     and reciprocal discovery without feeding intent guides into legacy templates.
+     b7a712d now implements actual48 family destinations and reciprocal
+     discovery without feeding guides into legacy templates. Final1953full/
+     68targeted/build/assets/performance/194HTTP and32native-view language/footer/
+     intent checks pass. Overall physicalGUIHOLD:15specificCTAs belowfold and
+     DEheader width contention feed the separate next compact-entry task.
+     Preserve the actual inherited layout issues, not a GUI waiver or homepage
+     redesign; current local buildUgePEZW87fbCk_uKF9zCx, no external release.
   5. Finish public catalog/content and offline advertising message-match review,
      then customer/admin cross-flow quality sweep. Select concrete remaining
      gaps from new evidence rather than repeatedly repainting the homepage.
 - Explicit global usability followup: existing floating language/availability
-  widgets can overlap non-actionable mobile text. Core-service scoped acceptance
-  does not close this P3 gap or imply authenticated admin acceptance.
+  widgets can overlap mobile content. Fresh b7 TRfilecheck proof upgrades the
+  language widget issue to P2:18.1% of the actual primary request hit target is
+  covered, though label/arrow and most of the action remain usable. This is not
+  the earlier text-only P3. Compact hero movement is not a global overlay fix;
+  preserve language features and review a coherent unobstructed control placement.
+  Core-service scoped acceptance does not close this or authenticated admin QA.
 - Existing request-brief copy needs a later native semantic sweep (ToolsHeader
   Tools in TR/ZH, literal brief nouns and German not-provided meaning). This
   behavioral fix reuses unchanged copy, not a claim that translation quality is

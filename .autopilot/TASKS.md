@@ -4,6 +4,36 @@
 
 ## Ready
 
+### MANUAL-20261007-SERVICE-GUIDE-COMPACT-ENTRY [P2] Keep guide request entry and translated navigation usable on compact screens
+
+Fingerprint: `public-services|intent-guide-first-screen-and-shared-navigation|oversized-hero-buries-service-cta-and-translated-nav-collides|compact-visible-intent-entry-with-preserved-routes`
+
+Origin: actual1c and finalb7/buildUgePEZW87fbCk_uKF9zCx EN/DE/TR/ZH laptop/mobile
+inspection and independent visual review. Final32views measure15specificCTAs
+belowfold (13laptop+2mobile), with Stage3 worst; German brand text overruns its
+allocated header width beside nine translated navigation links. TRfilecheck
+mobile floating language button obstructs18.1% of the primary hit target (P2).
+This is not the completed homepage hero or five-core-service parity task.
+Business4/User5/Admin2/Strategic4/Confidence5/Effort2/Risk2; value16.
+
+Boundary: ServiceIntentPage hero hierarchy/spacing and long-heading containment,
+PublicSeoHeader responsive navigation layout, and focused actual-render tests.
+Preserve every existing heading/body/FAQ/notice/link, black/red identity, all12
+locales, guide facts, metadata/schema, exact private intent and all nine public
+navigation destinations. No global zoom, hidden feature, new claim, dependency,
+auth/backend/customer-data/env, push or deployment change. Existing locale task
+stays In Progress until its remaining actual-browser acceptance is resolved.
+
+Acceptance: actual four guides in EN/DE/TR/ZH at390x844 and1366x768, with1280x720
+edge checks, retain readable headings, a visible unobstructed specific request
+entry, keyboard access and no brand/nav/action collisions or clipped content.
+Measure the global floating-control overlap separately; moving the hero CTA alone
+cannot be claimed as a global overlay fix. Verify native
+menus/FAQ/link/reload flows and console; preserve all48 route/copy/schema/intent
+regressions and187 prerender membership. All mandatory local gates, fresh build,
+performance and immutable review. Decoration-only FAQ plus overflow is not by
+itself a clipped-control failure; document actual impact. Local only.
+
 ## Completed manual releases
 
 ### MANUAL-20261001-CURRENT-BUSINESS-ADDRESS [P1] Synchronize the owner-confirmed Asperg address
@@ -23,6 +53,54 @@ No policy, payment, auth, customer-data, migration or environment change.
 Receipt: `docs/production-release-2026-10-01-address.md`.
 
 ## In Progress
+
+### MANUAL-20261007-SERVICE-GUIDE-LOCALE-DISCOVERY [P2] Give four reviewed service guides genuine locale destinations
+
+Fingerprint: `public-services|review-led-intent-guides|translated-content-without-genuine-locale-discovery|reciprocal-locale-urls-and-intent-preserving-navigation`
+
+Origin: owner local-first product milestone; ROADMAP item4 and fresh immutable
+98a3f6b audit prove four fully translated guides still have canonical-only URLs,
+no localized route dispatch or reciprocal sitemap discovery. This is not legacy
+five-core-service parity. Business4/User4/Admin2/Strategic5/Confidence5/Effort3/Risk2;
+value15. Manual engineering; installed OS controller is absent, no fictional run.
+
+Boundary: tiny four-slug registry, rich-model API re-export without fact edits,
+i18n route mapping, existing root/localized service dispatch, shared guide metadata
+and structured-data URL identities, exact homepage/footer guide href mapping,
+sitemap and targeted regressions. Preserve
+all reviewed facts, FAQs, requirements, request intents, private routes, layout,
+privacy and the five-core-service renderer. No copy/price/legal/auth/data/env,
+dependency, external service, push or deployment change.
+
+Acceptance: all48 guide/locale variants resolve on initial HTML with correct
+document/body language, canonical/reciprocal alternates, schema identity and
+intent-preserving links. Exact139 baseline prerenders remain; only48 explicitly
+enumerated guide additions are permitted. Compact client graphs must not import
+the rich guide catalog. Full local gates/build/performance; EN/DE/TR/ZH mobile
+and compact laptop plus immutable independent review. Measure known prefixless
+document/final-Vary debt separately; neither waiver nor global completion claim.
+
+Independent source review found two inherited schema English labels in148ccd2;
+literal all48 tests prove RED before narrow4f49956 repair with existing labels.
+Independent EN/DE/TR/ZH semantic review found exactly one additional P2: the
+ZH file-check identity sentence adds an automatic system actor absent from EN.
+Same bounded package corrects only that tuple slot, preserving the reviewed
+source/other10translations and all raw facts; a literal actual-body regression
+proves the unsupported actor cannot return. No other copy redesign is included.
+
+Actual browser and independent review found Footer's separate client closure
+still emitted four English guide destinations and Service.areaServed retained
+plain English names. Same bounded13c9f3c repair reuses the tiny exact guard and
+existing audited language-neutral geographical helper; actual48 footer/schema
+tests prove RED before repair. No coverage claim or broad catalog import added.
+Inherited laptop header/hero usability P2 remains visible and is assigned to the
+separate Ready compact-entry task, not counted as GUI green or globally ready.
+Finalb7 local gates PASS68targeted/1953full/prebuild37/lint/fulltypes/build/
+assets/performance/2emitted and actual194HTTP. Native32view language/footer/intent
+flags pass with console0,4keyboard pairs and real menu/link/history/reload flows.
+Overall In Progress / physical GUI HOLD:15belowfoldCTAs, DEheader width contention
+and measured TRmobile floating-language hit-target obstruction remain. See STATUS
+and bound browser JSON4F2397...35353A; no Done, Preview, release or global claim.
 
 ### MANUAL-20261007-TOOLS-HUB-COPY-QUALITY [P2] Make public tool choices understandable in every supported language
 

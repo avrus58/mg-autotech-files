@@ -1,5 +1,71 @@
 # Otonom calisma gunlugu
 
+## 2026-10-07 02:10 UTC — Guide locale discovery verified locally; inherited physical GUI issues remain open
+
+- MANUAL-20261007-SERVICE-GUIDE-LOCALE-DISCOVERY, owned attached worktree only.
+  Immutable b7a712d260df495a86d22e7b204553c0da6dbd3b, cumulative16 source/test
+  files since98a3f6b. Four reviewed guides gain actual12-locale dispatch,
+  initial-language metadata/schema identities, reciprocal discovery and native
+  public links, including Footer's separate client localization closure.
+  Tiny registry preserves compact clients; five-core/private behavior unchanged.
+  Raw guide digest8447a243...3df50c, dates/FAQs/requirements/intents remain frozen.
+  Only one ZH tuple slot loses an unsupported automatic-system actor; other10
+  targets/English source unchanged. Existing neutral DE/EU/UNM49-Europe helper
+  replaces untranslated geo prose without adding a coverage claim.
+- Required negative evidence retained:148 requirement/audience labels,4f ZH
+  review actor,1c Footer/helper graph47/50,geo50/51, and13c full1952/1953.
+  The latter fails only the old homepage assertion that Stage2 has no genuine
+  DE URL; b7 changes that exact assertion to all4 real guides and strengthens
+  stage4/nested negatives. No skip, fallback, checker relaxation or product edit
+  in b7. Aborted13c build is not accepted; earlier1c146HTTP lacks footer/geo
+  assertions and is not final evidence. Strengthened observer now covers both.
+- Final clean, same-b7 receipts PASS: targeted68/68, full1953/1953 (289224ms),
+  lint, full web/uploader types, prebuildi18n37/37 (2495 reviewed rows,
+  23occurrences/21signatures), Webpack build337/337, strict43assets/5fonts/
+  30PDFKit/8sharp/compiledAuth401/validPNG+PDF/externalFetches0, performance and
+  emitted2/2. BuildUgePEZW87fbCk_uKF9zCx; homepage15.7/80KB gzip.
+  Strengthened actualHTTP194/194 proves all48 firstHTML/native schemas/footers,
+  44preference redirects, exactly187=139baseline+48guide prerenders,
+  actual182=138baseline+44new sitemap URLs, reciprocal discovery and3unknown404s.
+  Observer receipt service-guide-http-20261007T020243072Z.json; previous incomplete
+  1c146 and preliminary relative-Location observer RED remain retained.
+  Actual prefixless Tools opening-language and finalVary debt is still RED in
+  separate diagnostics; observed private/no-store is not a waiver.
+- Source boundary: routes services/[slug], [locale]/services/[slug] and sitemap;
+  ServiceIntentPage; tiny serviceIntentGuideRoutes/model re-export; i18nRoutes,
+  homepageLocalization, one service-intent catalog slot and exact dynamic-guard
+  signature move; six actual-route/i18n/SEO/homepage tests. No new global bypass.
+  Independent immutable source GO on16files; no remaining scoped route/schema/
+  footer sourceP0/P1/P2. No indexing or customer acquisition outcome claim.
+- Actual1c laptop/mobile screenshots expose inherited EN/DE/TR Stage2 hero
+  request CTA belowfold and DE brand/nav width contention. Wrongly requested
+  EN-mobile setup honored the priorZH preference correctly; original image/row
+  is retained as rejected setup, then native English menu selection was recaptured.
+  Fresh b7 CUA32unique views (4guides x EN/DE/TR/ZH x1366x768/390x844) retain
+  correct native lang/footer/intent flags32/32, no document/main overflow and
+  consolewarn/error0. Four keyboard FAQ open/close pairs, actualDE Footer ->
+  Stage3/back/forward/reload and native menus retain equivalent guide destinations.
+  This is scoped functional browser proof, not blanket physical GUI acceptance:
+  15specificCTAs are belowfold (13laptop+2mobile). Actual TRfilecheck mobile
+  language button covers3225.29/17818.67primary hit-target px² (~18.1%), a P2,
+  not the old text-only P3. DE brand/nav width contention remains. Decorative
+  FAQ plus7px and DE10px heading overrun into clear gap are not clipped-action P2s.
+  Browser JSON SHA4F2397B2620508F1DB24CE50CE3F5B054676E7A9F1FAD5239872AF31EA35353A:
+  service-guide-browser-b7a712d-20261007/browser-receipt.json, plus32viewport PNGs,
+  four keyboard PNGs and actualDEfooter proof. Layout acceptance stays HOLD,
+  with separate Ready compact-entry task; no second task implemented.
+  Owned old server59721 deliberately stopped; fresh server87556 serves3190 on
+  this artifact. Standalone next-start warning retained; postbuild separately
+  proves compiled standalone assets/protection, not a Production runtime claim.
+- Independent final review binds the same b7/build and browser receipt digest:
+  source, all required gates,194HTTP and scoped functional browser checks pass;
+  physical GUI remains HOLD for the measured issues above. Native English
+  preference and the default viewport were restored; the local file-check tab
+  was handed off without clearing storage or changing authentication.
+- Overall task In Progress and whole goal active. Primary dirty checkout, live
+  site/Ads/spend, auth/payment/schema/backend/customer-data/env remain untouched.
+  Local only; no Done/Preview/Production or blanket-perfect claim.
+
 ## 2026-10-07 01:02 UTC — Scoped tool copy and mobile containment verified; strict document/header debt retained
 
 - Same bounded task, source b22faa6 plus necessary physical-GUI repair33711ad.
