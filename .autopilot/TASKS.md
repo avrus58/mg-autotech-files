@@ -4,6 +4,26 @@
 
 ## Ready
 
+## Completed manual releases
+
+### MANUAL-20261001-CURRENT-BUSINESS-ADDRESS [P1] Synchronize the owner-confirmed Asperg address
+
+Fingerprint: `business-location|public-footer-contact-legal-schema|outdated-stuttgart-address|owner-confirmed-asperg-address`
+
+Status: **Done — published and verified on 1 October 2026.**
+Address-only source `dec7f5be3197` is live as the healthy app/analyzer pair.
+All 12 locale copies, shared Organization/footer/contact address and exact legal
+recipients agree. Full tests 1,794/1,794; i18n, lint, types, both production
+builders and the unchanged Webpack performance gate pass. Immediate GET-only
+release smoke 33/33, independent address checks 65/65, browser journeys 39/39
+and retained assets 20/20 pass. Prior pair `01ba96a9fe00` remains available.
+Known unchanged prefixless initial-language and copyright contrast issues are
+explicitly deferred, not relabelled as fixed or green.
+No policy, payment, auth, customer-data, migration or environment change.
+Receipt: `docs/production-release-2026-10-01-address.md`.
+
+## In Progress
+
 ### MANUAL-20261007-SERVICE-GUIDE-COMPACT-ENTRY [P2] Keep guide request entry and translated navigation usable on compact screens
 
 Fingerprint: `public-services|intent-guide-first-screen-and-shared-navigation|oversized-hero-buries-service-cta-and-translated-nav-collides|compact-visible-intent-entry-with-preserved-routes`
@@ -34,25 +54,9 @@ regressions and187 prerender membership. All mandatory local gates, fresh build,
 performance and immutable review. Decoration-only FAQ plus overflow is not by
 itself a clipped-control failure; document actual impact. Local only.
 
-## Completed manual releases
-
-### MANUAL-20261001-CURRENT-BUSINESS-ADDRESS [P1] Synchronize the owner-confirmed Asperg address
-
-Fingerprint: `business-location|public-footer-contact-legal-schema|outdated-stuttgart-address|owner-confirmed-asperg-address`
-
-Status: **Done — published and verified on 1 October 2026.**
-Address-only source `dec7f5be3197` is live as the healthy app/analyzer pair.
-All 12 locale copies, shared Organization/footer/contact address and exact legal
-recipients agree. Full tests 1,794/1,794; i18n, lint, types, both production
-builders and the unchanged Webpack performance gate pass. Immediate GET-only
-release smoke 33/33, independent address checks 65/65, browser journeys 39/39
-and retained assets 20/20 pass. Prior pair `01ba96a9fe00` remains available.
-Known unchanged prefixless initial-language and copyright contrast issues are
-explicitly deferred, not relabelled as fixed or green.
-No policy, payment, auth, customer-data, migration or environment change.
-Receipt: `docs/production-release-2026-10-01-address.md`.
-
-## In Progress
+Started manually on clean owned433735e after recording prior discovery proof.
+The installed OS controller/policy/lifecycle scripts remain absent: this is
+owner-authorized manual engineering, not a fabricated accepted autopilot run.
 
 ### MANUAL-20261007-SERVICE-GUIDE-LOCALE-DISCOVERY [P2] Give four reviewed service guides genuine locale destinations
 

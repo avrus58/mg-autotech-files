@@ -1,5 +1,18 @@
 # Otonom calisma gunlugu
 
+## 2026-10-07 — Compact guide entry manual cycle started locally
+
+- Previous turn is concrete progress: audited433735e records the immutable b7
+  locale package and actual negative layout evidence; no new acceptance claim.
+- MANUAL-20261007-SERVICE-GUIDE-COMPACT-ENTRY selected from the Ready queue.
+  Preserve all text, facts,12locales,9navigation destinations and exact request
+  intents. Only shared public header and four-guide hero layout/tests are in scope.
+- First verify the source and development rendering before freezing one focused
+  source commit for mandatory gates and independent review. Installed Next16
+  isolates development output under .next/dev; no configuration override needed.
+- No live service, env content, auth/payment/data/schema, Ads, push or deployment.
+  Final checks/browser acceptance remain pending; task stays In Progress.
+
 ## 2026-10-07 02:10 UTC — Guide locale discovery verified locally; inherited physical GUI issues remain open
 
 - MANUAL-20261007-SERVICE-GUIDE-LOCALE-DISCOVERY, owned attached worktree only.
