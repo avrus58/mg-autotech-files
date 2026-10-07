@@ -360,4 +360,3 @@ export const publicCoreServices: readonly PublicCoreService[] = [
 export function getPublicCoreService(slug: string): PublicCoreService | undefined {
   return publicCoreServices.find((service) => service.slug === slug);
 }
-
