@@ -1,5 +1,42 @@
 # Otonom calisma gunlugu
 
+## 2026-10-07 — Same-context chat history reconciliation selected; validation pending
+
+- Started10:04:39UTC at clean6e39e57, one evidence-backed P1 selected after
+  current PROJECT/package/AGENTS/all11constitution/skillrefs and task/status/
+  roadmap/inbox/history/proposals/Git/file dedup. Previous goal turn progressed
+  product/source/native review; current overall goal remains active and OPEN.
+  Owned worktree only, owner primary untouched. OS/config/CLI absent, so manual
+  local fallback; no invented claim/lease/container or unattended receipt.
+- Full actual RequestChat/test/API reads revalidate old in-flight GET216,
+  history replacement254/IDs261 and POST acknowledgement421-444. Independent
+  reviewer confirms source unchanged6996→6e39 and explicit separate OPEN race.
+  A delayed pre-ack snapshot can remove a successfully stored message from UI;
+  no live customer or server deletion evidence. Fresh baseline actual-handler
+  RED17/16/1 at10:09:55–10:09:59UTC reproduced precisely the acknowledged row
+  disappearing under a creation-time/deferred-JSON snapshot. Baseline source
+  rawe574f6bf...e69a5ac/test30c62990...fd82 remained unchanged; loge2b19dd9...c35.
+  All final acceptance/gates/native evidence still pending.
+- Exact intended two-path product/test scope; root owns component, delegated
+  actual-handler tests/Temp-only fixture prep, independent review separate.
+  Context-owned acknowledgement revision and coalesced read must preserve fresh
+  authoritative omission/visibility/latest200, all draft/lifecycle/copy/JSX/
+  timers/payload/auth/API behavior. No append-only cache, false delivery state,
+  dependency, schema, payment, service, environment or real customer operation.
+- Supabase guidance/changelog/auth documentation consulted for unchanged access
+  boundary only; component imports authenticatedFetch, not the SDK. Do not run
+  real queries or alter auth/RLS just to test UI reconciliation. The existing
+  fixture's real storage writes are not safe to reuse; new Temp fixture must
+  use reviewed ephemeral storage and immutable current source/build/assets.
+  Main reads every execution helper before use. No Done/release/global claim.
+- Candidate prepared: context acknowledgement generation plus one owning-lock
+  reconciliation drain; stale JSON/error/finally/queued-scroll fenced. Named
+  callback-local recursion preserves original hook dependency identity and the
+  cleanup-derived promise is handled. Fresh server snapshots remain authoritative;
+  JSX/copy/API/auth/timers unchanged. Existing16 tests retained plus10 actual
+  runtime regressions; deterministic doubles are not native/backend evidence.
+  Freeze and sequential full-first validation follow; nothing is marked Done.
+
 ## 2026-10-07 — Private notification/language overlay coexistence accepted locally
 
 - One P2 MANUAL-20261007-PRIVATE-MENU-STACKING completed locally at frozen

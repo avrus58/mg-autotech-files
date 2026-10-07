@@ -43,6 +43,8 @@ type ChatContext = {
   senderRole: RequestChatProps["senderRole"];
   active: boolean;
   historyReady: boolean;
+  acknowledgedGeneration: number;
+  reconcileAfterSend: boolean;
 };
 
 type ChatSendOperation = {
@@ -160,6 +162,8 @@ export default function RequestChat({
       senderRole,
       active: true,
       historyReady: false,
+      acknowledgedGeneration: 0,
+      reconcileAfterSend: false,
     };
     contextRef.current = context;
     fetchAbortRef.current?.abort();
@@ -202,10 +206,10 @@ export default function RequestChat({
     return element.scrollHeight - element.scrollTop - element.clientHeight < 96;
   }, []);
 
-  const loadMessages = useCallback((options?: {
+  const loadMessages = useCallback(function fetchMessages(options?: {
     silent?: boolean;
     scrollAfterLoad?: boolean;
-  }) => {
+  }): Promise<boolean> {
     const currentContext = contextRef.current;
     if (
       !requestId
@@ -215,6 +219,10 @@ export default function RequestChat({
     ) return Promise.resolve(false);
     if (fetchInFlightRef.current) return fetchInFlightRef.current;
 
+    // A GET begun before a stored POST cannot replace that acknowledgement.
+    // Consume reconciliation only when a genuinely fresh read starts.
+    const acknowledgedGeneration = currentContext.acknowledgedGeneration;
+    currentContext.reconcileAfterSend = false;
     const currentRequestId = requestId;
     const wasNearBottom = isNearBottom();
     const controller = new AbortController();
@@ -240,7 +248,11 @@ export default function RequestChat({
         );
         const payload = await response.json().catch(() => ({}));
 
-        if (contextRef.current !== currentContext || !currentContext.active) return false;
+        if (
+          contextRef.current !== currentContext
+          || !currentContext.active
+          || currentContext.acknowledgedGeneration !== acknowledgedGeneration
+        ) return false;
         if (!response.ok) throw new Error("message_history_unavailable");
 
         const sortedMessages = sortMessages(
@@ -273,13 +285,15 @@ export default function RequestChat({
 
         if (!initialLoadDoneRef.current || options?.scrollAfterLoad) {
           window.setTimeout(() => {
-            if (contextRef.current === currentContext && currentContext.active) {
+            if (contextRef.current === currentContext && currentContext.active
+              && currentContext.acknowledgedGeneration === acknowledgedGeneration) {
               scrollChatToBottom("auto");
             }
           }, 0);
         } else if (wasNearBottom || sendingOwnMessageRef.current) {
           window.setTimeout(() => {
-            if (contextRef.current === currentContext && currentContext.active) {
+            if (contextRef.current === currentContext && currentContext.active
+              && currentContext.acknowledgedGeneration === acknowledgedGeneration) {
               scrollChatToBottom("smooth");
             }
           }, 0);
@@ -289,7 +303,8 @@ export default function RequestChat({
         sendingOwnMessageRef.current = false;
         return true;
       } catch {
-        if (contextRef.current !== currentContext || !currentContext.active) {
+        if (contextRef.current !== currentContext || !currentContext.active
+          || currentContext.acknowledgedGeneration !== acknowledgedGeneration) {
           return false;
         }
 
@@ -305,15 +320,21 @@ export default function RequestChat({
         return false;
       } finally {
         window.clearTimeout(timeoutId);
-        if (contextRef.current === currentContext && currentContext.active) setRefreshing(false);
+        if (contextRef.current === currentContext && currentContext.active
+          && currentContext.acknowledgedGeneration === acknowledgedGeneration) setRefreshing(false);
       }
     })();
 
     fetchInFlightRef.current = requestTask;
     void requestTask.finally(() => {
-      if (fetchInFlightRef.current === requestTask) fetchInFlightRef.current = null;
+      const ownsFetch = fetchInFlightRef.current === requestTask;
+      if (ownsFetch) fetchInFlightRef.current = null;
       if (fetchAbortRef.current === controller) fetchAbortRef.current = null;
-    });
+      if (ownsFetch && contextRef.current === currentContext && currentContext.active
+        && currentContext.reconcileAfterSend) {
+        void fetchMessages({ silent: true, scrollAfterLoad: true });
+      }
+    }).catch(() => false);
 
     return requestTask;
   }, [isNearBottom, requestId, scrollChatToBottom, senderRole]);
@@ -420,6 +441,8 @@ export default function RequestChat({
       }
 
       const storedMessage = payload.message as RequestMessage;
+      currentContext.acknowledgedGeneration += 1;
+      currentContext.reconcileAfterSend = true;
       setMessages((current) => contextRef.current === currentContext && currentContext.active
         ? sortMessages([
           ...current.filter((item) => item.id !== storedMessage.id),

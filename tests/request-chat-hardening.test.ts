@@ -232,7 +232,8 @@ function chatHarness(initial: ChatProps = { requestId: "request-a", senderRole: 
           init.signal?.addEventListener("abort", () => pending.reject(new Error("synthetic aborted history")), { once: true });
           return pending.promise;
         }
-        return Promise.resolve({ ok: true, json: async () => ({ messages: history.get(url) ?? [], history_limited: false }) });
+        const snapshot = (history.get(url) ?? []).map((item) => ({ ...item }));
+        return Promise.resolve({ ok: true, json: async () => ({ messages: snapshot, history_limited: false }) });
       } };
       throw new Error(`Unexpected RequestChat test import: ${name}`);
     },
@@ -282,6 +283,9 @@ function chatHarness(initial: ChatProps = { requestId: "request-a", senderRole: 
     }
     render();
   }
+  async function drainWithoutRender() {
+    for (let turn = 0; turn < 12; turn++) await Promise.resolve();
+  }
   function edit(value: string, rerender = true) {
     (control("textarea").props.onChange as (event: { target: { value: string } }) => void)({ target: { value } });
     if (rerender) render();
@@ -310,7 +314,7 @@ function chatHarness(initial: ChatProps = { requestId: "request-a", senderRole: 
   }
   render();
   return {
-    render, flush, edit, send, settle, posts, gets, scrolls, timers, history, listeners,
+    render, flush, drainWithoutRender, edit, send, settle, posts, gets, scrolls, timers, history, listeners,
     control,
     message: () => String(control("textarea").props.value),
     body: () => nodeText(current),
@@ -325,6 +329,7 @@ function chatHarness(initial: ChatProps = { requestId: "request-a", senderRole: 
     tick: runTimers,
     offline(value: boolean) { navigatorDouble.onLine = !value; },
     visible(value: boolean) { documentDouble.visibilityState = value ? "visible" : "hidden"; },
+    nearBottom(value: boolean) { scrollArea.scrollTop = value ? 700 : 0; },
     unmount() {
       for (const effect of effects) effect?.cleanup?.();
       for (const ref of refs) if (ref?.current === scrollArea) ref.current = null;
@@ -622,4 +627,414 @@ test("changing the customer locale keeps the pending operation and newer draft i
   assert.equal(h.message(), "newer raw draft");
   assert.deepEqual(h.stored(), ["submitted raw text"]);
   assert.equal(h.sending(), false);
+});
+
+test("same-context pre-acknowledgement GET JSON cannot erase an acknowledged POST and queues a fresh history read", async () => {
+  const h = chatHarness();
+  const url = "/api/requests/request-a/messages";
+  const original = fixture("request-a", "original-history", "Original loaded history");
+  h.history.set(url, [original]);
+  await h.flush();
+  assert.deepEqual(h.stored(), ["Original loaded history"]);
+
+  // Freeze the response at GET creation. Headers settle before the POST, but
+  // JSON deliberately ignores any subsequent AbortSignal and stays pending.
+  const snapshot = (h.history.get(url) ?? []).map((item) => ({ ...item }));
+  const oldHeaders = h.queueHistory();
+  const oldBody = deferred<unknown>();
+  h.emit("visibilitychange");
+  oldHeaders.resolve({ ok: true, json: () => oldBody.promise });
+  await h.flush(false);
+  assert.equal(h.gets.length, 2);
+  const freshHeaders = h.queueHistory();
+
+  h.edit("Acknowledged submitted message");
+  h.send();
+  h.edit("Newer unsent draft");
+  await h.settle(0);
+  assert.deepEqual(h.stored(), ["Original loaded history", "Acknowledged submitted message"]);
+  assert.equal(h.gets.length, 2, "keep the existing one-in-flight GET contract until the stale body settles");
+
+  oldBody.resolve({ messages: snapshot, history_limited: false });
+  await h.flush();
+  assert.deepEqual(h.stored(), ["Original loaded history", "Acknowledged submitted message"], "a stale pre-acknowledgement body cannot replace the stored-message UI while fresh history is held");
+  assert.equal(h.message(), "Newer unsent draft");
+  assert.equal(h.sending(), false);
+  assert.deepEqual(h.errors(), []);
+  assert.equal(h.gets.length, 3, "POST reconciliation starts automatically after the old GET lock releases, without another visibility event or poll");
+  assert.equal(h.gets[2].url, url);
+  assert.equal(h.gets[2].init.cache, "no-store");
+
+  freshHeaders.resolve({ ok: true, json: async () => ({ messages: (h.history.get(url) ?? []).map((item) => ({ ...item })), history_limited: false }) });
+  await h.flush();
+  assert.deepEqual(h.stored(), ["Original loaded history", "Acknowledged submitted message"]);
+  assert.equal(h.gets.length, 3, "one follow-up is enough after authoritative history settles");
+  assert.equal(h.message(), "Newer unsent draft");
+});
+
+test("multiple acknowledgements coalesce and an acknowledgement during the follow-up GET requires one newer snapshot", async () => {
+  const h = chatHarness();
+  const url = "/api/requests/request-a/messages";
+  const original = fixture("request-a", "original", "Original");
+  h.history.set(url, [original]);
+  await h.flush();
+  const oldHeaders = h.queueHistory();
+  const oldBody = deferred<unknown>();
+  h.emit("visibilitychange");
+  oldHeaders.resolve({ ok: true, json: () => oldBody.promise });
+  await h.flush(false);
+
+  for (const [index, text] of ["First acknowledgement", "Second acknowledgement"].entries()) {
+    h.edit(text);
+    h.send();
+    await h.settle(index);
+  }
+  assert.deepEqual(h.stored(), ["Original", "First acknowledgement", "Second acknowledgement"]);
+  assert.equal(h.gets.length, 2, "multiple POSTs do not bypass the existing GET lock");
+  const followUpSnapshot = (h.history.get(url) ?? []).map((item) => ({ ...item }));
+  const followUpHeaders = h.queueHistory();
+  const followUpBody = deferred<unknown>();
+  oldBody.resolve({ messages: [original], history_limited: false });
+  await h.flush();
+  assert.equal(h.gets.length, 3, "one coalesced follow-up for both acknowledgements");
+  followUpHeaders.resolve({ ok: true, json: () => followUpBody.promise });
+  await h.flush(false);
+
+  h.edit("Third acknowledgement");
+  h.send();
+  h.edit("Draft after all three sends");
+  await h.settle(2);
+  assert.equal(h.gets.length, 3);
+  const newestHeaders = h.queueHistory();
+  followUpBody.resolve({ messages: followUpSnapshot, history_limited: false });
+  await h.flush();
+  assert.deepEqual(h.stored(), ["Original", "First acknowledgement", "Second acknowledgement", "Third acknowledgement"]);
+  assert.equal(h.gets.length, 4, "a send acknowledged after follow-up creation needs its own current snapshot");
+  assert.equal(h.message(), "Draft after all three sends");
+  assert.equal(h.sending(), false);
+
+  newestHeaders.resolve({ ok: true, json: async () => ({ messages: (h.history.get(url) ?? []).map((item) => ({ ...item })), history_limited: false }) });
+  await h.flush();
+  assert.deepEqual(h.stored(), ["Original", "First acknowledgement", "Second acknowledgement", "Third acknowledgement"]);
+  assert.equal(h.gets.length, 4, "successful current history does not start an endless reconciliation loop");
+  assert.ok(h.body().includes(runtimeCopy.formatCustomerMessageCount("en", 4)));
+  assert.deepEqual(h.errors(), []);
+});
+
+test("superseded history failure and timeout tails preserve acknowledged history and drain one current read", async () => {
+  for (const failure of ["non-ok", "transport", "timeout"] as const) {
+    const h = chatHarness();
+    const url = "/api/requests/request-a/messages";
+    const original = fixture("request-a", "original", "Original");
+    h.history.set(url, [original]);
+    await h.flush();
+    const oldHeaders = h.queueHistory();
+    const oldBody = deferred<unknown>();
+    h.emit("visibilitychange");
+    if (failure === "non-ok") {
+      oldHeaders.resolve({ ok: false, json: () => oldBody.promise });
+      await h.flush(false);
+    }
+    h.edit("Stored before old failure");
+    h.send();
+    h.edit("Editable after old failure");
+    await h.settle(0);
+    const freshHeaders = h.queueHistory();
+    if (failure === "non-ok") oldBody.resolve({ messages: [], history_limited: true });
+    else if (failure === "transport") oldHeaders.reject(new Error("synthetic stale history failure"));
+    else h.tick(12000);
+    await h.flush();
+    assert.deepEqual(h.stored(), ["Original", "Stored before old failure"], failure);
+    assert.equal(h.message(), "Editable after old failure", failure);
+    assert.ok(h.body().includes("Secure and live"), "a superseded failure cannot replace the accepted send's live state");
+    assert.ok(!h.body().includes("Showing the latest 200 messages"));
+    assert.deepEqual(h.errors(), []);
+    assert.equal(h.gets.length, 3, `${failure}: the old lock releases into one automatic fresh read`);
+    if (failure === "timeout") assert.equal(h.gets[1].init.signal?.aborted, true);
+    freshHeaders.resolve({ ok: true, json: async () => ({ messages: (h.history.get(url) ?? []).map((item) => ({ ...item })) }) });
+    await h.flush();
+    assert.deepEqual(h.stored(), ["Original", "Stored before old failure"]);
+    assert.equal(h.gets.length, 3);
+  }
+});
+
+test("a failing current reconciliation preserves the acknowledgement and normal manual recovery remains available", async () => {
+  const h = chatHarness();
+  const url = "/api/requests/request-a/messages";
+  const original = fixture("request-a", "original", "Original");
+  h.history.set(url, [original]);
+  await h.flush();
+  const oldHeaders = h.queueHistory();
+  const oldBody = deferred<unknown>();
+  h.emit("visibilitychange");
+  oldHeaders.resolve({ ok: true, json: () => oldBody.promise });
+  await h.flush(false);
+  h.edit("Stored before fresh failure");
+  h.send();
+  h.edit("Retry-safe draft");
+  await h.settle(0);
+  const freshHeaders = h.queueHistory();
+  oldBody.resolve({ messages: [original] });
+  await h.flush();
+  freshHeaders.resolve({ ok: false, json: async () => ({}) });
+  await h.flush();
+  assert.deepEqual(h.stored(), ["Original", "Stored before fresh failure"]);
+  assert.equal(h.message(), "Retry-safe draft");
+  assert.ok(h.body().includes("Reconnecting in the background"));
+  assert.equal(h.sendDisabled(), false, "loaded history still permits a current draft while reconnecting");
+  assert.equal(h.gets.length, 3, "a current failure does not retry-spin automatically");
+  h.emit("online");
+  await h.flush();
+  assert.equal(h.gets.length, 4);
+  assert.deepEqual(h.stored(), ["Original", "Stored before fresh failure"]);
+  assert.ok(h.body().includes("Secure and live"));
+  assert.equal(h.message(), "Retry-safe draft");
+});
+
+test("current authoritative omission and latest-200 history can prune acknowledged messages rather than pinning them forever", async () => {
+  for (const limited of [false, true]) {
+    const h = chatHarness();
+    const url = "/api/requests/request-a/messages";
+    const original = fixture("request-a", "original", "Original");
+    h.history.set(url, [original]);
+    await h.flush();
+    const oldHeaders = h.queueHistory();
+    const oldBody = deferred<unknown>();
+    h.emit("visibilitychange");
+    oldHeaders.resolve({ ok: true, json: () => oldBody.promise });
+    await h.flush(false);
+    h.edit("Acknowledgement later omitted by authority");
+    h.send();
+    h.edit("Draft retained across authoritative replacement");
+    await h.settle(0);
+    const freshHeaders = h.queueHistory();
+    oldBody.resolve({ messages: [original], history_limited: !limited });
+    await h.flush();
+    assert.deepEqual(h.stored(), ["Original", "Acknowledgement later omitted by authority"]);
+    const authoritative = limited ? Array.from({ length: 200 }, (_, index) => ({
+      ...fixture("request-a", `window-${index}`, `Authoritative message ${index}`),
+      created_at: new Date(Date.UTC(2026, 9, 7, 11, 0, index)).toISOString(),
+    })) : [];
+    freshHeaders.resolve({ ok: true, json: async () => ({ messages: [...authoritative].reverse(), history_limited: limited }) });
+    await h.flush();
+    assert.deepEqual(h.stored(), authoritative.map((item) => item.message), "current server projection remains the source of truth for removal and window pruning");
+    assert.equal(h.body().includes("Showing the latest 200 messages"), limited);
+    assert.ok(h.body().includes(runtimeCopy.formatCustomerMessageCount("en", authoritative.length)));
+    if (!limited) assert.ok(h.body().includes("No messages yet"));
+    assert.equal(h.message(), "Draft retained across authoritative replacement");
+    assert.equal(h.sendDisabled(), false);
+    assert.equal(h.gets.length, 3);
+  }
+});
+
+test("failed POSTs do not supersede valid pending history or queue an acknowledgement reconciliation", async () => {
+  for (const result of ["failure", "reject"] as const) {
+    const h = chatHarness();
+    const url = "/api/requests/request-a/messages";
+    const original = fixture("request-a", "original", "Original");
+    const reply = fixture("request-a", "current-reply", "Current authoritative reply");
+    h.history.set(url, [original]);
+    await h.flush();
+    const headers = h.queueHistory();
+    const body = deferred<unknown>();
+    h.emit("visibilitychange");
+    headers.resolve({ ok: true, json: () => body.promise });
+    await h.flush(false);
+    h.edit("Unacknowledged submitted draft");
+    h.send();
+    h.edit("Newer draft after failed send");
+    await h.settle(0, result);
+    assert.equal(h.gets.length, 2);
+    assert.equal(h.errors().length, 1);
+    body.resolve({ messages: [original, reply], history_limited: false });
+    await h.flush();
+    assert.deepEqual(h.stored(), ["Original", "Current authoritative reply"]);
+    assert.equal(h.message(), "Newer draft after failed send");
+    assert.equal(h.gets.length, 2, "only a successful acknowledgement requires a newer GET");
+    assert.equal(h.errors().length, 1, "a history success does not silently erase a failed POST's feedback");
+    assert.equal(h.sending(), false);
+    assert.equal(h.sendDisabled(), false);
+  }
+});
+
+test("old queued history tails cannot drain or unlock a new request, role or A-B-A generation", async () => {
+  const transitions: ChatProps[][] = [
+    [{ requestId: "request-b", senderRole: "customer" }],
+    [{ requestId: "request-a", senderRole: "admin" }],
+    [{ requestId: "request-b", senderRole: "customer" }, { requestId: "request-a", senderRole: "customer" }],
+    [{ requestId: "request-a", senderRole: "admin" }, { requestId: "request-a", senderRole: "customer" }],
+  ];
+  for (const transition of transitions) {
+    for (const oldOk of [true, false]) {
+      const h = chatHarness();
+      const oldUrl = "/api/requests/request-a/messages";
+      const oldOriginal = fixture("request-a", "old-original", "Old generation history");
+      h.history.set(oldUrl, [oldOriginal]);
+      await h.flush();
+      const oldHeaders = h.queueHistory();
+      const oldBody = deferred<unknown>();
+      h.emit("visibilitychange");
+      oldHeaders.resolve({ ok: oldOk, json: () => oldBody.promise });
+      await h.flush(false);
+      h.edit("Old generation acknowledgement");
+      h.send();
+      await h.settle(0);
+
+      const target = transition[transition.length - 1];
+      const currentUrl = `/api/requests/${target.requestId}/messages`;
+      const currentOriginal = fixture(target.requestId, "new-original", "New generation history");
+      for (const next of transition) {
+        h.history.set(`/api/requests/${next.requestId}/messages`, [fixture(next.requestId, "new-original", "New generation history")]);
+        h.render(next);
+        await h.flush();
+      }
+      h.history.set(currentUrl, [currentOriginal]);
+      const currentHeaders = h.queueHistory();
+      const currentBody = deferred<unknown>();
+      h.emit("visibilitychange");
+      currentHeaders.resolve({ ok: true, json: () => currentBody.promise });
+      await h.flush(false);
+      h.edit("Current generation submission");
+      const currentSend = h.send(false);
+      h.render();
+      h.edit("Current generation unsent draft");
+      const before = { mutations: h.mutations(), gets: h.gets.length, scrolls: h.scrolls.length, body: h.body() };
+      oldBody.resolve({ messages: [oldOriginal], history_limited: true });
+      await h.flush();
+      assert.equal(h.mutations(), before.mutations, "old success/error/finally cannot write into a new committed context");
+      assert.equal(h.body(), before.body);
+      assert.deepEqual(h.stored(), ["New generation history"]);
+      assert.equal(h.message(), "Current generation unsent draft");
+      assert.equal(h.sending(), true);
+      assert.equal(h.gets.length, before.gets, "no old queued reconciliation drain");
+      assert.equal(h.scrolls.length, before.scrolls);
+      h.emit("visibilitychange");
+      assert.equal(h.gets.length, before.gets, "old cleanup cannot release the new pending history lock");
+      currentSend();
+      assert.equal(h.posts.length, 2, "old cleanup cannot release the new pending send lock");
+
+      const currentStored = fixture(target.requestId, "current-stored", "Current generation submission", target.senderRole);
+      h.history.set(currentUrl, [currentOriginal, currentStored]);
+      h.posts[1].response.resolve({ ok: true, json: async () => ({ message: currentStored }) });
+      await h.flush();
+      assert.equal(h.sending(), false);
+      const freshHeaders = h.queueHistory();
+      currentBody.resolve({ messages: [currentOriginal], history_limited: false });
+      await h.flush();
+      assert.deepEqual(h.stored(), ["New generation history", "Current generation submission"]);
+      assert.equal(h.gets.length, before.gets + 1, "only the current context drains its own reconciliation");
+      assert.equal(h.gets[h.gets.length - 1].url, currentUrl);
+      freshHeaders.resolve({ ok: true, json: async () => ({ messages: [currentOriginal, currentStored], history_limited: false }) });
+      await h.flush();
+      assert.deepEqual(h.stored(), ["New generation history", "Current generation submission"]);
+      assert.equal(h.message(), "Current generation unsent draft");
+      assert.deepEqual(h.errors(), []);
+    }
+  }
+});
+
+test("unmount discards queued acknowledgement reconciliation and pending follow-up JSON without late effects", async () => {
+  for (const stage of ["original", "follow-up"] as const) {
+    const h = chatHarness();
+    const url = "/api/requests/request-a/messages";
+    const original = fixture("request-a", "original", "Original");
+    h.history.set(url, [original]);
+    await h.flush();
+    const headers = h.queueHistory();
+    let body = deferred<unknown>();
+    h.emit("visibilitychange");
+    headers.resolve({ ok: true, json: () => body.promise });
+    await h.flush(false);
+    h.edit("Acknowledged before unmount");
+    h.send();
+    await h.settle(0);
+    if (stage === "follow-up") {
+      const freshHeaders = h.queueHistory();
+      body.resolve({ messages: [original] });
+      await h.flush();
+      body = deferred<unknown>();
+      freshHeaders.resolve({ ok: true, json: () => body.promise });
+      await h.flush(false);
+      h.edit("Another acknowledgement before unmount");
+      h.send();
+      await h.settle(1);
+    }
+    h.unmount();
+    const before = { mutations: h.mutations(), gets: h.gets.length, scrolls: h.scrolls.length };
+    body.resolve({ messages: [original], history_limited: true });
+    await h.drainWithoutRender();
+    h.tick(0);
+    assert.equal(h.mutations(), before.mutations, stage);
+    assert.equal(h.gets.length, before.gets, "no queued fresh read after unmount");
+    assert.equal(h.scrolls.length, before.scrolls);
+    assert.equal([...h.listeners.values()].every((set) => set.size === 0), true);
+  }
+});
+
+test("a queued history scroll from before acknowledgement cannot mutate the newer same-context UI", async () => {
+  const h = chatHarness();
+  const url = "/api/requests/request-a/messages";
+  const original = fixture("request-a", "original", "Original");
+  h.history.set(url, [original]);
+  await h.flush();
+  h.emit("visibilitychange");
+  await h.flush(false);
+  const oldScrolls = [...h.timers].filter(([, timer]) => timer.delay === 0 && !timer.interval);
+  assert.ok(oldScrolls.length > 0, "the actual accepted pre-send GET queued scrolling");
+  for (const [id] of oldScrolls) h.timers.delete(id);
+  h.edit("Acknowledgement after queued history scroll");
+  h.send();
+  h.edit("Newer scroll-safe draft");
+  const stored = fixture("request-a", "new-stored", "Acknowledgement after queued history scroll", "customer");
+  h.history.set(url, [original, stored]);
+  h.posts[0].response.resolve({ ok: true, json: async () => ({ message: stored }) });
+  await h.flush(false);
+  const before = { mutations: h.mutations(), scrolls: h.scrolls.length, body: h.body() };
+  for (const [, timer] of oldScrolls) timer.callback();
+  assert.equal(h.scrolls.length, before.scrolls, "a superseded history callback cannot scroll a newer acknowledgement generation");
+  assert.equal(h.mutations(), before.mutations, "superseded scrolling cannot clear the newer unread state");
+  assert.equal(h.body(), before.body);
+  assert.equal(h.message(), "Newer scroll-safe draft");
+  h.tick(0);
+  assert.ok(h.scrolls.length > before.scrolls, "current acknowledgement/current history scrolling is still usable");
+});
+
+test("superseded history cannot replace message count or limit metadata and current unread interaction still works", async () => {
+  const h = chatHarness();
+  const url = "/api/requests/request-a/messages";
+  const original = fixture("request-a", "original", "Original");
+  h.history.set(url, [original]);
+  await h.flush();
+  h.nearBottom(false);
+  const headers = h.queueHistory();
+  const body = deferred<unknown>();
+  h.emit("visibilitychange");
+  headers.resolve({ ok: true, json: () => body.promise });
+  await h.flush(false);
+  h.edit("Metadata-safe acknowledgement");
+  h.send();
+  await h.settle(0);
+  const freshHeaders = h.queueHistory();
+  body.resolve({ messages: [original, fixture("request-a", "superseded-other", "Superseded other-side reply")], history_limited: true });
+  await h.flush();
+  assert.deepEqual(h.stored(), ["Original", "Metadata-safe acknowledgement"]);
+  assert.ok(h.body().includes(runtimeCopy.formatCustomerMessageCount("en", 2)));
+  assert.ok(!h.body().includes("Showing the latest 200 messages"));
+  assert.ok(!h.body().includes(runtimeCopy.formatCustomerNewMessageCount("en", 1)), "ignored history does not create an unread badge");
+  freshHeaders.resolve({ ok: true, json: async () => ({ messages: (h.history.get(url) ?? []).map((item) => ({ ...item })), history_limited: false }) });
+  await h.flush();
+  h.nearBottom(false);
+  const reply = fixture("request-a", "new-authoritative-reply", "Fresh other-side reply");
+  h.history.set(url, [...(h.history.get(url) ?? []), reply]);
+  h.emit("visibilitychange");
+  await h.flush();
+  assert.deepEqual(h.stored(), ["Original", "Metadata-safe acknowledgement", "Fresh other-side reply"]);
+  const unread = h.control("button", (props) => nodeText(props.children) === runtimeCopy.formatCustomerNewMessageCount("en", 1));
+  assert.equal(nodeText(unread.props.children), "1 new message");
+  const before = h.scrolls.length;
+  (unread.props.onClick as () => void)();
+  h.render();
+  assert.equal(h.scrolls.length, before + 1);
+  assert.ok(!h.body().includes("1 new message"));
+  assert.ok(h.body().includes(runtimeCopy.formatCustomerMessageCount("en", 3)));
 });
