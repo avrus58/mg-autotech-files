@@ -99,6 +99,7 @@ const visiblePropertyNames = new Set([
   "emptyTitle",
   "eyebrow",
   "faq",
+  "features",
   "fitSignals",
   "helper",
   "heroTitle",

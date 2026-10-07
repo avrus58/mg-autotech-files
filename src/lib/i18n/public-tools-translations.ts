@@ -1,6 +1,86 @@
 import type { PublicSurfaceTranslationTuple } from "./public-surface-types";
 
+/** Exact feature labels used by the public tools hub; not firmware approval. */
+export type ToolsHubFeatureSource =
+  | "No file upload"
+  | "Readiness score"
+  | "Practical next actions"
+  | "Copy-ready brief"
+  | "Completeness score"
+  | "Read checklist"
+  | "Preparation score"
+  | "Nm + RPM input"
+  | "kW, HP and PS output"
+  | "Formula explained"
+  | "General text datalogs"
+  | "Multi-channel detail"
+  | "Browser-local processing";
+
 export const publicToolsTranslations: Record<string, PublicSurfaceTranslationTuple> = {
+  "Tools": [
+    "Werkzeuge", "Araçlar", "Hulpmiddelen", "Outils", "Strumenti",
+    "Herramientas", "Ferramentas", "Narzędzia", "Инструменты", "工具", "Mjete",
+  ],
+  "Practical next actions": [
+    "Konkrete nächste Schritte", "Uygulanabilir sonraki adımlar", "Concrete vervolgstappen",
+    "Prochaines étapes concrètes", "Prossimi passi concreti", "Próximos pasos prácticos",
+    "Próximos passos práticos", "Praktyczne kolejne kroki", "Конкретные следующие шаги",
+    "明确的后续步骤", "Hapa të mëtejshëm praktikë",
+  ],
+  "Copy-ready brief": [
+    "Kopierfertige Anfragezusammenfassung", "Kopyalanabilir talep özeti", "Kopieerklare aanvraagsamenvatting",
+    "Résumé de demande prêt à copier", "Riepilogo della richiesta pronto da copiare", "Resumen de solicitud listo para copiar",
+    "Resumo do pedido pronto a copiar", "Opis zlecenia gotowy do skopiowania", "Описание заявки для копирования",
+    "可直接复制的请求摘要", "Përmbledhje e kërkesës gati për kopjim",
+  ],
+  "Completeness score": [
+    "Vollständigkeitsbewertung", "Bilgi tamamlama puanı", "Volledigheidsscore",
+    "Score de complétude", "Punteggio di completezza", "Puntuación de integridad de la información",
+    "Pontuação de preenchimento", "Ocena kompletności", "Оценка полноты информации",
+    "信息完整度评分", "Vlerësim i plotësisë së informacionit",
+  ],
+  "Read checklist": [
+    "Checkliste zum Auslesen", "ECU okuma kontrol listesi", "Checklist voor uitlezen",
+    "Liste de contrôle pour la lecture ECU", "Checklist per la lettura ECU", "Lista de comprobación de lectura ECU",
+    "Lista de verificação da leitura ECU", "Lista kontrolna odczytu ECU", "Список проверки перед чтением ECU",
+    "ECU 读取检查清单", "Listë kontrolli për leximin e ECU",
+  ],
+  "Nm + RPM input": [
+    "Eingabe von Nm + RPM", "Nm + RPM girişi", "Invoer van Nm + RPM",
+    "Saisie de Nm + RPM", "Inserimento di Nm + RPM", "Entrada de Nm + RPM",
+    "Introdução de Nm + RPM", "Wprowadzanie Nm + RPM", "Ввод Nm + RPM",
+    "输入 Nm + RPM", "Vendosja e Nm + RPM",
+  ],
+  "kW, HP and PS output": [
+    "Ausgabe in kW, HP und PS", "kW, HP ve PS sonuçları", "Uitvoer in kW, HP en PS",
+    "Résultats en kW, HP et PS", "Risultati in kW, HP e PS", "Resultados en kW, HP y PS",
+    "Resultados em kW, HP e PS", "Wyniki w kW, HP i PS", "Результаты в kW, HP и PS",
+    "输出 kW、HP 和 PS", "Rezultatet në kW, HP dhe PS",
+  ],
+  "Formula explained": [
+    "Formel erläutert", "Formül açıklaması", "Uitleg van de formule",
+    "Formule expliquée", "Formula spiegata", "Fórmula explicada",
+    "Fórmula explicada", "Objaśnienie wzoru", "Пояснение формулы",
+    "公式说明", "Shpjegimi i formulës",
+  ],
+  "General text datalogs": [
+    "Text-Datenlogs verschiedener Tools", "Farklı araçlardan metin veri kayıtları", "Tekstlogs van verschillende tools",
+    "Journaux texte de différents outils", "Registri testuali di diversi strumenti", "Registros de texto de distintas herramientas",
+    "Registos de texto de diferentes ferramentas", "Logi tekstowe z różnych narzędzi", "Текстовые логи разных инструментов",
+    "不同工具的文本数据日志", "Regjistra tekstualë nga mjete të ndryshme",
+  ],
+  "Multi-channel detail": [
+    "Details zu mehreren Kanälen", "Çok kanallı ayrıntılar", "Details van meerdere kanalen",
+    "Détails de plusieurs canaux", "Dettagli di più canali", "Detalles de varios canales",
+    "Detalhes de vários canais", "Szczegóły wielu kanałów", "Данные нескольких каналов",
+    "多通道详细数据", "Të dhëna të hollësishme për disa kanale",
+  ],
+  "Browser-local processing": [
+    "Verarbeitung lokal im Browser", "Tarayıcıda yerel işleme", "Lokale verwerking in de browser",
+    "Traitement local dans le navigateur", "Elaborazione locale nel browser", "Procesamiento local en el navegador",
+    "Processamento local no navegador", "Przetwarzanie lokalnie w przeglądarce", "Локальная обработка в браузере",
+    "在浏览器本地处理", "Përpunim lokal në shfletues",
+  ],
   "Workshop tools": [
     "Werkstatt-Tools",
     "Atölye araçları",
@@ -392,17 +472,17 @@ export const publicToolsTranslations: Record<string, PublicSurfaceTranslationTup
     "Të dhëna të shkurtra",
   ],
   "Build a clean brief": [
-    "Erstellen Sie ein klares Briefing",
-    "Temiz bir özet oluşturun",
+    "Eine klare Anfragezusammenfassung erstellen",
+    "Anlaşılır bir talep özeti hazırlayın",
     "Stel een duidelijke opdracht op",
     "Construire un brief clair",
-    "Costruisci un brief pulito",
-    "Construya un informe limpio",
+    "Prepara un riepilogo chiaro della richiesta",
+    "Prepare un resumen claro de la solicitud",
     "Preparar um resumo claro",
-    "Zbuduj czysty brief",
-    "Составьте чистое краткое описание",
-    "建立一个干净的简介",
-    "Ndërtoni një përmbledhje të pastër",
+    "Przygotuj jasny opis zlecenia",
+    "Составьте понятное описание заявки",
+    "整理清晰的请求摘要",
+    "Përgatitni një përmbledhje të qartë të kërkesës",
   ],
   "Build a clean request note": [
     "Erstellen Sie eine saubere Anforderungsnotiz",
@@ -2160,16 +2240,16 @@ export const publicToolsTranslations: Record<string, PublicSurfaceTranslationTup
     "Planifikoni përgatitjen më të sigurt të leximit të ECU ose TCU për OBD, bench, boot ose situata të panjohura leximi përpara ngarkimit.",
   ],
   "Plan the read method": [
-    "Planen Sie die Lesemethode",
+    "Auslesemethode planen",
     "Okuma yöntemini planlayın",
-    "Plan de leesmethode",
+    "Plan de uitleesmethode",
     "Planifier la méthode de lecture",
     "Pianifica il metodo di lettura",
     "Planificar el método de lectura",
     "Planear o método de leitura",
     "Zaplanuj metodę odczytu",
-    "Планирование метода чтения",
-    "规划阅读方法",
+    "Спланируйте способ считывания",
+    "规划读取方式",
     "Planifikoni metodën e leximit",
   ],
   "Portable output": [
@@ -2225,17 +2305,17 @@ export const publicToolsTranslations: Record<string, PublicSurfaceTranslationTup
     "Fuqia vlerësohet nga çift rrotullimi i regjistruar dhe RPM. Nuk është një matje dyno, diagnozë ose miratim akordimi.",
   ],
   "Practical ECU file-service tools for cleaner requests.": [
-    "Praktische ECU-Dateiservice-Tools für sauberere Anforderungen.",
-    "Daha temiz talepler için pratik ECU dosya hizmeti araçları.",
-    "Praktische ECU bestandsservice-tools voor schonere verzoeken.",
-    "Outils ECU service de fichiers pratiques pour les demandes de nettoyage.",
-    "Pratici strumenti ECU servizio file per richieste più pulite.",
-    "Prácticas herramientas ECU servicio de archivos para solicitudes más limpias.",
+    "Praktische ECU-Fileservice-Werkzeuge für verständlichere Anfragen.",
+    "Daha anlaşılır talepler için pratik ECU dosya hizmeti araçları.",
+    "Praktische ECU-fileservicetools voor duidelijkere aanvragen.",
+    "Des outils pratiques de service de fichiers ECU pour des demandes plus claires.",
+    "Strumenti pratici per il file service ECU e richieste più chiare.",
+    "Herramientas prácticas de servicio de archivos ECU para solicitudes más claras.",
     "Ferramentas práticas para pedidos mais claros de serviços de ficheiros ECU.",
-    "Praktyczne narzędzia ECU usługa plikowa do czystszych żądań.",
-    "Практичные инструменты ECU файловый сервис для более чистоты.",
-    "满足清洁要求的实用 ECU 文件服务 工具。",
-    "Mjete praktike ECU shërbim skedarësh për kërkesa më të pastra.",
+    "Praktyczne narzędzia do usług plików ECU, które pomagają jasno opisać zlecenie.",
+    "Практичные инструменты файлового сервиса ECU для понятных заявок.",
+    "实用的 ECU 文件服务工具，让服务请求更清晰。",
+    "Mjete praktike për shërbimin e skedarëve ECU dhe kërkesa më të qarta.",
   ],
   "Pre-check your request": [
     "Überprüfen Sie Ihre Anfrage vorab",
@@ -3291,17 +3371,17 @@ export const publicToolsTranslations: Record<string, PublicSurfaceTranslationTup
     "Veglat e panjohura të leximit mund të kërkojnë verifikim shtesë.",
   ],
   "Use these tools before submitting a request so the order starts with clearer vehicle context, a cleaner brief and fewer support loops.": [
-    "Nutzen Sie diese Tools, bevor Sie eine Anfrage einreichen, damit die Bestellung mit einem klareren Fahrzeugkontext, einem klareren Briefing und weniger Supportschleifen beginnt.",
-    "Siparişin daha net araç bağlamı, daha net bir özet ve daha az destek döngüsüyle başlaması için bir istek göndermeden önce bu araçları kullanın.",
-    "Gebruik deze tools voordat u een aanvraag indient, zodat de bestelling begint met een duidelijkere voertuigcontext, een duidelijkere opdracht en minder ondersteunende lussen.",
-    "Utilisez ces outils avant de soumettre une demande afin que la commande commence avec un contexte de véhicule plus clair, un brief plus clair et moins de boucles d'assistance.",
-    "Utilizza questi strumenti prima di inviare una richiesta in modo che l'ordine inizi con un contesto del veicolo più chiaro, un brief più pulito e meno cicli di supporto.",
-    "Utilice estas herramientas antes de enviar una solicitud para que el pedido comience con un contexto más claro del vehículo, un resumen más claro y menos bucles de soporte.",
+    "Nutzen Sie diese Werkzeuge vor dem Absenden, damit der Auftrag mit klaren Fahrzeugangaben, einer verständlichen Anfragezusammenfassung und weniger Rückfragen beginnt.",
+    "Talep göndermeden önce bu araçları kullanın; böylece sipariş daha net araç bilgileri ve anlaşılır bir talep özetiyle başlar, destekle tekrar tekrar yazışma ihtiyacı azalır.",
+    "Gebruik deze hulpmiddelen vóór het indienen, zodat de opdracht begint met duidelijke voertuiggegevens, een heldere aanvraagsamenvatting en minder aanvullende vragen.",
+    "Utilisez ces outils avant d’envoyer votre demande : la commande commence ainsi avec des informations claires sur le véhicule, un résumé structuré et moins d’allers-retours avec l’assistance.",
+    "Usa questi strumenti prima di inviare la richiesta, così il lavoro parte con dati del veicolo chiari, un riepilogo comprensibile e meno scambi con l’assistenza.",
+    "Utilice estas herramientas antes de enviar la solicitud para iniciar el pedido con datos claros del vehículo, un resumen comprensible y menos intercambios con el soporte.",
     "Utilize estas ferramentas antes de enviar um pedido, para que este comece com um contexto do veículo mais claro, um resumo mais organizado e menos trocas com o apoio.",
-    "Skorzystaj z tych narzędzi przed złożeniem wniosku, aby zamówienie zaczynało się od jaśniejszego kontekstu pojazdu, czytelniejszych informacji i mniejszej liczby pętli wsparcia.",
-    "Используйте эти инструменты перед отправкой запроса, чтобы заказ начинался с более четкого контекста транспортного средства, более четкого описания и меньшего количества циклов поддержки.",
-    "在提交请求之前使用这些工具，以便订单以更清晰的车辆背景、更清晰的简介和更少的支持循环开始。",
-    "Përdorni këto mjete përpara se të paraqisni një kërkesë, në mënyrë që porosia të fillojë me kontekst më të qartë të automjetit, një përmbledhje më të pastër dhe më pak unaza mbështetëse.",
+    "Skorzystaj z tych narzędzi przed wysłaniem zlecenia, aby rozpocząć pracę z jasnymi danymi pojazdu, uporządkowanym opisem i mniejszą liczbą dodatkowych pytań do wsparcia.",
+    "Используйте эти инструменты перед отправкой заявки: работа начнётся с понятных данных автомобиля, структурированного описания и меньшего количества уточнений со службой поддержки.",
+    "提交请求前使用这些工具，整理清晰的车辆信息和请求摘要，减少与客服反复确认的次数。",
+    "Përdorni këto mjete para dërgimit të kërkesës, që puna të nisë me të dhëna të qarta të automjetit, një përmbledhje të kuptueshme dhe më pak pyetje shtesë për mbështetjen.",
   ],
   "Useful estimates, clearly explained.": [
     "Nützliche Schätzungen, klar erklärt.",

@@ -12,6 +12,7 @@ import {
   FileDown,
   Gauge,
   LockKeyhole,
+  type LucideIcon,
 } from "lucide-react";
 import { RuntimePublicLocalization } from "@/components/RuntimePublicLocalization";
 import { RuntimePublicFooter } from "@/components/RuntimePublicFooter";
@@ -26,6 +27,17 @@ import {
 } from "@/lib/i18n/runtime-public";
 import { absoluteUrl, siteName, websiteJsonLd } from "@/lib/seo";
 import { getServerLocale } from "@/lib/serverLocale";
+import type { ToolsHubFeatureSource } from "@/lib/i18n/public-tools-translations";
+
+type PublicToolCard = {
+  href: string;
+  eyebrow: string;
+  title: string;
+  description: string;
+  features: readonly ToolsHubFeatureSource[];
+  icon: LucideIcon;
+  action: string;
+};
 
 const tools = [
   {
@@ -78,7 +90,7 @@ const tools = [
     icon: BarChart3,
     action: "Open customer Studio",
   },
-];
+] satisfies readonly PublicToolCard[];
 
 const workflowSteps = [
   {

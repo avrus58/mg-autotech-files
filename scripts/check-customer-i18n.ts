@@ -7171,6 +7171,7 @@ function collectVisibleStrings() {
       "description",
       "eyebrow",
       "faq",
+      "features",
       "fitSignals",
       "heroTitle",
       "intentLabel",
