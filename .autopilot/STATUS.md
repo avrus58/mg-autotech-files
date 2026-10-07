@@ -1,5 +1,77 @@
 # Otonom calisma gunlugu
 
+## 2026-10-07 — Editor-visible customer profile save outcomes accepted locally
+
+- Current record07:09:50UTC: concrete product progress, not idle or whole-goal
+  completion. One existing Ready P2 MANUAL-20261007-ADMIN-PROFILE-FEEDBACK moved
+  through In Progress to Done locally. Owned worktree/branch only; primary
+  untouched. Frozen sourcefbed9128ea412baca8f113a7402be80d100a4ad6 from basee55a5f7.
+  Two product/test files; audit closure changes only these four autopilot docs.
+  OS controller absent/manual local fallback; no fictional unattended run.
+- Actual sticky modal header now receives current customer/editor-bound
+  profile outcome. Clear on open/close/new attempt; preserve across dashboard
+  refresh/global-message clearing; settle only under existing request/customer/
+  instance guards. Reuse original success/failure text and existing fixed-EN
+  internal admin inventory exception. Normalize object/null/blank errors, React
+  escape text, cap long alert at96px with wrapping/keyboard scrolling; expose
+  actual Save profile aria-busy. Global consumers, drafts/baselines, profile/
+  commercial payloads, permissions/readiness/prices/design remain unchanged.
+- Fresh same-source sequential gates06:47-07:00UTC, no formal failure/retry:
+  full2050/2050 FIRST/ALONE; targeted72/72 (draft47/pricing18/sync7); unchanged
+  npm lint, web+desktop typecheck, i18n38/38/all12/43sources/2495reviewed rows/
+  0clean English fallback; mandatory prebuild38/38,337static pages and strict
+  postbuild43assets/fonts5/PDFKit30/sharp8/auth401/validPNG+PDF/externalFetch0;
+  performance home16.3/80KBgzip,worker6.5/12KB,maxlocale22.7raw/6.8gzip,
+  187exactprerenders; emitted2/2. BuildigyBKEmpaCzdsDUCiwrzr.
+  All8 receipts/log/helper/source hashes independently verified at cleanfbed.
+- Validation/fixture helpers are outside repo at task-only Temp
+  mg-admin-profile-feedback-gui-20261007. Root and reviewer fully read all8
+  before execution. Exact native lint relocation065051376Z preserves all34
+  old ignored synthetic fixture files through before/moved/restored manifests;
+  current bytes identical and task-only Temp move destination absent. No
+  lint flag/config/rule, dependency, timeout, skip, env-file or gate adjustment.
+- Raw source hashes: pagebc7f42a09a494b8916d948e262eb1aaf0bf740faf07a414a2c7bbbc4790cda80;
+  drafthelperf23c97014c0942be70c4cba695ddbed5f9722064f02b93ef4ebcbbad72ac39bd;
+  testsb99cb471c6043952bc55c0ba78e8bec2cc8c4e82e118b4b1984700263227869d.
+  Binding compiled-fbed9128ea41-igyBKEmpaCzdsDUCiwrzr-c5c517c6b05b7a4d/
+  binding.json SHA910c2feea9dea6a7ea1b2115725fe4a718e25ef9b31dd8bd66498867de9298a4:
+  actual98/98 exact AST snippets, real modal/parent projection/hooks/callbacks,
+  seven real pure modules,33boundfiles and15freshCSS/font origins verified.
+  No full AdminPage/auth/backend import; loopback/static-only/CSP connect-none,
+  real fetch/unrelated actions denied. Original polling/recovery effects omitted.
+- Native artifact Temp root/native/browser-fbed9128-20261007.json
+  SHAfd1255cb8ad0c98f44bcdfa7e4bc48d2c3ca77207d7ed410640a823b57c28cdd:
+  37 actual React states,33/33 observer assertions;22 JPEG files/20distinct
+  byte hashes, not22unique contents. Stable error/refresh and invalidJSON/
+  transport-fallback pairs intentionally retain identical pixels. Independent
+  reviewer derived23/23 invariants from raw state/request bodies/DOM and
+  physically inspected every22 file plus hash/MIME/dimensions. Current modal
+  busy/error/success/retry, refresh retention, newer typing, malformed object/
+  null/blank/JSON/missing/wrong/transport responses, A-B-A old success and
+  close/reopen old failure fences verified at1280x720/390x844. Long2424-character
+  text wraps/caps96px and supports focused End scrolling; actual lower-form
+  textarea remains clickable/editable with feedback/Save/Close visible.
+  Console/blocked/finalpending0; viewport reset. Synthetic auto-refresh unused.
+- Preparation facts retained: test author initially gave a primary owner
+  removed permissions, which correctly still authorizes owner; negative fixture
+  changed to delegated support and47/47 passed before source freeze. No auth
+  weakening. Reviewer initially read older cases schema, corrected to actual
+  rows; root initially said22unique frames, corrected to22files/20bytehashes.
+  These are test/observation preparation errors, not hidden product regressions.
+- Immutable envelope runtime/admin-profile-feedback-envelope-fbed9128-20261007.json
+  SHAe6577b2204c92f4f54a25b7cc56443dddbb7131137043b7fefc4ffb0465caba1.
+  Independent final scoped GO: P2 local client feedback UX only. Prior6October
+  CUA rejection retained historically; no alternate authenticated workaround or
+  original polling/recovery/backend/business persistence acceptance is inferred.
+  Wider SSR/header/chat-snapshot/auth/backend/acquisition/milestone debts OPEN.
+  No push/deploy/Ads/spend/env/secret/real customer/payment/mail/DB/dependency
+  action or revenue/perfection claim. Broad local-first goal remains ACTIVE.
+- Owned app55473 stopped before build; sanitized new local app31510 at3190
+  ready167ms, same standalone warning retained/not a Production runner claim.
+  Known preview tab10 refreshed after exact TR/TCU URL check and kept. New test
+  tab16 and fixture server4726 closed after acceptance; intentional CTRL-C exit1
+  is cleanup, not a validation failure. All artifacts retained for review.
+
 ## 2026-10-07 — Admin profile outcome implementation In Progress
 
 - Current record06:43:38UTC: previous cycle was concrete progress, accepting

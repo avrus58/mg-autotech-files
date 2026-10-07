@@ -24,28 +24,6 @@ Receipt: `docs/production-release-2026-10-01-address.md`.
 
 ## In Progress
 
-### MANUAL-20261007-ADMIN-PROFILE-FEEDBACK [P2] Show editor-bound profile save outcomes inside the open form
-
-Fingerprint: `admin-operations|customer-profile-save-feedback|modal-hides-and-refresh-clears-save-result|editor-bound-visible-profile-outcome`
-
-Evidence at verified0c5c04f: saveCustomerSettings writes only global message
-(admin/page.tsx:1687,1691,1715,1722); renderer2232-2234 is behind the fixed
-z110 modal3020. The parent projection/modal receives no profile outcome;
-loadAdminData:860 clears the global message on refresh. Pricing already has
-visible modal alert/status3162-3174. The omission also exists at81ab52b.
-Independent TASKS/ROADMAP/INBOX/HISTORY/Git dedup found no same-purpose task.
-Business4/User3/Admin5/Strategic3/Confidence5/Effort1/Risk1; value18.
-
-Boundary: admin/page.tsx, existing draft-preservation tests and scoped audit.
-Reuse existing fixed-EN admin copy; add account/editor-bound outcome inside
-the modal, retain it across dashboard refresh, fence stale close/reopen/A-B-A
-responses. Preserve global-message consumers, drafts, payloads, permissions,
-pricing rules/readiness and layout. No backend/dependency/env/customer action.
-Acceptance: actual visible success/error, retained failed draft/reachable retry,
-post-click edits and stale-result isolation; mobile/laptop native feedback,
-focus/scroll plus full same-source gates and independent immutable review.
-This is separate from the accepted draft-retention task, not its hidden failure.
-
 ### MANUAL-20261007-TOOLS-HUB-COPY-QUALITY [P2] Make public tool choices understandable in every supported language
 
 Fingerprint: `public-tools|hub-feature-copy|scoped-runtime-english-leak-and-literal-request-meaning|native-all-locale-tool-selection`
@@ -446,6 +424,36 @@ Remediation: Batch with a future documentation/source-comment maintenance pass a
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
+
+### MANUAL-20261007-ADMIN-PROFILE-FEEDBACK [P2] Show editor-bound profile save outcomes inside the open form
+
+Fingerprint: `admin-operations|customer-profile-save-feedback|modal-hides-and-refresh-clears-save-result|editor-bound-visible-profile-outcome`
+
+Done locally on7October, not published. Prior0c5c04f/e55 source wrote profile
+outcomes only behind z110 modal; loadAdminData cleared global message. Same
+omission exists at81ab52b; independent dedup confirmed separate inherited P2.
+Business4/User3/Admin5/Strategic3/Confidence5/Effort1/Risk1; value18.
+Scoped fbed9128ea412baca8f113a7402be80d100a4ad6 adds current customer/editor-bound
+alert/status inside the existing sticky header, clear on open/close/new save,
+retain across refresh, reject stale settlements and malformed error objects.
+Existing fixed-EN admin copy, global consumers, profile/commercial drafts,
+payloads, permission/readiness/price rules and design remain intact. No API,
+schema, authentication, business-rule or dependency implementation change.
+Fresh2050full/72targeted/38i18n/lint/fulltypes/build337/strictassets/performance/
+2emitted allPASS; buildigyBKEmpaCzdsDUCiwrzr. Exact34old fixture files restored.
+Actual source98AST/7puremodules/33boundfiles/15freshasset origins native proof:
+37states,33passing observer assertions,22JPEG files/20distinct hashes;
+independent23/23 raw-state/request/DOM checks and all22physical frames PASS.
+Modal-visible error/success, retry/busy, refresh retention, newer drafts,
+malformed/transport response fallbacks, A-B-A/close-reopen fences,96px long
+message containment, focus/keyboard scroll and lower-form access verified at
+1280x720/390x844. Console/blocked/finalpending0; viewport reset/test tab closed.
+Envelope runtime/admin-profile-feedback-envelope-fbed9128-20261007.json
+SHA e6577b2204c92f4f54a25b7cc56443dddbb7131137043b7fefc4ffb0465caba1;
+raw native fd1255cb...57c28cdd/binding910c2fee...7de9298a4. Independent scoped GO.
+Synthetic client UX only: full authenticated AdminPage/backend/business
+persistence/original polling-recovery lifecycle and wider milestone OPEN.
+No push/deploy/Ads/spend/env/secret/real customer/payment/mail/DB action.
 
 ### MANUAL-20261006-ADMIN-CUSTOMER-DRAFTS [P1] Preserve customer editor drafts across live admin synchronization
 
