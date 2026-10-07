@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { intlLocaleByCode, type LocaleCode } from "@/lib/i18nConfig";
 import type { RequestBriefCopy } from "@/lib/i18n/tool-client-copy-keys";
-import { getRequestBriefPreparation } from "@/lib/requestBriefPreparation";
 
 const serviceGoals = [
   "Stage 1 performance",
@@ -39,6 +38,11 @@ function toolT(copy: RequestBriefCopy, source: string) {
 
 function line(copy: RequestBriefCopy, label: string, value: string) {
   return `${toolT(copy, label)}: ${value.trim() || toolT(copy, "not provided")}`;
+}
+
+function completeness(values: string[]) {
+  const filled = values.filter((value) => value.trim().length > 0).length;
+  return Math.round((filled / values.length) * 100);
 }
 
 function copyStatusLabel(copy: RequestBriefCopy, status: "idle" | "copied" | "failed") {
@@ -68,7 +72,15 @@ export function RequestBriefBuilder({
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
 
   const result = useMemo(() => {
-    const preparation = getRequestBriefPreparation({ vehicle, engine, year, notes, hardware, faultCodes, serviceGoal });
+    const requiredValues = [vehicle, engine, year, readTool, serviceGoal, notes];
+    const score = completeness(requiredValues);
+    const missing: string[] = [];
+    if (!vehicle.trim()) missing.push("vehicle brand/model");
+    if (!engine.trim()) missing.push("engine or engine code");
+    if (!year.trim()) missing.push("model year");
+    if (!notes.trim()) missing.push("short customer goal or context");
+    if (/dtc/i.test(serviceGoal) && !faultCodes.trim()) missing.push("fault codes");
+    if (/hardware/i.test(serviceGoal) && !hardware.trim()) missing.push("hardware changes");
 
     const brief = [
       t("MG AutoTech request brief"),
@@ -87,7 +99,7 @@ export function RequestBriefBuilder({
       t("Safety note: original file will be uploaded only through the secure MG AutoTech request form."),
     ].join("\n");
 
-    return { ...preparation, brief };
+    return { score, missing, brief };
   }, [copy, ecu, engine, faultCodes, hardware, notes, readTool, serviceGoal, symptoms, t, vehicle, year]);
 
   const localizedMissing = useMemo(
@@ -96,10 +108,6 @@ export function RequestBriefBuilder({
       type: "conjunction",
     }).format(result.missing.map((item) => t(item))),
     [locale, result.missing, t]
-  );
-  const localizedScore = useMemo(
-    () => new Intl.NumberFormat(intlLocaleByCode[locale], { style: "percent", maximumFractionDigits: 0 }).format(result.score / 100),
-    [locale, result.score]
   );
 
   async function copyBrief() {
@@ -148,9 +156,9 @@ export function RequestBriefBuilder({
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">{t("Brief completeness")}</div>
-                <div className="mt-2 text-5xl font-black text-white">{localizedScore}</div>
+                <div className="mt-2 text-5xl font-black text-white">{result.score}%</div>
               </div>
-              <div role="progressbar" aria-label={t("Brief completeness")} aria-valuemin={0} aria-valuemax={100} aria-valuenow={result.score} aria-valuetext={localizedScore} className="h-4 w-full overflow-hidden rounded-full bg-black/50 sm:w-52">
+              <div className="h-4 w-full overflow-hidden rounded-full bg-black/50 sm:w-52">
                 <div className="h-full bg-[#b1121b]" style={{ width: `${result.score}%` }} />
               </div>
             </div>
@@ -188,7 +196,7 @@ export function RequestBriefBuilder({
               {t("This tool does not upload files, inspect binary data, create a request or contact MG AutoTech automatically.")}
             </div>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <Link href={result.requestPath} className="inline-flex items-center justify-center rounded-lg bg-[#b1121b] px-5 py-3 text-sm font-black hover:bg-[#c91824]">
+              <Link href="/new-request" className="inline-flex items-center justify-center rounded-lg bg-[#b1121b] px-5 py-3 text-sm font-black hover:bg-[#c91824]">
                 {t("Open Secure Request Form")}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>

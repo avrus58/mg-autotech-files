@@ -24,6 +24,18 @@ Receipt: `docs/production-release-2026-10-01-address.md`.
 
 ## In Progress
 
+### MANUAL-20261008-EXPERIENCE-RELEASE [P1] Publish the complete ready v0.2.0 package
+
+Fingerprint: `release|file-service-ready-package|accepted-local-changes-unpublished|validated-scoped-production-v0.2.0`
+
+Owner authorized Production on8October after the package/version discussion.
+Exact scope and incomplete-pilot exclusions are in
+docs/experience-reliability-v0.2.0-release-scope.md. Fresh frozen-source gates,
+independent review, checksum-bound archive, healthy retained rollback pair,
+responsive browser checks and immediate live GET-only smoke are pending.
+No Ads, payment, schema, customer-data or separate workshop change authorized.
+Existing three pilot tasks below remain incomplete, not silently accepted.
+
 ### MANUAL-20261007-TOOLS-HUB-COPY-QUALITY [P2] Make public tool choices understandable in every supported language
 
 Fingerprint: `public-tools|hub-feature-copy|scoped-runtime-english-leak-and-literal-request-meaning|native-all-locale-tool-selection`

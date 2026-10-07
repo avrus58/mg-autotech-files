@@ -73,7 +73,6 @@ const customerSurfaceRoots = [
   "src/app/opengraph-image.tsx",
   "src/app/page.tsx",
   "src/app/[locale]",
-  "src/app/[locale]/tools/request-brief-builder/page.tsx",
   "src/app/about",
   "src/app/auth",
   "src/app/brands",
@@ -7172,7 +7171,6 @@ function collectVisibleStrings() {
       "description",
       "eyebrow",
       "faq",
-      "features",
       "fitSignals",
       "heroTitle",
       "intentLabel",
@@ -8194,8 +8192,6 @@ function allowedSupplementalLabelsForFile(file: string) {
     add("public-core", "public-services", "service-intent");
   if (/^src\/app\/tools(?:\/|$)/u.test(normalized))
     add("public-core", "public-tools", "log-studio");
-  if (normalized === "src/app/[locale]/tools/request-brief-builder/page.tsx")
-    add("public-core", "public-tools");
   if (/^src\/app\/embed(?:\/|$)/u.test(normalized)) add("widget-site");
   if (/^src\/app\/widget(?:\/|$)/u.test(normalized))
     add("public-core", "widget-site");

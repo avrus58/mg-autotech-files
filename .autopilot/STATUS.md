@@ -1,5 +1,21 @@
 # Otonom calisma gunlugu
 
+## 2026-10-08 — Experience & Reliability v0.2.0 release started
+
+- Owner explicitly authorized the complete ready package with `yayinla bakalim
+  komple`. Reused the clean owned worktree, created the scoped release branch;
+  primary dirty owner checkout and unrelated attachments remain untouched.
+- Restored/excluded only the unfinished Tools/request-brief pilot lineage;
+  preserved all accepted shared header, services, chat, admin and notification
+  work. Version-only root package/lock update to0.2.0; no dependency change.
+  Exact scope: docs/experience-reliability-v0.2.0-release-scope.md.
+- Read-only VPS preflight confirmed current healthy app/analyzer b4c22314d60f
+  and their retained images, previous61d82840aac7, healthy workshop/Caddy/DB,
+  35GiB disk available. No customer data or secret values read/displayed.
+- Fresh final-candidate validation, independent review, archive checksum,
+  publication and post-release checks remain pending. Not yet published/Done.
+  Manual fallback: OS controller absent; paused wider goal is not resumed.
+
 ## 2026-10-07 — Acknowledged chat history reconciliation accepted locally
 
 - MANUAL-20261007-CHAT-HISTORY-RECONCILIATION completed after immutable
