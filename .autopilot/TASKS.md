@@ -4,6 +4,26 @@
 
 ## Ready
 
+## Completed manual releases
+
+### MANUAL-20261001-CURRENT-BUSINESS-ADDRESS [P1] Synchronize the owner-confirmed Asperg address
+
+Fingerprint: `business-location|public-footer-contact-legal-schema|outdated-stuttgart-address|owner-confirmed-asperg-address`
+
+Status: **Done — published and verified on 1 October 2026.**
+Address-only source `dec7f5be3197` is live as the healthy app/analyzer pair.
+All 12 locale copies, shared Organization/footer/contact address and exact legal
+recipients agree. Full tests 1,794/1,794; i18n, lint, types, both production
+builders and the unchanged Webpack performance gate pass. Immediate GET-only
+release smoke 33/33, independent address checks 65/65, browser journeys 39/39
+and retained assets 20/20 pass. Prior pair `01ba96a9fe00` remains available.
+Known unchanged prefixless initial-language and copyright contrast issues are
+explicitly deferred, not relabelled as fixed or green.
+No policy, payment, auth, customer-data, migration or environment change.
+Receipt: `docs/production-release-2026-10-01-address.md`.
+
+## In Progress
+
 ### MANUAL-20261007-REQUEST-BRIEF-SSR-LANGUAGE [P1] Resolve the request brief document language without de-prerendering static pages
 
 Fingerprint: `public-tools|request-brief-document-shell|native-body-with-english-opening-html|exact-runtime-locale-param-routing-pilot`
@@ -44,26 +64,22 @@ gates/fresh build/performance plus immutable review. Failure preserves current
 RED/task In Progress and feeds the global proposal; no acceptance waiver.
 Independent read-only architecture/planning review agrees with this bounded
 pilot, preserving the global route-group proposal as a later reviewed option.
+Started 7 October: existing clean db47376 reused in attached managed worktree;
+new local codex/request-brief-ssr-language-20261007. Actual installed Next is
+16.2.11; prior bootstrap/planning 16.2.10 is stale, no dependency change.
+Isolated prototype precedes any product source implementation. Manual owner
+engineering; repository OS controller/CLI/config is absent, not a fake lifecycle.
 
-## Completed manual releases
-
-### MANUAL-20261001-CURRENT-BUSINESS-ADDRESS [P1] Synchronize the owner-confirmed Asperg address
-
-Fingerprint: `business-location|public-footer-contact-legal-schema|outdated-stuttgart-address|owner-confirmed-asperg-address`
-
-Status: **Done — published and verified on 1 October 2026.**
-Address-only source `dec7f5be3197` is live as the healthy app/analyzer pair.
-All 12 locale copies, shared Organization/footer/contact address and exact legal
-recipients agree. Full tests 1,794/1,794; i18n, lint, types, both production
-builders and the unchanged Webpack performance gate pass. Immediate GET-only
-release smoke 33/33, independent address checks 65/65, browser journeys 39/39
-and retained assets 20/20 pass. Prior pair `01ba96a9fe00` remains available.
-Known unchanged prefixless initial-language and copyright contrast issues are
-explicitly deferred, not relabelled as fixed or green.
-No policy, payment, auth, customer-data, migration or environment change.
-Receipt: `docs/production-release-2026-10-01-address.md`.
-
-## In Progress
+Frozen local candidate 3cff2dd, build WpzO54pyZuc84KH_DZqOz: strict unchanged
+initial HTML now 12/12 PASS; all 139 prerender keys and manifest hash unchanged.
+40 targeted/1932 full/37 prebuild, lint/full types/build/strict assets/performance/
+2 emitted checks pass. Eight native GUI views/20 observations/console0/no horizontal
+overflow and actual menu/link/back/forward/reload verified. Independent source GO.
+Still In Progress / overall NO-GO: expanded 101-check strict receipt has 39 failures
+at one real final-header contract (Cookie/Accept-Language missing from Vary).
+Installed Next overwrites configured/Proxy Vary, including unchanged English;
+private/no-store is observed mitigation, not a passing-header waiver. Preserve
+the failed receipts and close the final-header boundary safely before acceptance.
 
 ### MANUAL-20261007-REQUEST-BRIEF-ACCURACY [P2] Make preparation progress truthful and preserve exact service intent
 
@@ -105,6 +121,13 @@ is NOT a waived language/full-copy/canonical/schema gate. Keep In Progress;
 separate server-document-language remedy and fresh strict acceptance required.
 Ignored candidate-bound request-brief-*20261007 receipts and screenshots;
 STATUS records legacy copy/floating-widget/native-menu-reload boundaries.
+
+Successor evidence on 3cff2dd/build WpzO54pyZuc84KH_DZqOz closes the original
+first-HTML language failure: unchanged strict acceptance is now 12/12 PASS.
+Accuracy remains In Progress because the dependent SSR pilot's expanded actual
+HTTP acceptance is RED at the final Vary contract, not because the former
+opening-language defect still occurs on this route. Historical RED receipts
+remain retained; source/static/hydrated GO is not overall acceptance.
 
 ### MANUAL-20261006-ADMIN-CUSTOMER-DRAFTS [P1] Preserve customer editor drafts across live admin synchronization
 

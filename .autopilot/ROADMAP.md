@@ -57,14 +57,15 @@
   3. Request brief accuracy/continuity: frozen 561a0f0 corrects baseline empty 33%
      and false conditional 100%, adds native percentage/named ARIA and strict
      service-token-only handoff. 1924 full/43 targeted/fresh build and 8 GUI/144 states
-     pass. Task stays In Progress: mandatory raw opening document-language gate
-     is RED (11 non-English prefixless languages emit html lang=en). Diagnostic
-     native body subset and hydrated JS language correction do not waive it.
-     Prioritize a separately reviewed server-document-language remedy preserving
-     all 139 current static prerenders; do not make the shared root request-bound.
-     Next bounded task MANUAL-20261007-REQUEST-BRIEF-SSR-LANGUAGE is a verified
-     framework-routing pilot, not a global route rewrite. Wider isolation design
-     is PROPOSAL-20261007-PREFIXLESS-DOCUMENT-LANGUAGE, not implemented.
+     pass. Successor pilot 3cff2dd/build WpzO54pyZuc84KH_DZqOz now proves strict
+     first HTML 12/12 and identical full 139-entry prerender membership/hash;
+     1932 full tests, native 8 views and independent source GO. Both tasks stay
+     In Progress: expanded strict final-response Vary is RED, not waived by the
+     observed private/no-store mitigation. Resolve this inherited installed-Next
+     final-header boundary safely; no shared-root request read or Next monkeypatch.
+     MANUAL-20261007-REQUEST-BRIEF-SSR-LANGUAGE remains a one-route pilot, not a
+     global route rewrite. Wider isolation design is still only
+     PROPOSAL-20261007-PREFIXLESS-DOCUMENT-LANGUAGE.
   4. Locale discovery for the four already translated newer service guides:
      current route/sitemap eligibility is legacy-only. Add genuine locale URLs
      and reciprocal discovery without feeding intent guides into legacy templates.
@@ -78,6 +79,10 @@
   Tools in TR/ZH, literal brief nouns and German not-provided meaning). This
   behavioral fix reuses unchanged copy, not a claim that translation quality is
   globally perfect. Keep the localization contract and exact scope intact.
+- Native ZH Tools-index navigation also exposed untranslated feature bullets
+  (for example Practical next actions and Copy-ready brief) despite the source
+  checker passing. This is observed runtime copy debt, not proof of complete
+  translations or permission to waive the localization contract.
 - This sequence is bounded initial product work, not a redefinition of the goal
   or a claim that five packages exhaust every requirement. Reassess uncovered
   requirements after each accepted package; keep the thread goal active until

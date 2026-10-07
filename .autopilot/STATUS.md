@@ -1,5 +1,80 @@
 # Otonom calisma gunlugu
 
+## 2026-10-07 — Request brief first-document language verified; strict final-header acceptance remains RED
+
+- One local bounded candidate 3cff2ddcffb1d0c4bf0e062d0c382d545b4ce512,
+  parent db47376, exactly 6 source/audit/test files. Exact canonical non-English
+  requests receive the locale-param document; incoming provenance is stripped,
+  direct aliases are 404/noindex before page-skipping prefetch, and both wrapper
+  exports guard before unchanged canonical rendering/metadata. English's existing
+  route/redirect remains. No shared-root headers, HTML mutation or dependency change.
+- Isolated Next 16.2.11 prototype first proved 64 HTTP observations, source digest
+  414d0c91afd470d15fcabc3c31c56889df3453fab52f513c4f249d5b238e641a.
+  Initial numeric-loopback rewrite failures remain recorded; named localhost
+  plus ipv4first proves standard clone rewrite without a product host adapter.
+  Prototype server stopped. Old owned product server 96262 deliberately stopped;
+  fresh owned server 47772 serves loopback3190 with this consistent-origin setup.
+- Frozen-source lint, full web/uploader types, 40 targeted/1932 full/37 prebuild
+  tests and Webpack build pass. Build WpzO54pyZuc84KH_DZqOz; unchanged strict
+  43 assets/5 fonts/30 PDFKit/8 sharp/auth401/PNG+PDF/zero external fetches pass.
+  Homepage remains 15.7/80 KB gzip; 2 emitted checks pass. SourceDirty=false receipts.
+- Unchanged strict no-JS HTML assertions now PASS 12/12, including actual opening
+  tag, native zero progress, inputs, handoff, canonical and matching FAQ/schema.
+  All 139 prerender keys AND manifest SHA256 equal the recorded baseline,
+  b844d3a6f1eabd69c1ed1b0d75d90b167492dc8e3bfcecb23e01300b5c78b751.
+- Real CUA EN/DE/TR/ZH x laptop/mobile: 8 screenshots, 20 observations, native
+  0/80 percent/ARIA and Stage2 handoff, actual menus, reload and ZH public link/
+  back/forward pass; warn/error console 0, no horizontal overflow. Root inspected
+  all 8. Browser receipt hash 464A96CDBAE1456FB987BE9677E5ABB96A79F3EE6C51F83F7853F7F8CBCF140D.
+  One navigation observation context changed transiently; same handle plus fresh
+  state and explicit URL wait verified outcome. EN/viewport restored; tab retained.
+- Expanded strict acceptance is NOT green: corrected receipt
+  request-brief-ssr-acceptance-20261007T001323132Z.json has 101 checks, 62 pass,
+  39 fail solely at unchanged Vary Cookie requirement. Actual safe response
+  headers are retained. Core HTML/query/RSC assertions execute before that failure;
+  unrelated static/fixed and anonymous API denial plus forged/encoded alias checks pass.
+- Installed framework app-page template lines 445-446 overwrite Vary, including
+  untouched English. Actual dynamic response is private/no-cache/no-store; this
+  mitigates shared caching but DOES NOT waive the declared Vary contract or prove
+  customer leakage. Next bounded work must resolve the final-header boundary
+  safely, not read shared-root headers, monkeypatch Next or weaken the gate.
+- Preserved first expanded RED and paired diagnostic; harness-only corrections
+  handle framed Flight text, installed numeric router-state slot, correct _rsc
+  hash and structural Flight noindex. Actual HTTP URL/Proxy raw query bytes remain
+  exact; router c's %20-to-plus normalization also occurs on English control.
+  No invented byte-preservation claim for normalized c. Strict HTML script unchanged.
+- Independent immutable source/SSR/UI GO; overall PARTIAL/NO-GO. Reviewer bound
+  the final source/build/strict receipt hashes and inspected EN laptop, DE mobile,
+  TR laptop and ZH mobile. Fresh build prebuild is final i18n provenance; an older
+  standalone i18n-core receipt is not. A source checker reporting zero fallback
+  is not proof that all actual Tools-index copy is translated.
+  Both dependent tasks stay
+  In Progress; no Done/Preview/Production claim. Whole goal remains active.
+  Existing weak translations, Tools header/index English feature leakage and
+  floating locale overlap remain followups, not fixed by a document-language pilot.
+  Primary owner checkout, live site/Ads, auth/payment/schema/data/env are untouched.
+
+## 2026-10-07 — Request brief server-document language pilot started locally
+
+- Previous goal turn is progress: source 561a0f0 plus clean receipt db47376,
+  actual 144 hydrated states, source/body diagnosis and independently reviewed
+  exact next action. Full goal is unchanged and active, not completed.
+- Revalidated attached managed worktree, clean HEAD and same live owned server
+  96262 before work; no restart on silent output. Primary owner checkout untouched.
+  New branch codex/request-brief-ssr-language-20261007; one bounded P1 task.
+- Main read AGENTS/skill/references, all 11 constitution files, project, current
+  queue/status/roadmap/proposal/history/inbox and real package scripts. OS configs
+  and CLI remain absent; manual owner engineering, no invented controller state.
+- Fresh installed Next version is 16.2.11 (package already ^16.2.11). Prior
+  bootstrap and planning 16.2.10 references were stale. No dependency was changed.
+  Framework hypothesis must be proved on actual 16.2.11 in an isolated synthetic
+  local prototype before any product rewrite, then exact baseline static route,
+  locale/canonical/schema/query/alias-denial and hydrated navigation verification.
+- Existing raw first-HTML RED is retained; body diagnostic/hydrated script
+  correctness is not acceptance. Current model/design/copy/privacy remain intact;
+  no root headers/response mutation, auth/API/backend/schema/price/env changes,
+  real data or external/Ads/deployment operation. Validation is pending.
+
 ## 2026-10-07 — Request brief source and hydrated behavior verified; first-HTML acceptance RED
 
 - Frozen source 561a0f0f3c611ee9bf08db015e9cb69adf9d5330 differs from 7a851419

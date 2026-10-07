@@ -20,6 +20,13 @@
   request-brief route only. Keep direct aliases non-public and canonical/body
   unchanged, test actual installed-framework HTML/RSC/hydration behavior. This
   can resolve one acceptance dependency; it cannot close every prefixless page.
+- Pilot evidence now exists: 3cff2dd / WpzO54pyZuc84KH_DZqOz strict initial HTML
+  12/12 and exact 139-entry prerender parity pass. Overall pilot acceptance is
+  still RED: installed Next app-page template overwrites final Vary even on the
+  unchanged English route. Private/no-store mitigates caching, not the declared
+  header contract. Preserve failed evidence; assess a scoped real final-response
+  boundary before broad migration. No framework monkeypatch, header-test waiver
+  or test-only proxy may be represented as an application fix.
 - Rejected shortcuts: whole-root request headers that remove static prerendering,
   post-render regex/HTML mutation, duplicate html tags, script-only/no-JS waivers,
   unchecked query locale values, new libraries or newly indexable alias pages.
@@ -32,7 +39,7 @@
   [Proxy rewrites](https://nextjs.org/docs/app/api-reference/file-conventions/proxy),
   [locale route params](https://nextjs.org/docs/app/guides/internationalization),
   [request-time headers](https://nextjs.org/docs/app/api-reference/functions/headers).
-  Docs currently describe later 16.x; validate against installed 16.2.10 rather
+  Docs currently describe later 16.x; validate against actual installed 16.2.11 rather
   than introducing unavailable new APIs. Selection remains design/prototype
   work, not a completed global language fix or authorization to deploy.
 
