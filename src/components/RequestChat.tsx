@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   CheckCircle2,
   Loader2,
@@ -37,6 +37,18 @@ type RequestChatProps = {
 };
 
 type ChatSyncState = "loading" | "live" | "reconnecting" | "unavailable";
+
+type ChatContext = {
+  requestId: string;
+  senderRole: RequestChatProps["senderRole"];
+  active: boolean;
+  historyReady: boolean;
+};
+
+type ChatSendOperation = {
+  context: ChatContext;
+  draftRevision: number;
+};
 
 const MESSAGE_MAX_LENGTH = 4000;
 const MESSAGE_REFRESH_INTERVAL_MS = 12000;
@@ -134,10 +146,38 @@ export default function RequestChat({
   const previousMessageIdsRef = useRef<Set<string>>(new Set());
   const initialLoadDoneRef = useRef(false);
   const sendingOwnMessageRef = useRef(false);
-  const sendInFlightRef = useRef(false);
+  const sendInFlightRef = useRef<ChatSendOperation | null>(null);
+  const draftRevisionRef = useRef(0);
+  const contextRef = useRef<ChatContext | null>(null);
   const fetchInFlightRef = useRef<Promise<boolean> | null>(null);
   const fetchAbortRef = useRef<AbortController | null>(null);
-  const requestIdRef = useRef(requestId);
+
+  // A unique committed context also distinguishes A -> B -> A and unmounts.
+  // Invalidate before passive effects so late responses cannot settle on new UI.
+  useLayoutEffect(() => {
+    const context: ChatContext = {
+      requestId,
+      senderRole,
+      active: true,
+      historyReady: false,
+    };
+    contextRef.current = context;
+    fetchAbortRef.current?.abort();
+    fetchInFlightRef.current = null;
+    fetchAbortRef.current = null;
+    sendInFlightRef.current = null;
+    sendingOwnMessageRef.current = false;
+
+    return () => {
+      context.active = false;
+      if (contextRef.current !== context) return;
+      fetchAbortRef.current?.abort();
+      fetchInFlightRef.current = null;
+      fetchAbortRef.current = null;
+      sendInFlightRef.current = null;
+      sendingOwnMessageRef.current = false;
+    };
+  }, [requestId, senderRole]);
 
   const charactersRemaining = MESSAGE_MAX_LENGTH - message.length;
   const canSendMessage =
@@ -166,7 +206,13 @@ export default function RequestChat({
     silent?: boolean;
     scrollAfterLoad?: boolean;
   }) => {
-    if (!requestId) return Promise.resolve(false);
+    const currentContext = contextRef.current;
+    if (
+      !requestId
+      || !currentContext?.active
+      || currentContext.requestId !== requestId
+      || currentContext.senderRole !== senderRole
+    ) return Promise.resolve(false);
     if (fetchInFlightRef.current) return fetchInFlightRef.current;
 
     const currentRequestId = requestId;
@@ -194,8 +240,8 @@ export default function RequestChat({
         );
         const payload = await response.json().catch(() => ({}));
 
+        if (contextRef.current !== currentContext || !currentContext.active) return false;
         if (!response.ok) throw new Error("message_history_unavailable");
-        if (requestIdRef.current !== currentRequestId) return false;
 
         const sortedMessages = sortMessages(
           Array.isArray(payload.messages) ? payload.messages : []
@@ -208,6 +254,7 @@ export default function RequestChat({
         setMessages(sortedMessages);
         setHistoryLimited(payload.history_limited === true);
         setHistoryReady(true);
+        currentContext.historyReady = true;
         setSyncState("live");
         setLoadError("");
         setLastSyncedAt(new Date());
@@ -225,16 +272,24 @@ export default function RequestChat({
         }
 
         if (!initialLoadDoneRef.current || options?.scrollAfterLoad) {
-          window.setTimeout(() => scrollChatToBottom("auto"), 0);
+          window.setTimeout(() => {
+            if (contextRef.current === currentContext && currentContext.active) {
+              scrollChatToBottom("auto");
+            }
+          }, 0);
         } else if (wasNearBottom || sendingOwnMessageRef.current) {
-          window.setTimeout(() => scrollChatToBottom("smooth"), 0);
+          window.setTimeout(() => {
+            if (contextRef.current === currentContext && currentContext.active) {
+              scrollChatToBottom("smooth");
+            }
+          }, 0);
         }
 
         initialLoadDoneRef.current = true;
         sendingOwnMessageRef.current = false;
         return true;
       } catch {
-        if (controller.signal.aborted && requestIdRef.current !== currentRequestId) {
+        if (contextRef.current !== currentContext || !currentContext.active) {
           return false;
         }
 
@@ -250,7 +305,7 @@ export default function RequestChat({
         return false;
       } finally {
         window.clearTimeout(timeoutId);
-        if (requestIdRef.current === currentRequestId) setRefreshing(false);
+        if (contextRef.current === currentContext && currentContext.active) setRefreshing(false);
       }
     })();
 
@@ -264,17 +319,18 @@ export default function RequestChat({
   }, [isNearBottom, requestId, scrollChatToBottom, senderRole]);
 
   useEffect(() => {
-    requestIdRef.current = requestId;
-    fetchAbortRef.current?.abort();
-    fetchInFlightRef.current = null;
+    const currentContext = contextRef.current;
 
     const resetId = window.setTimeout(() => {
+      if (!currentContext?.active || contextRef.current !== currentContext) return;
       previousMessageIdsRef.current = new Set();
       initialLoadDoneRef.current = false;
       sendingOwnMessageRef.current = false;
-      sendInFlightRef.current = false;
+      sendInFlightRef.current = null;
+      draftRevisionRef.current += 1;
       setMessages([]);
       setMessage("");
+      setSending(false);
       setHistoryReady(false);
       setHistoryLimited(false);
       setLoadError("");
@@ -288,7 +344,7 @@ export default function RequestChat({
 
     return () => {
       window.clearTimeout(resetId);
-      fetchAbortRef.current?.abort();
+      if (contextRef.current === currentContext) fetchAbortRef.current?.abort();
     };
   }, [loadMessages, requestId]);
 
@@ -325,10 +381,26 @@ export default function RequestChat({
   }, [loadMessages]);
 
   async function sendMessage() {
+    const currentContext = contextRef.current;
     const cleanMessage = message.trim();
-    if (!cleanMessage || !canSendMessage || sendInFlightRef.current) return;
+    if (
+      !cleanMessage
+      || !canSendMessage
+      || sendInFlightRef.current
+      || !currentContext?.active
+      || !currentContext.historyReady
+      || currentContext.requestId !== requestId
+      || currentContext.senderRole !== senderRole
+    ) return;
 
-    sendInFlightRef.current = true;
+    const operation: ChatSendOperation = {
+      context: currentContext,
+      draftRevision: draftRevisionRef.current,
+    };
+    const ownsSend = () => currentContext.active
+      && contextRef.current === currentContext
+      && sendInFlightRef.current === operation;
+    sendInFlightRef.current = operation;
     setSending(true);
     setSendError("");
     sendingOwnMessageRef.current = true;
@@ -341,29 +413,45 @@ export default function RequestChat({
       });
       const payload = await response.json().catch(() => ({}));
 
+      if (!ownsSend()) return;
+
       if (!response.ok || !payload.message) {
         throw new Error("message_send_failed");
       }
 
       const storedMessage = payload.message as RequestMessage;
-      setMessages((current) => sortMessages([
-        ...current.filter((item) => item.id !== storedMessage.id),
-        storedMessage,
-      ]));
+      setMessages((current) => contextRef.current === currentContext && currentContext.active
+        ? sortMessages([
+          ...current.filter((item) => item.id !== storedMessage.id),
+          storedMessage,
+        ])
+        : current);
       previousMessageIdsRef.current.add(storedMessage.id);
-      setMessage("");
+      setMessage((current) => contextRef.current === currentContext
+        && currentContext.active
+        && draftRevisionRef.current === operation.draftRevision
+        && current === message
+        ? ""
+        : current);
       setSyncState("live");
       setLastSyncedAt(new Date());
-      window.setTimeout(() => scrollChatToBottom("smooth"), 0);
+      window.setTimeout(() => {
+        if (contextRef.current === currentContext && currentContext.active) {
+          scrollChatToBottom("smooth");
+        }
+      }, 0);
       void loadMessages({ silent: true, scrollAfterLoad: true });
     } catch {
+      if (!ownsSend()) return;
       sendingOwnMessageRef.current = false;
       setSendError(
         "Your message was not sent. Keep this window open and try again when the connection is stable."
       );
     } finally {
-      sendInFlightRef.current = false;
-      setSending(false);
+      if (ownsSend()) {
+        sendInFlightRef.current = null;
+        setSending(false);
+      }
     }
   }
 
@@ -599,6 +687,7 @@ export default function RequestChat({
           <textarea
             value={message}
             onChange={(event) => {
+              draftRevisionRef.current += 1;
               setMessage(event.target.value);
               if (sendError) setSendError("");
             }}

@@ -4,6 +4,8 @@
 
 ## Ready
 
+## In Progress — current bounded manual cycle
+
 ### MANUAL-20261007-CHAT-DRAFT-SETTLEMENT [P1] Preserve newer chat drafts when an older send finishes
 
 Fingerprint: `customer-workflow|request-chat-send-lifecycle|late-post-clears-newer-draft|request-and-draft-bound-settlement`
@@ -36,7 +38,11 @@ A-B-A and unmount. Test edit-away-and-back identity and overlapping async work,
 not only different strings. Actual synthetic local component/browser interaction
 in EN/DE/TR/ZH mobile/laptop plus targeted i18n, lint/full types/tests/build and
 immutable independent review required. Do not claim authenticated/server outcomes.
-Ready only; no chat implementation in the campaign package.
+Started 7 October from clean1cdc3d1 in the owned attached worktree, local branch
+codex/chat-draft-settlement-20261007. Prior campaign cycle is completed progress;
+this separate bounded manual cycle does not use the absent OS controller/CLI.
+Root implements the component; a separate agent owns actual-handler regression
+tests. Candidate remains unaccepted until same-SHA gates and independent review.
 
 ## Completed manual releases
 
