@@ -1,5 +1,82 @@
 # Otonom calisma gunlugu
 
+## 2026-10-07 — Existing admin customer drafts accepted by bounded native React QA
+
+- Progress, not idle or whole-goal completion. One manual cycle resumed existing
+  MANUAL-20261006-ADMIN-CUSTOMER-DRAFTS in the owned attached worktree on
+  codex/admin-customer-draft-qa-20261007; frozen clean0c5c04fdad515644bc0509a790df879520dd929e.
+  All three product/test paths remain byte-identical to implementation8fa6853.
+  Only TASKS/STATUS/ROADMAP/TASK_HISTORY change at audit closure; primary untouched.
+  OS/Docker controller absent; manual synthetic host verification is not a claimed
+  unattended lifecycle. Broad local-first milestone remains ACTIVE.
+- Fresh sequential same-source gates06:09-06:22UTC: runtime/admin-customer-tests-
+  20261007T060932350Z2028/2028 alone; targeted061400940Z50/50 (draft25/pricing18/
+  sync7); lint061417237Z, fulltypes061515786Z, i18n061534509Z38/38;
+  build061746930Z mandatory prebuild38/38/all12/43sources/2495reviewed rows/0clean
+  English fallbacks,337static/strict43assets/fonts5/PDFKit30/sharp8/auth401/valid
+  PNG+PDF/externalFetch0; performance062204636Z home16.3/80KBgzip,worker6.5/12KB,
+  locale22.7raw/6.8gzip,187exactprerenders/no invalid or missing languages;
+  emitted062209680Z2/2. BuildRpf2o5C0nRFu6PDhH6ykM. No failed formal gate or retry.
+  All eight receipts/log hashes and source bindings independently checked.
+- Raw source hashes: admin/page5265e395290b044df7d0d6ed20c0e22c07596015422c19f1a20392250ea53cb6;
+  helperf23c97014c0942be70c4cba695ddbed5f9722064f02b93ef4ebcbbad72ac39bd;
+  test538a8fb689403c887ccc5220a7d88077fc42928086be4131da22c89469c2cb2a.
+  Validation helper233a1fdf...c34f70; exact native lint wrapper3b2413ef...a63ab.
+  runtime/admin-customer-lint-relocation-20261007T061416643Z before/moved/restored
+  manifests preserve all34 old synthetic fixture files. Native recoverable move
+  to absent task-only Temp target, unchanged npm lint, finally restore; every
+  pre/restored/current hash equal and destination absent. No lint flag/config,
+  dependency, timeout, skip, rule, env-file or source adjustment.
+- Root and reviewer fully read six outside-repo fixture helpers before execution.
+  Preflight reviewer caught a masking gap: Open A/B used synthetic server rows;
+  root corrected it to actual React customers only and captured canonical/selected
+  state. No source callback/modal rewrite. Final binding at
+  C:/Users/gokka/AppData/Local/Temp/mg-admin-draft-gui-20261007-0c5c04f/
+  compiled-Rpf2o5C0nRFu6PDhH6ykM-5db2cb70075b3d2d/binding.json
+  SHA256978ff344126343ba77f8e6ee89617b8ce5be7ece490f9f66b452b81e5db918d4.
+  97/97 exact source AST nodes, actual modal/security/fields/parent projection/
+  hooks/callbacks, real React+7 pure modules;31bound files plus15 original fresh
+  CSS/font hashes independently match. No full AdminPage/auth/Supabase import;
+  loopback-only static/CSP connect-none/denied real fetch and unrelated actions.
+- Native same-bound source proof at the same Temp root/native/browser-0c5c04f.json
+  SHA256d74ad91b8cf13d8ff4d55be3f0354a36da3c9129153ce4eed94a6ac53e8f8f12:
+  37actual states,12unique JPEGs (8 laptop1280x720/4mobile390x844),26passing
+  observation assertions plus one RETAINED wrong-status-string oracle, not27/27.
+  Actual pricing status differs from the observer's invented literal; draft/
+  baseline conditions passed, unchanged actual source/status then independently
+  checked and corrected observation passed. Initial observer closed over an
+  unassigned tab handle; native click succeeded, observer corrected to explicit
+  tab argument. Both preparation issues recorded, no product failure hidden.
+- Actual field/button/keyboard interactions cover three successive refreshes,
+  dirty empty name/tags/false credit flag, all nine commercial fields, untouched
+  city/read-only balance, post-click profile city, true :disabled pricing controls,
+  profile editing during pricing save, independent concurrent confirmations,
+  profile/pricing failure+retry, A-B-A/close-reopen/late read/save success/error/
+  finally and pre-save GET after canonical save/reopen. Mobile form/pending/error/
+  retry/refresh/post-click city, inner scroll and ordinary keyboard focus; no
+  horizontal dialog/field overflow. Independent20/20 raw-state/request/DOM
+  invariants and physical all12 frames PASS. Console/blocked/pending0, viewport
+  reset. No claim of focus trap/Escape, complete admin density or all-site UX.
+- Envelope runtime/admin-customer-envelope-0c5c04f-20261007.json
+  SHA2566e312a733652b2088a22429d7aa958b926731f0781fd41f8478c855ee271f2f6.
+  Final independent immutable scoped GO accepts existing P1 client draft task.
+  Original6October CUA rejection remains historical; this deliberately lower-
+  authority component fixture is not an alternate authenticated-page workaround
+  or proof of original polling/recovery effects (omitted explicitly). No real
+  backend/permissions/business persistence, auth, live customer/payment/mail/DB,
+  Production/Ads/spend/env/secret/dependency action or acquisition result claim.
+- Concrete inherited P2: saveCustomerSettings result writes global message behind
+  z110 modal; loadAdminData clears it. Native controller output is NOT visible
+  product feedback acceptance. Source/prior81ab and dedup independently checked;
+  Ready MANUAL-20261007-ADMIN-PROFILE-FEEDBACK is next small product change, reuse
+  existing fixed-EN admin copy, preserve all price/security/API rules. Existing
+  wider SSR/header/chat-snapshot/backend/milestone debts remain OPEN.
+- Owned app4929 stopped before fresh build; new sanitized local app55473 ready
+  187ms at3190, same next-start/standalone warning retained (not a Production
+  runner assertion). Known preview tab10 refreshed after verifying unchanged TR
+  TCU URL and kept; disposable test tab15/server34937 closed after review
+  (server CTRL-C exit1 is intentional cleanup, not a validation failure).
+
 ## 2026-10-07 — Native order-conversation headings accepted locally; admin interaction next
 
 - Previous goal turn was progress: chat source6996a0a and auditd85c5af were

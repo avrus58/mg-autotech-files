@@ -14,17 +14,23 @@
   admin experience, conversion-oriented content and preparation, SEO discovery,
   advertising readiness, usability, accessibility and reliability. Keep all work
   local; no push, Preview, Production or Ads account/spend changes in this phase.
-- Current verified local source:aa913611dec66070986a5ef69675948de37a6935,
-  buildn3TbXrsmbViLKp4PgI0nS; three accepted homepage packages, five-service/all12
+- Current verified local source:0c5c04fdad515644bc0509a790df879520dd929e,
+  buildRpf2o5C0nRFu6PDhH6ykM; three accepted homepage packages, five-service/all12
   compact experience, four-guide locale discovery/compact entry, bounded shared
   public-header utility placement, ECU read-advisor form containment and offline
   campaign-guide locale parity, context/revision-bound customer chat sends and
-  native order-conversation heading semantics. Prior6996a0a/buildLE9ntJ-sLtJE6XtCTFf7N,
+  native order-conversation heading semantics and bounded synthetic admin draft
+  acceptance. Prior aa913611/buildn3TbXrsmbViLKp4PgI0nS,
+  6996a0a/buildLE9ntJ-sLtJE6XtCTFf7N,
   bd8281/buildtzbd0d05cUiiuW4BIXkqx,f4cd512/buildjxEseGeFkmCoevqtWEcwb,
   658977b/buildialpFw3aQcowOg5JX63cP,0a55d547/build-rWBvfpAWFA01d1qFc_AM
   and core2a98f865/buildJnRpeAAvSidfUgVRbdTFs remain audit evidence, not the current
   artifact. Header placement acceptance is not all Tools body containment.
-  Tested admin draft source8fa6853 still awaits interactive acceptance.
+  Admin draft source8fa6853 is unchanged;37 actual React states/12 laptop/mobile
+  frames and fresh2028full/50targeted/all gates close its client-draft UX gate.
+  Authenticated backend/original polling-recovery lifecycle remain unproved.
+  Inherited hidden/refresh-cleared profile-save outcome is the next separate
+  MANUAL-20261007-ADMIN-PROFILE-FEEDBACK Ready P2, not completed or waived.
   Owner primary checkout is dirty and must remain untouched. Previous turn is
   concrete progress (source commits and bounded evidence), not idle.
   Historical release/Ads/SEO receipts are not current account metrics.
@@ -55,7 +61,11 @@
   1. P1 admin customer drafts: every successful20-second/recovery snapshot
      reconstructs an open profile+commercial form, discarding edits and loaded
      pricing while readiness remains ready (admin/page:493-522,932-935,1238-1245).
-     Current implementation task MANUAL-20261006-ADMIN-CUSTOMER-DRAFTS.
+     MANUAL-20261006-ADMIN-CUSTOMER-DRAFTS accepted locally on7October; source
+     8fa6853 unchanged at0c5c04f/buildRpf. Native explicit delayed transport and
+     real modal state/focus/scroll prove client retention/fences, not full-page
+     auth, automatic source effects or real commercial persistence. Next bounded
+     profile-feedback P2 reuses existing admin copy and retains all business rules.
   2. Core service semantic/design parity: accepted locally, not published,
      MANUAL-20261006-CORE-SERVICE-PARITY source2a98f865. Shared compact review-led
      body restores notices/Stage1 authority/FAQ parity and removes stale timing

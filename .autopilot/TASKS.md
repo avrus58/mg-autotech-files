@@ -4,6 +4,28 @@
 
 ## Ready
 
+### MANUAL-20261007-ADMIN-PROFILE-FEEDBACK [P2] Show editor-bound profile save outcomes inside the open form
+
+Fingerprint: `admin-operations|customer-profile-save-feedback|modal-hides-and-refresh-clears-save-result|editor-bound-visible-profile-outcome`
+
+Evidence at verified0c5c04f: saveCustomerSettings writes only global message
+(admin/page.tsx:1687,1691,1715,1722); renderer2232-2234 is behind the fixed
+z110 modal3020. The parent projection/modal receives no profile outcome;
+loadAdminData:860 clears the global message on refresh. Pricing already has
+visible modal alert/status3162-3174. The omission also exists at81ab52b.
+Independent TASKS/ROADMAP/INBOX/HISTORY/Git dedup found no same-purpose task.
+Business4/User3/Admin5/Strategic3/Confidence5/Effort1/Risk1; value18.
+
+Boundary: admin/page.tsx, existing draft-preservation tests and scoped audit.
+Reuse existing fixed-EN admin copy; add account/editor-bound outcome inside
+the modal, retain it across dashboard refresh, fence stale close/reopen/A-B-A
+responses. Preserve global-message consumers, drafts, payloads, permissions,
+pricing rules/readiness and layout. No backend/dependency/env/customer action.
+Acceptance: actual visible success/error, retained failed draft/reachable retry,
+post-click edits and stale-result isolation; mobile/laptop native feedback,
+focus/scroll plus full same-source gates and independent immutable review.
+This is separate from the accepted draft-retention task, not its hidden failure.
+
 ## Completed manual releases
 
 ### MANUAL-20261001-CURRENT-BUSINESS-ADDRESS [P1] Synchronize the owner-confirmed Asperg address
@@ -176,43 +198,6 @@ Accuracy remains In Progress because the dependent SSR pilot's expanded actual
 HTTP acceptance is RED at the final Vary contract, not because the former
 opening-language defect still occurs on this route. Historical RED receipts
 remain retained; source/static/hydrated GO is not overall acceptance.
-
-### MANUAL-20261006-ADMIN-CUSTOMER-DRAFTS [P1] Preserve customer editor drafts across live admin synchronization
-
-Fingerprint: `admin-operations|customer-profile-editor|background-snapshot-reinitializes-account-draft|account-bound-reconciliation-without-silent-loss`
-
-Owner's broad local-first excellence goal remains active in ROADMAP. Independent
-current81ab52b source audit proves that successful dashboard snapshots call
-makeCustomerForm on the open editor every20seconds/visibility/online recovery,
-resetting profile edits and loaded commercial fields to empty/inherit defaults
-while pricing can remain ready. Existing pricing revision/A-B checks do not
-protect this refresh path. Business4/User4/Admin5/Strategic5/Confidence5,
-urgency4/effort3/risk2; value18. Manual local-only product implementation.
-
-Boundary: src/app/admin/page.tsx, pure src/lib/adminCustomerDraft.ts,
-tests/admin-customer-draft-preservation.test.ts and task/status/history/roadmap.
-No new dependency/API/schema/auth/pricing rule, external write or real data.
-Acceptance: immutable account/editor-instance draft+baseline; refresh merges
-untouched profile fields without overwriting edits or any loaded commercial
-values; account switching/close-reopen fences stale responses; successful
-profile/pricing saves preserve post-click edits and update only their proper
-baseline; failure retains draft. Actual application/state regressions include
-repeated sync/recovery, late responses, nested package edits and A-B-A identity.
-Retain permissions/revision/readiness and existing UI. Full required gates plus
-independent immutable review; honest synthetic/browser evidence, no live claims.
-
-Local source checkpoint:8fa6853d39b6d03c68ad343853cdbd10eb263e3e.
-Actual helper/application-callback tests25/25 and retained targeted pricing/sync
-suite50/50 pass; immutable baseline81ab52b actual full refresh reproduces two
-lost-value assertions. Independent source/test GO, no scoped P0/P1/P2 found.
-Full gates pass: lint/fulltypes,1909/1909 tests, full prebuild i18n37/37,
-fresh Webpack282/282 plus strict postbuild/performance checks. Same-artifact
-anonymous homepage initial HTML12/12 retains language/copy/links/features.
-Build ID30gaqEFxiKBuAO3vjyBgB; ignored admin-draft-*20261006 receipts.
-Task stays In Progress: unchanged JSX/AST is not a
-substitute for the required interactive browser/mobile/compact-laptop gate.
-CUA rejected the existing IAB tab under its security policy; no alternate
-browser/CDP/navigation workaround was attempted. No Done/Preview/release claim.
 
 ### MANUAL-20260919-AUTH-SESSION-RECOVERY [P1] Prevent stale checks from ending a newer browser session
 
@@ -461,6 +446,40 @@ Remediation: Batch with a future documentation/source-comment maintenance pass a
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
+
+### MANUAL-20261006-ADMIN-CUSTOMER-DRAFTS [P1] Preserve customer editor drafts across live admin synchronization
+
+Fingerprint: `admin-operations|customer-profile-editor|background-snapshot-reinitializes-account-draft|account-bound-reconciliation-without-silent-loss`
+
+Done locally on7October, not published. Original81ab52b dashboard refresh
+reproduced two lost values; implementation8fa6853d39b6d03c68ad343853cdbd10eb263e3e
+uses account/editor-instance draft+baseline, untouched-profile reconciliation,
+disjoint profile/commercial confirmation and stale-response fences. Preserve
+all permissions/revision/readiness/price rules/UI; boundary remains admin/page,
+pure adminCustomerDraft and actual callback tests. No new product edit this QA
+cycle: all three paths are byte-identical at clean0c5c04f. Original25/50/1909
+tests,282 build and source review remain historical. Original CUA rejection of
+the existing IAB tab remains retained; no alternate browser/CDP workaround or
+authenticated full-page acceptance is claimed.
+
+Fresh0c5c04fdad515644bc0509a790df879520dd929e/buildRpf2o5C0nRFu6PDhH6ykM:
+50targeted/2028full/38i18n/lint/fulltypes/build337/strictassets/performance/
+2emitted PASS. Eight receipts/logs/source hashes match;34 prior ignored fixture
+files were reversibly relocated for unchanged lint and restored byte-for-byte.
+Actual modal/security/fields/parent projection/hooks/callbacks extracted as97
+verbatim AST nodes, real React+7 pure product modules, fresh4CSS/11fonts;
+synthetic controller uses actual canonical React customers, not server copies.
+Native37 states/12JPEGs at1280x720 and390x844,26passing observations plus one
+retained wrong-status-string oracle corrected from actual source; independent
+20/20 raw-state/request/DOM invariants and scoped GO. Console/blocked/pending0,
+viewport reset. Envelope6e312a73...271f2f6; native d74ad91b...e8f8f12;
+binding978ff344...db918d4; full paths and limits in STATUS.
+
+Accepts synthetic client draft retention, separate save baselines, real disabled
+pricing fields, failure/retry and A-B-A/close-reopen/late-GET settlement only.
+No native edits through disabled pricing controls, auth/backend/business or
+original polling/recovery lifecycle proof. Inherited hidden profile-save
+feedback remains OPEN as the distinct Ready P2 above; whole goal remains ACTIVE.
 
 ### MANUAL-20261007-ORDER-CHAT-HEADING [P2] Describe the order conversation naturally in every language
 
