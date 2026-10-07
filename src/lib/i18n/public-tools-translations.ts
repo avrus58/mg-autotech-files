@@ -35,7 +35,7 @@ export const publicToolsTranslations: Record<string, PublicSurfaceTranslationTup
   ],
   "Completeness score": [
     "Vollständigkeitsbewertung", "Bilgi tamamlama puanı", "Volledigheidsscore",
-    "Score de complétude", "Punteggio di completezza", "Puntuación de integridad de la información",
+    "Score de complétude", "Punteggio di completezza", "Puntuación de completitud",
     "Pontuação de preenchimento", "Ocena kompletności", "Оценка полноты информации",
     "信息完整度评分", "Vlerësim i plotësisë së informacionit",
   ],

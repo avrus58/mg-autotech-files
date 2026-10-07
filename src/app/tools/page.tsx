@@ -199,7 +199,7 @@ export default async function ToolsHubPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <ToolsHeader locale={locale} />
 
-      <main>
+      <main className="min-w-0 [overflow-wrap:anywhere]">
         <section className="border-b border-white/10 bg-[#090909]">
           <div className="mx-auto max-w-7xl px-4 py-14 sm:py-20">
             <div className="max-w-4xl">
@@ -237,7 +237,7 @@ export default async function ToolsHubPage() {
                 <Link
                   key={step.href}
                   href={step.href}
-                  className="group flex min-h-[260px] flex-col border border-white/10 bg-[#0b0b0c] p-6 transition hover:border-red-800/50 hover:bg-red-950/10"
+                  className="group flex min-h-[260px] min-w-0 flex-col border border-white/10 bg-[#0b0b0c] p-6 transition hover:border-red-800/50 hover:bg-red-950/10"
                 >
                   <div className="flex items-center justify-between gap-4">
                     <span className="text-xs font-black uppercase tracking-[0.18em] text-red-400">
@@ -264,7 +264,7 @@ export default async function ToolsHubPage() {
               const Icon = tool.icon;
 
               return (
-                <article key={tool.href} className="flex min-h-[360px] flex-col border border-white/10 bg-[#0b0b0c] p-6 sm:p-8">
+                <article key={tool.href} className="flex min-h-[360px] min-w-0 flex-col border border-white/10 bg-[#0b0b0c] p-6 sm:p-8">
                   <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-red-800/50 bg-red-950/25 text-red-400">
                     <Icon className="h-6 w-6" />
                   </div>
@@ -277,7 +277,7 @@ export default async function ToolsHubPage() {
                     {tool.features.map((feature) => (
                       <li key={feature} className="flex items-center gap-3">
                         <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
-                        {feature}
+                        <span className="min-w-0">{feature}</span>
                       </li>
                     ))}
                   </ul>

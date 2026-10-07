@@ -68,7 +68,7 @@ function text(html: string) {
     .replaceAll("&#x27;", "'").replace(/\s+/gu, " ").trim();
 }
 function features(html: string) {
-  const main = html.match(/<main>([\s\S]*?)<\/main>/u)?.[1];
+  const main = html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/u)?.[1];
   assert.ok(main, "actual hub main");
   return [...main.matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/gu)].map((match) => text(match[1]));
 }
@@ -161,9 +161,30 @@ test("native hub copy describes clear requests and ECU reading rather than clean
   assert.ok(zh.includes("ECU 读取检查清单"));
   assert.ok(zh.includes("输入 Nm + RPM"));
   assert.ok(zh.includes("输出 kW、HP 和 PS"));
-  const zhMain = (await renderHub("zh")).match(/<main>([\s\S]*?)<\/main>/u)![1];
+  const zhMain = (await renderHub("zh")).match(/<main\b[^>]*>([\s\S]*?)<\/main>/u)![1];
   assert.ok(zhMain.includes("规划读取方式"));
   assert.doesNotMatch(zhMain, /规划阅读方法/u);
+  assert.ok(features(await renderHub("es")).includes("Puntuación de completitud"));
+});
+
+test("the actual hub allows long translated words to wrap without widening workflow and tool grids", async () => {
+  for (const { code } of supportedLocales) {
+    const html = await renderHub(code);
+    const main = html.match(/<main\b[^>]*class="([^"]*)"[^>]*>([\s\S]*?)<\/main>/u);
+    assert.ok(main, code);
+    const mainClasses = new Set(main[1].split(/\s+/u));
+    assert.ok(mainClasses.has("min-w-0"), `${code}: bound main width`);
+    assert.ok(mainClasses.has("[overflow-wrap:anywhere]"), `${code}: long compound words participate in min-content sizing`);
+    const cards = [...main[2].matchAll(/<article\b[^>]*class="([^"]*)"/gu)];
+    assert.equal(cards.length, 5, code);
+    for (const card of cards) assert.ok(card[1].split(/\s+/u).includes("min-w-0"), `${code}: tool grid item`);
+    const workflow = [...main[2].matchAll(/<a\b[^>]*class="([^"]*)"[^>]*>[\s\S]*?>0[1-4]<\/span>/gu)];
+    assert.equal(workflow.length, 4, code);
+    for (const step of workflow) assert.ok(step[1].split(/\s+/u).includes("min-w-0"), `${code}: workflow grid item`);
+    const rows = [...main[2].matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/gu)];
+    assert.equal(rows.length, 15, code);
+    for (const row of rows) assert.match(row[1], /<span class="min-w-0">/u, `${code}: feature flex item`);
+  }
 });
 
 test("both existing source collectors explicitly classify feature collections instead of hiding the runtime labels", () => {
