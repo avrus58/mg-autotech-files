@@ -24,88 +24,6 @@ Receipt: `docs/production-release-2026-10-01-address.md`.
 
 ## In Progress
 
-### MANUAL-20261007-SERVICE-GUIDE-COMPACT-ENTRY [P2] Keep guide request entry and translated navigation usable on compact screens
-
-Fingerprint: `public-services|intent-guide-first-screen-and-shared-navigation|oversized-hero-buries-service-cta-and-translated-nav-collides|compact-visible-intent-entry-with-preserved-routes`
-
-Origin: actual1c and finalb7/buildUgePEZW87fbCk_uKF9zCx EN/DE/TR/ZH laptop/mobile
-inspection and independent visual review. Final32views measure15specificCTAs
-belowfold (13laptop+2mobile), with Stage3 worst; German brand text overruns its
-allocated header width beside nine translated navigation links. TRfilecheck
-mobile floating language button obstructs18.1% of the primary hit target (P2).
-This is not the completed homepage hero or five-core-service parity task.
-Business4/User5/Admin2/Strategic4/Confidence5/Effort2/Risk2; value16.
-
-Boundary: ServiceIntentPage hero hierarchy/spacing and long-heading containment,
-PublicSeoHeader responsive navigation layout, and focused actual-render tests.
-Preserve every existing heading/body/FAQ/notice/link, black/red identity, all12
-locales, guide facts, metadata/schema, exact private intent and all nine public
-navigation destinations. No global zoom, hidden feature, new claim, dependency,
-auth/backend/customer-data/env, push or deployment change. Existing locale task
-stays In Progress until its remaining actual-browser acceptance is resolved.
-
-Acceptance: actual four guides in EN/DE/TR/ZH at390x844 and1366x768, with1280x720
-edge checks, retain readable headings, a visible unobstructed specific request
-entry, keyboard access and no brand/nav/action collisions or clipped content.
-Measure the global floating-control overlap separately; moving the hero CTA alone
-cannot be claimed as a global overlay fix. Verify native
-menus/FAQ/link/reload flows and console; preserve all48 route/copy/schema/intent
-regressions and187 prerender membership. All mandatory local gates, fresh build,
-performance and immutable review. Decoration-only FAQ plus overflow is not by
-itself a clipped-control failure; document actual impact. Local only.
-
-Started manually on clean owned433735e after recording prior discovery proof.
-The installed OS controller/policy/lifecycle scripts remain absent: this is
-owner-authorized manual engineering, not a fabricated accepted autopilot run.
-
-### MANUAL-20261007-SERVICE-GUIDE-LOCALE-DISCOVERY [P2] Give four reviewed service guides genuine locale destinations
-
-Fingerprint: `public-services|review-led-intent-guides|translated-content-without-genuine-locale-discovery|reciprocal-locale-urls-and-intent-preserving-navigation`
-
-Origin: owner local-first product milestone; ROADMAP item4 and fresh immutable
-98a3f6b audit prove four fully translated guides still have canonical-only URLs,
-no localized route dispatch or reciprocal sitemap discovery. This is not legacy
-five-core-service parity. Business4/User4/Admin2/Strategic5/Confidence5/Effort3/Risk2;
-value15. Manual engineering; installed OS controller is absent, no fictional run.
-
-Boundary: tiny four-slug registry, rich-model API re-export without fact edits,
-i18n route mapping, existing root/localized service dispatch, shared guide metadata
-and structured-data URL identities, exact homepage/footer guide href mapping,
-sitemap and targeted regressions. Preserve
-all reviewed facts, FAQs, requirements, request intents, private routes, layout,
-privacy and the five-core-service renderer. No copy/price/legal/auth/data/env,
-dependency, external service, push or deployment change.
-
-Acceptance: all48 guide/locale variants resolve on initial HTML with correct
-document/body language, canonical/reciprocal alternates, schema identity and
-intent-preserving links. Exact139 baseline prerenders remain; only48 explicitly
-enumerated guide additions are permitted. Compact client graphs must not import
-the rich guide catalog. Full local gates/build/performance; EN/DE/TR/ZH mobile
-and compact laptop plus immutable independent review. Measure known prefixless
-document/final-Vary debt separately; neither waiver nor global completion claim.
-
-Independent source review found two inherited schema English labels in148ccd2;
-literal all48 tests prove RED before narrow4f49956 repair with existing labels.
-Independent EN/DE/TR/ZH semantic review found exactly one additional P2: the
-ZH file-check identity sentence adds an automatic system actor absent from EN.
-Same bounded package corrects only that tuple slot, preserving the reviewed
-source/other10translations and all raw facts; a literal actual-body regression
-proves the unsupported actor cannot return. No other copy redesign is included.
-
-Actual browser and independent review found Footer's separate client closure
-still emitted four English guide destinations and Service.areaServed retained
-plain English names. Same bounded13c9f3c repair reuses the tiny exact guard and
-existing audited language-neutral geographical helper; actual48 footer/schema
-tests prove RED before repair. No coverage claim or broad catalog import added.
-Inherited laptop header/hero usability P2 remains visible and is assigned to the
-separate Ready compact-entry task, not counted as GUI green or globally ready.
-Finalb7 local gates PASS68targeted/1953full/prebuild37/lint/fulltypes/build/
-assets/performance/2emitted and actual194HTTP. Native32view language/footer/intent
-flags pass with console0,4keyboard pairs and real menu/link/history/reload flows.
-Overall In Progress / physical GUI HOLD:15belowfoldCTAs, DEheader width contention
-and measured TRmobile floating-language hit-target obstruction remain. See STATUS
-and bound browser JSON4F2397...35353A; no Done, Preview, release or global claim.
-
 ### MANUAL-20261007-TOOLS-HUB-COPY-QUALITY [P2] Make public tool choices understandable in every supported language
 
 Fingerprint: `public-tools|hub-feature-copy|scoped-runtime-english-leak-and-literal-request-meaning|native-all-locale-tool-selection`
@@ -543,6 +461,64 @@ Remediation: Batch with a future documentation/source-comment maintenance pass a
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
+
+### MANUAL-20261007-SERVICE-GUIDE-COMPACT-ENTRY [P2] Keep guide request entry and translated navigation usable on compact screens
+
+Fingerprint: `public-services|intent-guide-first-screen-and-shared-navigation|oversized-hero-buries-service-cta-and-translated-nav-collides|compact-visible-intent-entry-with-preserved-routes`
+
+Done locally, not published. Origin is the retained b7 actual-browser evidence:
+15 below-fold specific CTAs, DE brand/navigation contention and TR file-check
+primary hit-target obstruction. Business4/User5/Admin2/Strategic4/Confidence5/
+Effort2/Risk2; value16. One bounded manual product cycle; no fabricated OS run.
+
+Frozen source0a55d547cde4ab6aaecaf535fccbe6d7ab4a929a, build-rWBvfpAWFA01d1qFc_AM.
+Exactly three product/test files: PublicSeoHeader, ServiceIntentPage and focused
+actual-render regressions. Brand/actions and nine wrapping navigation links use
+separate rows; guide H1 is 30-48px and both existing CTAs precede the unchanged
+lead. All text, facts,12locales, links, schema, exact intents and black/red
+identity remain. No zoom, hidden feature, dependency, auth/backend/data/env,
+push or deployment change.
+
+72/72 targeted,1957/1957 full,37/37 prebuild i18n, lint/fulltypes/build/strict
+assets/performance/2emitted and194/194 raw HTTP PASS on the same clean source.
+Exactly187 prerenders and182 sitemap URLs retained. Actual compiled/hydrated
+48 unique EN/DE/TR/ZH x4guides x390x844/1366x768/1280x720 views PASS; specific
+request and compare actions are above fold,44px minimum, with zero pill overlap,
+header collisions or document overflow. Ten actual shared-header views and17
+native menu/FAQ keyboard/footer/header/link/back/reload interactions PASS;
+console warning/error0. Independent immutable source and four critical physical
+screenshots GO, no scoped P0/P1/P2. Browser receipt SHA256
+d9d52696f2751ce8714efc3a3084f6932508402bfcf3556083cc881b0fe769a6,
+64 hash-bound PNGs under compact-guide-browser-0a55d54-20261007.
+
+Global floating controls at arbitrary scroll positions are NOT fixed by moving
+this hero entry. ToolsHeader and the localized inline file-service header are
+different renderers, not changed or accepted under this nine-link contract.
+Initial observer/setup negatives remain retained, not counted as product PASS.
+Whole site-excellence goal, authenticated admin QA and strict prefixless header
+debt remain open. Source/gate/GUI evidence is local only, not Production proof.
+
+### MANUAL-20261007-SERVICE-GUIDE-LOCALE-DISCOVERY [P2] Give four reviewed service guides genuine locale destinations
+
+Fingerprint: `public-services|review-led-intent-guides|translated-content-without-genuine-locale-discovery|reciprocal-locale-urls-and-intent-preserving-navigation`
+
+Done locally, not published. Existing b7a712d/16-file locale package provides
+four genuine guide slugs across12 locales, reciprocal canonical/alternates/
+sitemap, native initial HTML/schema/geographical helpers, tiny client-safe
+registry and actual Footer links. Dates, requirements, FAQs, exact private
+intents and guide model digest8447a243...3df50c are unchanged; only the reviewed
+ZH unsupported automatic-system actor was removed. Earlier schema/Footer/geo/
+homepage assertion REDs and the original layout HOLD remain audit history.
+Business4/User4/Admin2/Strategic5/Confidence5/Effort3/Risk2; value15.
+
+The separately bounded compact-entry successor0a55d547 closes that first-screen
+GUI dependency: same48 routes/metadata/footer/schema/intents and187 prerenders
+are reverified by194HTTP,72targeted/1957full, all mandatory gates and48 actual
+compiled browser views. Independent final review explicitly permits closing
+the prior15-CTA/DE-header/TR-primary-obstruction HOLD. No unrelated source task
+implemented to close this record. See compact-entry receipt and STATUS.
+Inherited prefixless Tools document/final-Vary and arbitrary-scroll global
+overlay debt remain separate; no indexing, customers, release or global claim.
 
 ### MANUAL-20261006-CORE-SERVICE-PARITY [P2] Give every core service locale the same reviewed compact experience
 

@@ -1,5 +1,72 @@
 # Otonom calisma gunlugu
 
+## 2026-10-07 — Compact guide entry accepted locally; prior guide first-screen HOLD closed
+
+- One bounded MANUAL-20261007-SERVICE-GUIDE-COMPACT-ENTRY product cycle in the
+  owned attached worktree. Product/test source0a55d547cde4ab6aaecaf535fccbe6d7ab4a929a
+  was frozen and clean throughout all final gates and actual browser checks.
+  Exactly three product/test files since4d593f2: PublicSeoHeader.tsx,
+  ServiceIntentPage.tsx and service-guide-locales.test.ts. Separate brand/action
+  and nine-link navigation rows preserve branding and destinations. The guide
+  H1 uses30-48px with wrapping, both existing44px CTAs precede the entire unchanged
+  lead, and hero spacing is compact. No copy, fact, price, service, schema,
+  payment/auth/data/env/dependency or global zoom change.
+- Final same-source local receipts PASS: targeted72/72 (022029304Z),
+  full1957/1957 (022042417Z), lint022042445Z, full web/uploader types022042430Z,
+  build022042445Z, performance023134968Z, emitted2/2 at023135675Z and HTTP runner
+  023153142Z. All use the service-guide- prefix and20261007T timestamp under
+  runtime. Prebuild12locales/2495reviewed rows/0cleanENfallback/37tests;
+  Webpack337pages; strict43assets/5fonts/30PDFKit/8sharp/compiledAuth401/validPNG+
+  PDF/externalFetches0. Homepage15.7/80KB gzip,187exactprerenders.
+  Actual detailed service-guide-http-20261007T023157898Z.json proves194/194,
+  all48 native firstHTML/schema/footer/intent variants,44preference redirects,
+  182exactactualsitemap entries and3unknown404s. Build-rWBvfpAWFA01d1qFc_AM.
+  Test SHA256b64c1ec78563f02feb03d260649851058f3d1e3e7d3ccfa137f5c752dceabf9a.
+- Retained negative evidence:68ebb92 targeted71/72 exposed only the harness's
+  React-escaped [&amp;_a] class token;0a55d54 decodes HTML ampersands exactly like
+  the browser without weakening assertions or changing product CSS. Development
+  geometry48 views was not accepted as functional proof (immediate hydration0).
+  Stopped3191 dev tab then caused stale CUA handle/viewport policy errors;
+  documented runtime reset and the existing valid tab4 resolved the tool state,
+  without browser-security bypass, server restart or product change.
+  Unsupported DOM Range/TreeWalker methods were not represented as glyph proof.
+- Final actual compiled/hydrated browser:48 unique EN/DE/TR/ZH x4guides x
+  390x844/1366x768/1280x720 PASS, all48 source-mapped intents and genuine native
+  headings/footers retained. Specific request and compare actions both remain
+  fully above fold, >=44px, zero actual language-pill overlap; primary bottom
+  <=519.84px, compare <=570.11px. No measured header collision/clipping or
+  horizontal document/main overflow. Visible-span border-box/scrollWidth checks
+  are supplemented by physical screenshots, not claimed as DOM Range ink tests.
+  Ten actual shared-header views PASS (DEStage1/BMW/MD1 plus ENAbout/rootHub,
+  mobile and compact). FourStage3 native menu transitions, fourFAQ Enter/Space
+  open-close pairs, Footer/link/Tab-focus/Enter/back/reload/mobile shortcut are
+  17/17 PASS; console warning/error0.64 PNGs are hash-bound. Browser receipt
+  compact-guide-browser-0a55d54-20261007/browser-receipt.json SHA256
+  d9d52696f2751ce8714efc3a3084f6932508402bfcf3556083cc881b0fe769a6.
+- Rejected browser observer assumptions are retained separately: tcu-tuning
+  correctly uses tcu_stage_1, ECU file check uses file_check, and ZH document
+  lang is zh-CN. A direct rootEN navigation honored the priorZH preference;
+  actual native English menu selection corrected test setup, not application.
+  Localized /de/file-service uses its own inherited four-link inline header,
+  so its two mismatched nine-link-contract rows are excluded with source evidence
+  in shared-header-different-renderer.json, not relabelled as shared-header PASS.
+  ToolsHeader is also outside this changed component. No language/storage/auth
+  reset or waiver. Native English and default viewport restored; tab4 handed off.
+- Independent immutable source/gates/receipt/hash and four critical screenshot
+  review gives scoped GO, no scoped P0/P1/P2. Main also viewed DEStage3 compact/
+  mobile,TRfilecheck mobile and ZHtcu laptop. Reviewer explicitly permits closing
+  the prior guide-locale task's first-screen GUI HOLD. Both scoped tasks move to
+  Done locally; arbitrary-scroll global floating widgets, separate legacy header,
+  Tools/brief strict first-document/final-Vary debt and admin interactive QA
+  remain open. No global perfection, ranking/indexing/customer/conversion proof.
+- Four audit files updated after source verification: TASKS, STATUS, ROADMAP,
+  TASK_HISTORY. Documentation successor is distinct from tested source0a55d547.
+  Owned local server7206 serves127.0.0.1:3190; standard next-start standalone
+  warning retained, separate strict compiled-standalone checks are not a
+  Production-runtime assertion. Whole local-first goal remains active. Primary
+  dirty checkout, live site/Ads/spend/backend/customer data remain untouched;
+  no push, Preview, deployment, real auth, e-mail, payment or external mutation.
+
 ## 2026-10-07 — Compact guide entry manual cycle started locally
 
 - Previous turn is concrete progress: audited433735e records the immutable b7

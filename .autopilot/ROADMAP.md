@@ -14,8 +14,10 @@
   admin experience, conversion-oriented content and preparation, SEO discovery,
   advertising readiness, usability, accessibility and reliability. Keep all work
   local; no push, Preview, Production or Ads account/spend changes in this phase.
-- Current verified local source:2a98f865, three accepted homepage packages and
-  accepted five-service/all12-locale compact experience (buildJnRpeAAvSidfUgVRbdTFs).
+- Current verified local source:0a55d547, build-rWBvfpAWFA01d1qFc_AM; three accepted
+  homepage packages, five-service/all12-locale compact experience and four-guide
+  locale discovery/compact first-screen entry. Prior accepted core source2a98f865
+  and buildJnRpeAAvSidfUgVRbdTFs remain audit evidence, not the current artifact.
   Tested admin draft source8fa6853 still awaits interactive acceptance.
   Owner primary checkout is dirty and must remain untouched. Previous turn is
   concrete progress (source commits and bounded evidence), not idle.
@@ -67,21 +69,22 @@
      global route rewrite. Wider isolation design is still only
      PROPOSAL-20261007-PREFIXLESS-DOCUMENT-LANGUAGE.
   4. Locale discovery for the four already translated newer service guides:
-     b7a712d now implements actual48 family destinations and reciprocal
-     discovery without feeding guides into legacy templates. Final1953full/
-     68targeted/build/assets/performance/194HTTP and32native-view language/footer/
-     intent checks pass. Overall physicalGUIHOLD:15specificCTAs belowfold and
-     DEheader width contention feed the separate next compact-entry task.
-     Preserve the actual inherited layout issues, not a GUI waiver or homepage
-     redesign; current local buildUgePEZW87fbCk_uKF9zCx, no external release.
+     b7a712d implements actual48 family destinations and reciprocal discovery
+     without feeding guides into legacy templates. Separately bounded compact
+     source0a55d547 closes its first-screen GUI dependency with30-48px guide
+     hierarchy, above-fold unchanged CTAs and noncolliding shared navigation.
+     Final1957full/72targeted/allgates/194HTTP,48compiled EN/DE/TR/ZH views,
+     10shared-header views/17native interactions/console0 and independent GO.
+     Both scoped tasks Done locally, no external release. Original15belowfold
+     CTA,DEheader andTRprimary-obstruction RED remains audit history, not a waiver.
   5. Finish public catalog/content and offline advertising message-match review,
      then customer/admin cross-flow quality sweep. Select concrete remaining
      gaps from new evidence rather than repeatedly repainting the homepage.
 - Explicit global usability followup: existing floating language/availability
-  widgets can overlap mobile content. Fresh b7 TRfilecheck proof upgrades the
-  language widget issue to P2:18.1% of the actual primary request hit target is
-  covered, though label/arrow and most of the action remain usable. This is not
-  the earlier text-only P3. Compact hero movement is not a global overlay fix;
+  widgets can overlap mobile content. Historical b7 TRfilecheck primary
+  obstruction18.1% is closed at initial entry by0a55d547 (all48 measured request
+  and compare actions have0overlap). Arbitrary-scroll positioning remains open:
+  compact hero movement is not a global overlay fix;
   preserve language features and review a coherent unobstructed control placement.
   Core-service scoped acceptance does not close this or authenticated admin QA.
 - Existing request-brief copy needs a later native semantic sweep (ToolsHeader
@@ -98,13 +101,13 @@
   main to375px. Cumulative5files; source/feature collectors strengthened.
   No global native-copy perfection claim: Tools11openinglang and12finalVary
   remainRED; both brief dependent tasks and this copy task stayInProgress.
-- Next-cycle read-only audit on33711ad confirmed existing item4's exact gap:
+- Pre-discovery read-only audit on33711ad confirmed existing item4's exact gap:
   four distinct already-translated serviceIntentGuides render prefixless, but
   locale route/i18nRoutes/sitemap only recognize thelegacy5service family.
   All180guide phrase occurrences have11nonEN tuple slots, not linguistic proof.
-  Plan separate exact guide-family dispatch/locale metadata/reciprocal discovery,
-  keeping core5model andguide facts/CTA intents untouched. No implementation
-  or invented indexing/customer outcome in this cycle.
+  That exact bounded dispatch/locale metadata/reciprocal discovery package is
+  now accepted as item4 above, with core5model/guide facts/CTA intents untouched.
+  No invented indexing or customer outcome; do not duplicate the completed gap.
 - This sequence is bounded initial product work, not a redefinition of the goal
   or a claim that five packages exhaust every requirement. Reassess uncovered
   requirements after each accepted package; keep the thread goal active until
