@@ -24,29 +24,6 @@ Receipt: `docs/production-release-2026-10-01-address.md`.
 
 ## In Progress
 
-### MANUAL-20261007-PRIVATE-MENU-STACKING [P2] Keep the language menu usable beside an open notification panel
-
-Fingerprint: `customer-chrome|notification-and-language-menus|notification-panel-intercepts-language-choice|independently-operable-overlays`
-
-Started7October08:22:58UTC on clean base9c677c9 in the owned worktree only.
-Previous goal turn was concrete progress: candidate6bbd and audit9c677c9 accepted
-notification isolation with raw/native evidence; no idle or global completion.
-Native bound6bbd observation33 remains RED: both-open Deutsch click instead
-activates own notification link. Current two-component source matches6bbd; actual
-private95-versus80 roots and toast-dependent absolute panel corroborate it.
-Value13 (B3/U4/A1/S3/C5/E2/R1). One bounded local UI package: private-only96 via
-existing exact route helper, natural-height viewport budget, normal-flow panel,
-scrollable list/toast and short-height fallback; no new state/effects/handlers,
-copy/tree/colors/catalog/auth/action/API/public-host change. New actual-source/
-React structural test: baseline5PASS/3expectedRED, current9/9preparatory PASS;
-native hit testing/geometry/focus/scroll remains required, not proved by CSS math.
-Acceptance requires same-SHA full unchanged gates, EN/DE/TR/ZH laptop/mobile,
-both-open pointer/keyboard selection without UPDATE/navigation,20 long rows+
-toast/last-item/footer/blank-click access and a short-height sample, then immutable
-independent review. OS/controller/scripts absent: manual local fallback only.
-No dependencies, schema, backend, env, services, customer data or publication.
-Chat same-context/read-error/SSR debts stay separate; wider milestone OPEN.
-
 ### MANUAL-20261007-TOOLS-HUB-COPY-QUALITY [P2] Make public tool choices understandable in every supported language
 
 Fingerprint: `public-tools|hub-feature-copy|scoped-runtime-english-leak-and-literal-request-meaning|native-all-locale-tool-selection`
@@ -447,6 +424,38 @@ Remediation: Batch with a future documentation/source-comment maintenance pass a
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
+
+### MANUAL-20261007-PRIVATE-MENU-STACKING [P2] Keep the language menu usable beside an open notification panel
+
+Fingerprint: `customer-chrome|notification-and-language-menus|notification-panel-intercepts-language-choice|independently-operable-overlays`
+
+Done locally after independent SCOPED_GO_LOCAL; no publication/global completion.
+Started08:22:58UTC on9c677c9; frozen44d05225c3e001fa5fc53e440e7cf4a1daee2df0,
+buildBnyhD5lgf6FgUHxO504-m. Value13 (B3/U4/A1/S3/C5/E2/R1). Two component
+presentation changes and two tests only; four audit records close this task.
+Private language96 wins over notification95 via unchanged exact route helper;
+natural-height budget/normal-flow panel and scrollable toast/list retain access.
+All non-class AST contracts, copy/catalog12, state/effects/handlers/colors/auth/
+query/write/runtime/public-host behavior preserved. New9actual-source regressions
+and existing public VM's actual-helper binding, not validator/assertion waivers.
+Final2080full FIRST/ALONE,158targeted,38i18n/lint/fulltypes/build337/strict43assets/
+performance/emitted2 PASS; all final receipts clean/same-source/sequential.
+Native47durable cases(8v2+39v3),24native+16derived PASS,26hashed case images;
+eight physically reviewed EN/DE/TR/ZH1280x720/390x844 final client views,20longrows
+and genuine8s toast, pointer/keyboard selection, last/center handlers and native
+390x320 nested scrolling/focus. Blank-gap hit/click passes through toHTML only,
+not an underlying form/control guarantee. DE loading/error/immediate retry/empty
+observed; console/blocked0. Capture09 is rejected390x219, accepted retake16 is
+390x844; tool/selector/periodic-retry/formal predecessor negatives retained.
+Final logout clears feed/removes4channels;97inactive syntheticSELECTs retained,
+not claimed settled. Fixture20/3194 closed/stopped, viewport reset; local app
+84558/3190 and deliverable10 retained. No live auth/RLS/backend/SSR proof.
+Native1d2b1770...5bb534/binding47acc3ac...2370e/review37d96f21...758432;
+ignored envelope `runtime/private-menu-stacking-envelope-44d05225-20261007.json`.
+All34 ignored historical fixture files restored identically for unchanged lint.
+Inherited observation33 remains historical RED, now closed only in this bounded
+synthetic presentation scope. Read-error/chat/Tools-brief SSR debts and broader
+milestone OPEN. No dependencies, schema, services/customer/env/push/deploy change.
 
 ### MANUAL-20261007-NOTIFICATION-ACCOUNT-ISOLATION [P1] Keep customer notifications bound to their current account
 

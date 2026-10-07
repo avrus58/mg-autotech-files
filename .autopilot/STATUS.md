@@ -1,5 +1,63 @@
 # Otonom calisma gunlugu
 
+## 2026-10-07 — Private notification/language overlay coexistence accepted locally
+
+- One P2 MANUAL-20261007-PRIVATE-MENU-STACKING completed locally at frozen
+  44d05225c3e001fa5fc53e440e7cf4a1daee2df0/buildBnyhD5lgf6FgUHxO504-m.
+  Root reviewed the complete scoped diff: eight notification class values,
+  one existing pure private-path import/two language wrapper class expressions,
+  new9actual-source tests and existing public VM helper binding. Four audit-only
+  records follow the reviewed candidate. Owned worktree only; primary untouched.
+  Autopilot OS/controller absent/manual local fallback; broader goal remains OPEN.
+- Private language96 now paints above notification95; public hosted relative
+  placement/unhosted80 unchanged. Toast/bell/panel share a natural bounded height,
+  normal-flow panel with independent list/toast scrolling and short-height outer
+  fallback. Empty overlay gaps are pointer-transparent. AST pins preserve exact
+  non-class logic/tree/copy/ARIA/actions/auth/query/runtime/catalog contracts.
+- Final same-source checks: npm test2080/2080 FIRST/ALONE; targeted158/158,
+  unchanged npm run lint, npm run typecheck(web+uploader renderer/electron/node),
+  npm run check:i18n38/38/all12/43sources/2495rows/zero clean non-EN fallback;
+  mandatory prebuild38/38/Webpack337pages, strict43assets including synthetic
+  compiled-auth401/validPNG+PDF/external-fetch0, performance home16.4/80KB gzip,
+  worker6.5/12KB raw/maxlocale6.8KB gzip/187prerenders and emitted2/2 PASS.
+  Eight final clean44d receipts are sequential; pretypes separately preparation.
+- Main/reviewer read11 fixture/gate helpers before use; source/build binding has
+  57actual product modules/4CSS/11fonts. Actual complete React controls/catalogs,
+  synthetic SDK/auth/context/realtime and ephemeral storage only.47durable cases
+  (8v2+39v3),24native and16derived PASS,26hash/MIME-bound images; selected eight
+  EN/DE/TR/ZH laptop1280x720/mobile390x844 frames physically reviewed by both.
+  Native both-open pointer and Home/End/arrows/Escape/Enter/Space choose locale
+  without notification UPDATE/navigation;20longraw rows plus genuine8s toasts
+  remain bounded. Last-row own-ID action and center handlers are preserved.
+- Native390x320 focus/Tab/Enter proves usable last-row visible intersection and
+  center footer via inner/outer scrolling. Long toast request is focus-scrollable
+  and dismissible. DE loading/error/immediate retry/empty are legible. Blank gap
+  hitsHTML and native click causes no notification action; not a tested underlying
+  form/control. Console/blocked0; final logout clears root/feed/toast/removes4/4
+  channels.97inactive pending syntheticSELECTs stay recorded, not relabelled zero.
+- Native packet1d2b1770...5bb534/binding47acc3ac...2370e; independent immutable
+  SCOPED_GO_LOCAL37d96f21...758432 verifies115artifact hashes/all47cases/all8gates
+  and selected physical frames. Root read the receipt before task closure. Ignored
+  envelope runtime/private-menu-stacking-envelope-44d05225-20261007.json retains
+  exact raw receipts/log/source/observer/image identities and limits.
+- Negative history preserved: f287full2077/2080(3VM binding failures),5a types
+  TS18048/TS2345 repaired only in test source; no rules/assertions/flags waived.
+  Reviewed unchanged-lint relocation restores34ignored files byte-for-byte; two
+  pre-gate launcher diagnostics did not change execution policy. Three300sCUA
+  tool timeouts and lostV1 in-memory observations are not acceptance evidence.
+  V3capture09 JPEG390x219 contradictsDOM390x844 and is excluded; retake16 is full
+  390x844. Existing.png filenames contain API JPEG bytes, actual MIME recorded.
+  Wrong Chinese trigger lookup and delayed TryAgain after unchanged20s periodic
+  reload are retained; immediate33→34→35 passes without timer/handler changes.
+- Fixture tab20 closed, viewport reset, fixture98459/3194 CtrlC expectedexit1;
+  local app84558/3190 kept, unique observed provider UUID reloaded/marked existing
+  deliverable10. Canonical/providerID collision and failed binding assignment
+  recorded; owner/duplicate tabs untouched. Local Next-start standalone warning
+  is not Production runner evidence. No push/Preview/deploy/liveAds/backend/DB/
+  customer/env/secret/auth-policy/payment/email/dependency change. No SSR/real
+  auth/RLS/conversion/revenue/global-perfect claim. Separate read-error, same-
+  context chat reconciliation and supported-layer Tools/brief lang/Vary debts OPEN.
+
 ## 2026-10-07 — Private overlay coexistence selected; native acceptance pending
 
 - Started08:22:58UTC, one existing Ready P2 selected at clean9c677c9. Previous

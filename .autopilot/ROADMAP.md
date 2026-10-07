@@ -14,14 +14,15 @@
   admin experience, conversion-oriented content and preparation, SEO discovery,
   advertising readiness, usability, accessibility and reliability. Keep all work
   local; no push, Preview, Production or Ads account/spend changes in this phase.
-- Current verified local source:6bbd17400eadcc9de8835899ecce0e0a85ed13f4,
-  buildCEW45b0JQrBID3s1otp3-; three accepted homepage packages, five-service/all12
+- Current verified local source:44d05225c3e001fa5fc53e440e7cf4a1daee2df0,
+  buildBnyhD5lgf6FgUHxO504-m; three accepted homepage packages, five-service/all12
   compact experience, four-guide locale discovery/compact entry, bounded shared
   public-header utility placement, ECU read-advisor form containment and offline
   campaign-guide locale parity, context/revision-bound customer chat sends and
   native order-conversation heading semantics and bounded synthetic admin draft
   acceptance plus editor-visible profile-save outcomes and account-bound customer
-  notifications. Priorfbed9128/buildigyBKEmpaCzdsDUCiwrzr,0c5c04f/build
+  notifications and scoped private notification/language overlay coexistence.
+  Prior6bbd1740/buildCEW45b0JQrBID3s1otp3-,fbed9128/buildigyBKEmpaCzdsDUCiwrzr,0c5c04f/build
   Rpf2o5C0nRFu6PDhH6ykM and aa913611/buildn3TbXrsmbViLKp4PgI0nS,
   6996a0a/buildLE9ntJ-sLtJE6XtCTFf7N,
   bd8281/buildtzbd0d05cUiiuW4BIXkqx,f4cd512/buildjxEseGeFkmCoevqtWEcwb,
@@ -173,14 +174,25 @@
   notification-account-isolation envelope. This is synthetic client lifecycle
   acceptance, not real auth/RLS/backend/SSR/live customer or whole-goal proof.
   Formal suppression-shape/lint/nullable-context REDs fixed without waivers.
-- Next bounded Ready P2 MANUAL-20261007-PRIVATE-MENU-STACKING is grounded in
-  native observation33: an open notification panel intercepts a Deutsch menu
-  click and triggers an own-file action. Closed-panel retake34 is successful
-  translation evidence, not defect closure. Original stacking classes untouched;
-  tall toast+panel can also exceed720px. Preserve existing state/copy/public
-  placement and repair private overlay coexistence only. RequestChat same-context
-  acknowledged-send reconciliation, mark-read structured-error honesty and
-  Tools/brief strict initial-language/final-Vary debt remain OPEN separately.
+- MANUAL-20261007-PRIVATE-MENU-STACKING accepted locally at44d05225:
+  private language96 above notification95 and normal-flow viewport-bounded
+  panel/list/toast fix recorded interception33 and below720px reachability in
+  this synthetic presentation scope. Non-class AST/state/copy/all12/public-host/
+  runtime/auth/actions preserved.2080full/158targeted/38i18n/lint/fulltypes/
+  build337/strict43assets/performance/emitted2 PASS; final gates sequential.
+  Native47durable cases/24native+16derivedPASS/26hashed case images, accepted8
+  EN/DE/TR/ZH1280x720/390x844 frames;20longrows/genuine8s toast, native keys,
+  last/center handlers and390x320 nested scrolling/focus. Blank-gapHTML hit/click
+  is not underlying-form proof. Console/blocked0; logout removes4channels,97old
+  inactive syntheticSELECTs explicitly remain. Capture09 excluded/replaced16,
+  other formal/tool/observer negatives preserved;34ignoredfixture files restored.
+  Native1d2b1770...5bb534/binding47acc3ac...2370e/review37d96f21...758432 and
+  ignored private-menu-stacking envelope. Fixture closed/reset; local3190 kept.
+  No actual authenticated/RLS/backend/SSR or whole-goal closure. RequestChat
+  same-context acknowledged-send reconciliation, mark-read structured-error
+  honesty and supported-layer Tools/brief initial-language/final-Vary debt stay
+  OPEN separately. Next turn must recheck/deduplicate these evidenced gaps;
+  do not repeat unsafe installed-Next response-layer prototypes.
 - Existing request-brief copy needs a later native semantic sweep (ToolsHeader
   Tools in TR/ZH, literal brief nouns and German not-provided meaning). This
   behavioral fix reuses unchanged copy, not a claim that translation quality is
