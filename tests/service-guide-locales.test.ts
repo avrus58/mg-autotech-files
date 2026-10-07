@@ -213,6 +213,16 @@ test("all 48 actual guide schemas use reviewed native requirement labels and wor
   }
 });
 
+test("Chinese file-check guidance retains the source's review boundary without inventing an automatic system actor", async () => {
+  const source = "Vehicle, controller, HW/SW and file context are checked for conflicts instead of relying on the filename.";
+  const native = "会检查车辆、控制器、HW/SW 和文件背景是否存在冲突，而不是依赖文件名。";
+  assert.equal(getServiceIntentGuide("ecu-file-check")!.reviewChecks[0].text, source);
+  assert.equal(scopedCopy("zh", source), native);
+  const body = (await rendered).get("zh:ecu-file-check")!.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gu, "");
+  assert.ok(body.includes(native));
+  assert.ok(!body.includes("系统会检查车辆"));
+});
+
 test("actual route metadata and graph identities use matching locale canonicals and reciprocal alternates", async () => {
   const pages = await rendered;
   for (const { code } of supportedLocales) {
