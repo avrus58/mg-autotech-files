@@ -70,10 +70,15 @@ function graph(html: string) {
 function attribute(attributes: string, name: string) {
   return attributes.match(new RegExp(`\\b${name}="([^"]*)"`, "u"))?.[1];
 }
+function classTokens(attributes: string) {
+  // React encodes the ampersand in Tailwind's [&_a] selector in HTML source;
+  // the browser decodes it back to the actual class token before applying CSS.
+  return new Set((attribute(attributes, "class") ?? "").replaceAll("&amp;", "&").split(/\s+/u));
+}
 function anchors(html: string) {
   return [...html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/gu)].map((match) => ({
     href: attribute(match[1], "href"),
-    classes: new Set((attribute(match[1], "class") ?? "").split(/\s+/u)),
+    classes: classTokens(match[1]),
     label: attribute(match[1], "aria-label"),
     content: match[2],
     index: match.index,
@@ -410,7 +415,7 @@ test("all 48 actual shared headers retain nine native crawlable destinations and
       const header = pages.get(`${code}:${guide.slug}`)!.match(/<header\b[^>]*>([\s\S]*?)<\/header>/u)![1];
       const navigation = header.match(/<nav\b([^>]*)>([\s\S]*?)<\/nav>/u)!;
       assert.equal(attribute(navigation[1], "aria-label"), escapeText(coreCopy(code, "Primary navigation")));
-      const navClasses = new Set((attribute(navigation[1], "class") ?? "").split(/\s+/u));
+      const navClasses = classTokens(navigation[1]);
       const links = anchors(navigation[2]);
       assert.equal(links.length, 9, `${code}:${guide.slug}: all original public destinations remain actual anchors`);
       routes.forEach(([path, label], index) => {
@@ -452,7 +457,7 @@ test("actual headers separate nonshrinking brand/actions from an independently w
       const brand = topLinks.find(({ href, label }) => href === localizedPath(code) && label === escapeText(coreCopy(code, "MG AutoTech home")));
       assert.ok(brand && brand.classes.has("shrink-0") && brand.classes.has("focus-visible:ring-2"), `${code}:${guide.slug}: uncompressed keyboard-accessible brand`);
       assert.ok(brand.content.includes("MG ") && brand.content.includes("AUTOTECH"));
-      const navClasses = new Set((attribute(navigation[1], "class") ?? "").split(/\s+/u));
+      const navClasses = classTokens(navigation[1]);
       assert.ok(navClasses.has("hidden") && navClasses.has("lg:flex") && navClasses.has("flex-wrap"), `${code}:${guide.slug}: independent wrapping desktop nav contract`);
     }
   }
