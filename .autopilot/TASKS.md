@@ -4,6 +4,8 @@
 
 ## Ready
 
+## In Progress — current bounded manual cycle
+
 ### MANUAL-20261007-ORDER-CHAT-HEADING [P2] Describe the order conversation naturally in every language
 
 Fingerprint: `customer-workflow|order-chat-heading|order-noun-mistranslated-as-command|native-order-context-in-all-locales`
@@ -34,8 +36,11 @@ Master/generated parity alone is insufficient: literal independently reviewed
 expected headings must detect the existing wrong verb meanings. Existing state
 fix, pending drafts, statuses and raw message leaves remain unchanged. Complete
 mandatory gates/fresh build/performance, actual EN/DE/TR/ZH mobile/laptop copy
-and containment plus independent immutable review. Local only, Ready only;
-this cycle does not implement or claim full conversation-copy perfection.
+and containment plus independent immutable review. Local only. Started from
+clean d85c5af on codex/order-chat-heading-20261007 in the owned attached worktree.
+Root owns the exact master row and existing generator; separate test writer and
+read-only reviewer own independent regression/semantic evidence. Previous cycle
+is verified progress; broader milestone and inherited snapshot race remain OPEN.
 
 ## Completed manual releases
 

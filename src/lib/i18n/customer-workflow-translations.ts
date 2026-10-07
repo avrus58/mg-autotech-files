@@ -5294,17 +5294,17 @@ const customerWorkflowRows = [
   ],
   [
     "Order conversation",
-    "Bestel gesprek",
-    "Gespräch bestellen",
-    "Conversation de commande",
-    "Conversazione dell'ordine",
-    "Заказать разговор",
-    "Ordenar conversación",
-    "Görüşmeyi sipariş edin",
-    "Conversa do pedido",
+    "Gesprek over de opdracht",
+    "Chat zum Auftrag",
+    "Discussion sur la commande",
+    "Conversazione sull'ordine",
+    "Обсуждение заказа",
+    "Conversación sobre el pedido",
+    "Sipariş sohbeti",
+    "Conversa sobre o pedido",
     "订单对话",
-    "Zamów rozmowę",
-    "Porosit bisedë"
+    "Rozmowa dotycząca zlecenia",
+    "Biseda për porosinë"
   ],
   [
     "Press Enter to send / Shift + Enter for a new line",

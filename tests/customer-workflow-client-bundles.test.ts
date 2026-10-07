@@ -12,6 +12,7 @@ import {
 } from "../src/lib/i18n";
 import {
   customerPasswordErrorT as masterPasswordErrorT,
+  customerWorkflowExactT as masterExactT,
   customerWorkflowExactTranslations as masterExactTranslations,
   customerWorkflowLocaleOrder as masterLocaleOrder,
   customerWorkflowTemplateRows as masterTemplateRows,
@@ -90,7 +91,7 @@ import {
   widgetSiteExactTranslations,
   widgetSiteLocaleOrder,
 } from "../src/lib/i18n/widget-site-translations";
-import type { LocaleCode } from "../src/lib/i18nConfig";
+import { supportedLocales, type LocaleCode } from "../src/lib/i18nConfig";
 
 type CompactCatalog = {
   customerWorkflowLocaleOrder: readonly string[];
@@ -172,6 +173,40 @@ test("compact customer workflow catalogs preserve combined legacy runtime semant
         masterTemplateRowsByKey.get(row[0]),
         `${name}: ${row[0]}`,
       );
+    }
+  }
+});
+
+test("workspace chat headings describe the order conversation, not a command to order one", () => {
+  // Independent semantic expectations: equality between a master and its
+  // generated copy alone would preserve the inherited verb/command mistake.
+  const expected = {
+    en: "Order conversation",
+    nl: "Gesprek over de opdracht",
+    de: "Chat zum Auftrag",
+    fr: "Discussion sur la commande",
+    it: "Conversazione sull'ordine",
+    ru: "Обсуждение заказа",
+    es: "Conversación sobre el pedido",
+    tr: "Sipariş sohbeti",
+    pt: "Conversa sobre o pedido",
+    zh: "订单对话",
+    pl: "Rozmowa dotycząca zlecenia",
+    sq: "Biseda për porosinë",
+  } satisfies Record<LocaleCode, string>;
+  const heading = "Order conversation";
+  const generated = ordersDom.customerWorkflowExactTranslations[heading];
+  assert.equal(generated.length, ordersDom.customerWorkflowLocaleOrder.length);
+  assert.deepEqual(Object.keys(expected).sort(), supportedLocales.map(({ code }) => code).sort());
+  for (const { code } of supportedLocales) {
+    assert.equal(masterExactT(code, heading), expected[code], `${code}: master heading meaning`);
+    // English remains the original JSX source; the generated DOM companion
+    // owns explicit entries for each of the eleven non-English locales.
+    if (code === "en") assert.equal(heading, expected[code]);
+    else {
+      const index = ordersDom.customerWorkflowLocaleOrder.indexOf(code);
+      assert.ok(index >= 0, `${code}: generated heading locale exists`);
+      assert.equal(generated[index], expected[code], `${code}: generated orders-DOM heading meaning`);
     }
   }
 });
