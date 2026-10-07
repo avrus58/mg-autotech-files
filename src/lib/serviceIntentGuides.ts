@@ -1,11 +1,5 @@
-export const serviceIntentGuideSlugs = [
-  "stage-2",
-  "stage-3",
-  "tcu-tuning",
-  "ecu-file-check",
-] as const;
-
-export type ServiceIntentGuideSlug = (typeof serviceIntentGuideSlugs)[number];
+import type { ServiceIntentGuideSlug } from "@/lib/serviceIntentGuideRoutes";
+export { serviceIntentGuideSlugs, type ServiceIntentGuideSlug } from "@/lib/serviceIntentGuideRoutes";
 
 export type ServiceIntentGuide = {
   slug: ServiceIntentGuideSlug;

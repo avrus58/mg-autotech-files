@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -15,19 +16,56 @@ import { RuntimePublicLocalization } from "@/components/RuntimePublicLocalizatio
 import { StageComparison } from "@/components/StageComparison";
 import {
   absoluteUrl,
+  languageAlternates,
+  localizedUrl,
   organizationJsonLd,
+  seoLocales,
+  siteName,
   websiteJsonLd,
 } from "@/lib/seo";
 import type { ServiceIntentGuide } from "@/lib/serviceIntentGuides";
 import {
   localizeRuntimePublicJsonLd,
   runtimePublicInLanguage,
+  runtimePublicMetadataCopy,
+  runtimePublicOpenGraphLocale,
 } from "@/lib/i18n/runtime-public";
 import type { LocaleCode } from "@/lib/i18nConfig";
 import {
   buildNewRequestPath,
   getPublicServiceRequestIntent,
 } from "@/lib/requestIntent";
+
+const serviceIntentScopes = ["core", "services", "service-intent"] as const;
+
+export function getServiceIntentGuideMetadata(guide: ServiceIntentGuide, locale: LocaleCode): Metadata {
+  const path = `/services/${guide.slug}`;
+  const canonical = localizedUrl(locale, path);
+  const copy = runtimePublicMetadataCopy(locale, guide.metaTitle, guide.description, serviceIntentScopes);
+  const socialTitle = `${copy.title} | MG AutoTech`;
+
+  return {
+    title: copy.title,
+    description: copy.description,
+    alternates: { canonical, languages: languageAlternates(path) },
+    openGraph: {
+      title: socialTitle,
+      description: copy.description,
+      url: canonical,
+      siteName,
+      locale: runtimePublicOpenGraphLocale(locale),
+      alternateLocale: seoLocales.filter((item) => item !== locale).map(runtimePublicOpenGraphLocale),
+      type: "website",
+      images: [{ url: absoluteUrl("/opengraph-image"), width: 1200, height: 630, alt: copy.title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: socialTitle,
+      description: copy.description,
+      images: [absoluteUrl("/opengraph-image")],
+    },
+  };
+}
 
 export function ServiceIntentPage({
   guide,
@@ -36,11 +74,11 @@ export function ServiceIntentPage({
   guide: ServiceIntentGuide;
   locale?: LocaleCode;
 }) {
-  const pageUrl = absoluteUrl(`/services/${guide.slug}`);
+  const pageUrl = localizedUrl(locale, `/services/${guide.slug}`);
   const requestHref = buildNewRequestPath(
     getPublicServiceRequestIntent(guide.slug)
   );
-  const scopes = ["core", "services", "service-intent"] as const;
+  const scopes = serviceIntentScopes;
   const jsonLd = localizeRuntimePublicJsonLd({
     "@context": "https://schema.org",
     "@graph": [
@@ -72,13 +110,14 @@ export function ServiceIntentPage({
         },
         areaServed: ["Germany", "Europe"],
         url: pageUrl,
+        mainEntityOfPage: { "@id": `${pageUrl}#page` },
       },
       {
         "@type": "BreadcrumbList",
         "@id": `${pageUrl}#breadcrumb`,
         itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Home", item: absoluteUrl("/") },
-          { "@type": "ListItem", position: 2, name: "Services", item: absoluteUrl("/services") },
+          { "@type": "ListItem", position: 1, name: "Home", item: localizedUrl(locale) },
+          { "@type": "ListItem", position: 2, name: "ECU File Service", item: localizedUrl(locale, "/file-service") },
           { "@type": "ListItem", position: 3, name: guide.name, item: pageUrl },
         ],
       },
@@ -95,6 +134,7 @@ export function ServiceIntentPage({
       {
         "@type": "FAQPage",
         "@id": `${pageUrl}#faq`,
+        inLanguage: runtimePublicInLanguage(locale),
         mainEntity: guide.faq.map((item) => ({
           "@type": "Question",
           name: item.q,

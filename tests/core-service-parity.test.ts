@@ -258,7 +258,7 @@ test("Stage 1 retains fit, comparison and all fifteen genuine crawlable technica
 
 test("both routes use the actual shared experience while newer guide branches, static params and invalid paths retain their behavior", async () => {
   assert.equal(rootParams().length, 9);
-  assert.equal(localeParams().length, 55);
+  assert.equal(localeParams().length, 99);
   for (const slug of publicServiceSlugs) {
     const root = await RootServicePage({ params: Promise.resolve({ slug }) }) as ReactElement<{ slug: string; locale: string }>;
     assert.equal(root.type, PublicCoreServiceExperience);

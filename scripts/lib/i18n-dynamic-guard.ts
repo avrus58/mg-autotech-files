@@ -35,7 +35,7 @@ export const reviewedDynamicVisibleExpressions = [
     classification: "raw-technical-data",
   },
   {
-    file: "src/app/services/[slug]/page.tsx",
+    file: "src/components/ServiceIntentPage.tsx",
     kind: "template",
     source: "`${copy.title} | MG AutoTech`",
     classification: "localized-copy",

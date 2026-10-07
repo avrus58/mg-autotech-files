@@ -4,6 +4,11 @@ import { resolve } from "node:path";
 import test from "node:test";
 import { GET as getFeed } from "../src/app/feed.xml/route";
 import { GET as getLlms } from "../src/app/llms.txt/route";
+import { generateMetadata as rootGuideMetadata } from "../src/app/services/[slug]/page";
+import { generateMetadata as localizedGuideMetadata } from "../src/app/[locale]/services/[slug]/page";
+import sitemap from "../src/app/sitemap";
+import { supportedLocales } from "../src/lib/i18nConfig";
+import { languageAlternates, localizedUrl } from "../src/lib/seo";
 import {
   getServiceIntentGuide,
   serviceIntentGuides,
@@ -59,14 +64,26 @@ test("global service-intent library exposes four distinct substantial guides", (
   }
 });
 
-test("service-intent routes publish canonical metadata and matching visible schema", () => {
+test("service-intent routes publish shared locale-aware canonical metadata and matching visible schema", async () => {
   const route = projectFile("src", "app", "services", "[slug]", "page.tsx");
   const page = projectFile("src", "components", "ServiceIntentPage.tsx");
 
   assert.match(route, /serviceIntentGuideSlugs\.map/);
-  assert.match(route, /absoluteUrl\(`\/services\/\$\{intentGuide\.slug\}`\)/);
+  assert.match(route, /getServiceIntentGuideMetadata\(intentGuide, defaultLocale\)/);
   assert.match(route, /ServiceIntentPage guide=\{intentGuide\}/);
-  assert.doesNotMatch(route, /languageAlternates\(`\/services\/\$\{intentGuide\.slug\}`\)/);
+  for (const guide of serviceIntentGuides) {
+    const path = `/services/${guide.slug}`;
+    for (const { code } of supportedLocales) {
+      const metadata = code === "en"
+        ? await rootGuideMetadata({ params: Promise.resolve({ slug: guide.slug }) })
+        : await localizedGuideMetadata({ params: Promise.resolve({ locale: code, slug: guide.slug }) });
+      assert.equal(metadata.alternates?.canonical, localizedUrl(code, path));
+      assert.deepEqual(metadata.alternates?.languages, languageAlternates(path));
+      assert.equal(metadata.openGraph?.url, localizedUrl(code, path));
+      if (code === "en") assert.equal(metadata.title, guide.metaTitle);
+      else assert.notEqual(metadata.title, guide.metaTitle, `${code}:${guide.slug}: genuine localized metadata`);
+    }
+  }
   assert.match(page, /"@type": "WebPage"/);
   assert.match(page, /"@type": "Service"/);
   assert.match(page, /"@type": "BreadcrumbList"/);
@@ -92,13 +109,24 @@ test("service catalog and public discovery surfaces link to every new guide", ()
 });
 
 test("sitemap, robots and root metadata expose safe discovery endpoints", () => {
-  const sitemap = projectFile("src", "app", "sitemap.ts");
+  const sitemapSource = projectFile("src", "app", "sitemap.ts");
   const robots = projectFile("src", "app", "robots.ts");
   const layout = projectFile("src", "app", "layout.tsx");
 
-  assert.match(sitemap, /serviceIntentGuides\.map/);
-  assert.match(sitemap, /new Date\(guide\.updatedAt\)/);
-  assert.doesNotMatch(sitemap, /localizedUrl\(locale, `\/services\/\$\{guide\.slug\}`\)/);
+  assert.match(sitemapSource, /serviceIntentGuides\.map/);
+  assert.match(sitemapSource, /new Date\(guide\.updatedAt\)/);
+  const entries = sitemap();
+  const guideUrls = serviceIntentGuides.flatMap((guide) => supportedLocales.map(({ code }) => localizedUrl(code, `/services/${guide.slug}`)));
+  assert.equal(guideUrls.length, 48);
+  assert.equal(new Set(guideUrls).size, 48);
+  for (const guide of serviceIntentGuides) {
+    for (const { code } of supportedLocales) {
+      const path = `/services/${guide.slug}`;
+      const matches = entries.filter((entry) => entry.url === localizedUrl(code, path));
+      assert.equal(matches.length, 1);
+      assert.deepEqual(matches[0].alternates?.languages, languageAlternates(path));
+    }
+  }
   assert.match(robots, /serviceIntentGuideSlugs\.map/);
   assert.match(robots, /"\/feed\.xml"/);
   assert.match(robots, /"\/llms\.txt"/);

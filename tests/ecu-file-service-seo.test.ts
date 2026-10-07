@@ -2,12 +2,15 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import test from "node:test";
+import sitemap from "../src/app/sitemap";
 import { metadata as fileServiceMetadata } from "../src/app/file-service/page";
 import { generateMetadata as generateBrandMetadata } from "../src/app/brands/[slug]/page";
 import { generateMetadata as generateServiceMetadata } from "../src/app/services/[slug]/page";
 import { getBrandGuide } from "../src/lib/industry-content";
 import { serviceIntentGuides } from "../src/lib/serviceIntentGuides";
 import { stageTuningComparisons } from "../src/lib/stageTuning";
+import { languageAlternates, localizedUrl } from "../src/lib/seo";
+import { supportedLocales } from "../src/lib/i18nConfig";
 
 function projectFile(...segments: string[]) {
   return readFileSync(resolve(process.cwd(), ...segments), "utf8");
@@ -60,7 +63,7 @@ test("Stage 1, Stage 2 and Stage 3 use distinct exact-intent canonical pages", a
   assert.equal(serialized.includes("horsepower"), false);
 });
 
-test("Stage 3 is substantial, review-led and discoverable without a duplicate locale page", () => {
+test("Stage 3 remains substantial and review-led while four genuine translated guides are discoverable", () => {
   const stage3 = serviceIntentGuides.find((guide) => guide.slug === "stage-3");
   assert.ok(stage3);
   assert.match(stage3.lead, /not one universal software package/i);
@@ -69,9 +72,20 @@ test("Stage 3 is substantial, review-led and discoverable without a duplicate lo
   assert.ok(stage3.related.some((item) => item.href === "/services/stage-1"));
   assert.ok(stage3.related.some((item) => item.href === "/services/stage-2"));
 
-  const sitemap = projectFile("src", "app", "sitemap.ts");
-  assert.match(sitemap, /serviceIntentGuides\.map/);
-  assert.doesNotMatch(sitemap, /localizedUrl\(locale, `\/services\/\$\{guide\.slug\}`\)/);
+  const entries = sitemap();
+  const expectedUrls = serviceIntentGuides.flatMap((guide) =>
+    supportedLocales.map(({ code }) => localizedUrl(code, `/services/${guide.slug}`))
+  );
+  assert.equal(expectedUrls.length, 48);
+  for (const guide of serviceIntentGuides) {
+    const path = `/services/${guide.slug}`;
+    for (const { code } of supportedLocales) {
+      const matches = entries.filter((entry) => entry.url === localizedUrl(code, path));
+      assert.equal(matches.length, 1, `${code}:${guide.slug}: unique genuine guide URL`);
+      assert.deepEqual(matches[0].alternates?.languages, languageAlternates(path));
+      assert.equal(matches[0].lastModified?.valueOf(), new Date(guide.updatedAt).valueOf());
+    }
+  }
 });
 
 test("Audi search intent is served by the existing canonical brand guide", async () => {

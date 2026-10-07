@@ -25,8 +25,8 @@ test("i18n route helper maps equivalent public routes across locales", () => {
   assert.equal(getLocalizedPublicPath("/services/stage-1", "de"), "/de/services/stage-1");
   assert.equal(getLocalizedPublicPath("/de/services/dtc-off", "en"), "/services/dtc-off");
   assert.equal(getLocalizedPublicPath("/about", "tr"), "/about");
-  assert.equal(getLocalizedPublicPath("/services/stage-2", "de"), "/services/stage-2");
-  assert.equal(getLocalizedPublicPath("/services/stage-3", "tr"), "/services/stage-3");
+  assert.equal(getLocalizedPublicPath("/services/stage-2", "de"), "/de/services/stage-2");
+  assert.equal(getLocalizedPublicPath("/services/stage-3", "tr"), "/tr/services/stage-3");
   assert.equal(getLocalizedPublicHref("/file-service?ref=nav#upload", "de"), "/de/file-service?ref=nav#upload");
   assert.equal(getLocalizedPublicHref("/about?ref=nav", "tr"), "/about?ref=nav");
 });
@@ -37,7 +37,7 @@ test("prefixed recovery and single-path URLs stay aligned with the selected loca
   assert.equal(getLocalizedPublicPath("/de/brands", "fr"), "/brands");
   assert.equal(
     getLocalizedPublicPath("/de/services/stage-2", "tr"),
-    "/services/stage-2",
+    "/tr/services/stage-2",
   );
   assert.equal(getLocalizedPublicPath("/de/login", "tr"), "/login");
   assert.equal(
@@ -161,7 +161,7 @@ test("first visit keeps an explicit or detected locale and redirects only true l
   assert.equal(getInitialLocaleRedirect("/", "de"), "/de");
   assert.equal(getInitialLocaleRedirect("/file-service", "tr"), "/tr/file-service");
   assert.equal(getInitialLocaleRedirect("/de/how-it-works", "tr"), null);
-  assert.equal(getInitialLocaleRedirect("/services/stage-2", "de"), null);
+  assert.equal(getInitialLocaleRedirect("/services/stage-2", "de"), "/de/services/stage-2");
   assert.equal(getInitialLocaleRedirect("/login", "de"), null);
   assert.equal(getInitialLocaleRedirect("/", "en"), null);
 });

@@ -86,10 +86,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: new Date(guide.updatedAt),
       changeFrequency: "monthly" as const,
       priority: 0.84,
+      alternates: { languages: languageAlternates(`/services/${guide.slug}`) },
     })),
   ];
 
   const localizedPages: MetadataRoute.Sitemap = localizedSeoLocales.flatMap((locale) => [
+    ...serviceIntentGuides.map((guide) => ({
+      url: localizedUrl(locale, `/services/${guide.slug}`),
+      lastModified: new Date(guide.updatedAt),
+      changeFrequency: "monthly" as const,
+      priority: 0.82,
+      alternates: { languages: languageAlternates(`/services/${guide.slug}`) },
+    })),
     {
       url: localizedUrl(locale, "/"),
       lastModified: contentUpdated,

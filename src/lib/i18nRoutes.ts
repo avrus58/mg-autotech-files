@@ -8,6 +8,7 @@ import {
   isSeoLocale,
   localizedPath,
 } from "@/lib/seo";
+import { isServiceIntentGuideSlug } from "@/lib/serviceIntentGuideRoutes";
 
 // These routes are localized at runtime on one canonical URL instead of
 // duplicating the route tree with a locale prefix.
@@ -73,6 +74,10 @@ export function getLocalizedPublicPath(pathname: string, locale: LocaleCode) {
   if (parts.length === 0) return localizedPath(locale);
 
   if (parts[0] === "services" && parts[1] && isPublicServiceSlug(parts[1])) {
+    return localizedPath(locale, `/services/${parts[1]}`);
+  }
+
+  if (parts.length === 2 && parts[0] === "services" && isServiceIntentGuideSlug(parts[1])) {
     return localizedPath(locale, `/services/${parts[1]}`);
   }
 
