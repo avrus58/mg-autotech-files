@@ -98,10 +98,14 @@ test("homepage links localize only when an equivalent locale page exists", () =>
     localizeHomepageHref("/services/dtc-off", "de"),
     "/de/services/dtc-off",
   );
-  assert.equal(
-    localizeHomepageHref("/services/stage-2", "de"),
-    "/services/stage-2",
-  );
+  for (const slug of ["stage-2", "stage-3", "tcu-tuning", "ecu-file-check"]) {
+    assert.equal(
+      localizeHomepageHref(`/services/${slug}`, "de"),
+      `/de/services/${slug}`,
+    );
+  }
+  assert.equal(localizeHomepageHref("/services/stage-4", "de"), "/services/stage-4");
+  assert.equal(localizeHomepageHref("/services/stage-2/extra", "de"), "/services/stage-2/extra");
   assert.equal(localizeHomepageHref("/new-request", "de"), "/new-request");
   assert.equal(localizeHomepageHref("/dashboard", "tr"), "/dashboard");
   assert.equal(
