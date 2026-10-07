@@ -84,10 +84,12 @@ test("admin orders keep file state and actions visible at every responsive width
   );
 });
 
-test("public online status is compact and never intercepts mobile controls", () => {
+test("public online status remains compact without a viewport-fixed fallback", () => {
   const onlineStatus = readProjectFile("src", "components", "OnlineStatus.tsx");
 
-  assert.match(onlineStatus, /pointer-events-none fixed bottom-3 left-3/);
+  assert.match(onlineStatus, /pointer-events-none mx-auto w-full max-w-7xl/);
+  assert.doesNotMatch(onlineStatus, /fixed bottom-/);
+  assert.match(onlineStatus, /usePublicUtilityHost\("status"\)/);
   assert.match(onlineStatus, /hidden font-black sm:block/);
   assert.match(onlineStatus, /max-w-24 truncate/);
 });

@@ -43,6 +43,7 @@ import {
   type RuntimeTranslationCatalog,
 } from "@/lib/i18n/runtime-exact-translation";
 import { fixedPresentationLocaleBySegment } from "@/lib/fixedPresentationLocale";
+import { renderPublicUtilityControl, usePublicUtilityHost } from "@/components/PublicUtilityBar";
 
 const originalText = new WeakMap<Text, string>();
 const originalAttributes = new WeakMap<Element, Record<string, string>>();
@@ -723,6 +724,7 @@ function translateNode(
 
 export function LanguageSwitcher() {
   const pathname = usePathname();
+  const utilityHost = usePublicUtilityHost("language");
   const externallySelectedLocale = useActiveLocale();
   const firstSegment = pathname.split("/").filter(Boolean)[0] ?? "";
   const pageOwnsDocumentLocale =
@@ -990,16 +992,16 @@ export function LanguageSwitcher() {
   // Until hydration reads the route-level document language, render a neutral
   // control instead of briefly claiming that English is active.
   if (!localeResolved) {
-    return (
+    return renderPublicUtilityControl(utilityHost, (
       <div
         data-language-switcher
         data-language-switcher-pending
         aria-hidden="true"
-        className="fixed bottom-4 right-4 z-[80] flex h-11 min-w-11 items-center justify-center rounded-full border border-white/10 bg-[#111720]/95 px-3 text-base text-white shadow-2xl shadow-black/40 backdrop-blur-xl"
+        className={`${utilityHost ? "relative" : "fixed bottom-4 right-4 z-[80]"} flex h-11 min-w-11 items-center justify-center rounded-full border border-white/10 bg-[#111720]/95 px-3 text-base text-white shadow-2xl shadow-black/40 backdrop-blur-xl`}
       >
         <span aria-hidden="true">🌐</span>
       </div>
-    );
+    ));
   }
 
   const closeMenuAndRestoreFocus = () => {
@@ -1047,10 +1049,10 @@ export function LanguageSwitcher() {
     items[nextIndex]?.focus();
   };
 
-  return (
+  return renderPublicUtilityControl(utilityHost, (
     <div
       data-language-switcher
-      className="fixed bottom-4 right-4 z-[80] flex flex-col items-end gap-2"
+      className={`${utilityHost ? "relative" : "fixed bottom-4 right-4 z-[80]"} flex flex-col items-end gap-2`}
       aria-label={currentSelectorCopy.label}
       aria-busy={isLocaleLoading}
     >
@@ -1061,7 +1063,7 @@ export function LanguageSwitcher() {
           role="menu"
           aria-label={currentSelectorCopy.label}
           onKeyDown={handleMenuKeyDown}
-          className="grid max-h-[min(31rem,68vh)] w-56 overflow-y-auto rounded-2xl border border-white/10 bg-[#111720]/98 p-2 shadow-2xl shadow-black/50 backdrop-blur-xl"
+          className={`${utilityHost ? "absolute right-0 top-[calc(100%+.5rem)] z-[80] max-h-[min(31rem,calc(100dvh-13rem))]" : "max-h-[min(31rem,68vh)]"} grid w-56 overflow-y-auto rounded-2xl border border-white/10 bg-[#111720]/98 p-2 shadow-2xl shadow-black/50 backdrop-blur-xl`}
         >
           {supportedLocales.map((item) => {
             const localizedTarget = getLocalizedPublicPath(pathname, item.code);
@@ -1112,7 +1114,7 @@ export function LanguageSwitcher() {
               setRequestedLocale(item.code);
               setIsLocaleLoading(true);
             };
-            const optionClassName = `flex min-h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-xs font-black outline-none transition focus-visible:ring-2 focus-visible:ring-red-400 ${
+            const optionClassName = `flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-xs font-black outline-none transition focus-visible:ring-2 focus-visible:ring-red-400 ${
               item.code === locale
                 ? "bg-red-600 text-white"
                 : "text-zinc-200 hover:bg-white/10"
@@ -1152,25 +1154,25 @@ export function LanguageSwitcher() {
           })}
         </div>
       )}
-      {isLocaleLoading && (
+      {isLocaleLoading && (!utilityHost || !isOpen) && (
         <div
           role="status"
           aria-live="polite"
-          className="max-w-72 rounded-xl border border-white/10 bg-[#111720]/98 px-4 py-3 text-xs font-bold text-zinc-200 shadow-xl shadow-black/40 backdrop-blur-xl"
+          className={`${utilityHost ? "absolute right-0 top-[calc(100%+.5rem)] z-[80] w-[min(18rem,calc(100vw-2rem))]" : "max-w-72"} rounded-xl border border-white/10 bg-[#111720]/98 px-4 py-3 text-xs font-bold text-zinc-200 shadow-xl shadow-black/40 backdrop-blur-xl`}
         >
           {currentSelectorCopy.loading}
         </div>
       )}
-      {failedLocale && !isLocaleLoading && (
+      {failedLocale && !isLocaleLoading && (!utilityHost || !isOpen) && (
         <div
           role="alert"
-          className="max-w-72 rounded-xl border border-red-500/35 bg-[#1a1115]/98 px-4 py-3 text-xs font-bold text-zinc-100 shadow-xl shadow-black/40 backdrop-blur-xl"
+          className={`${utilityHost ? "absolute right-0 top-[calc(100%+.5rem)] z-[80] w-[min(18rem,calc(100vw-2rem))]" : "max-w-72"} rounded-xl border border-red-500/35 bg-[#1a1115]/98 px-4 py-3 text-xs font-bold text-zinc-100 shadow-xl shadow-black/40 backdrop-blur-xl`}
         >
           <p>{currentSelectorCopy.failed}</p>
           <button
             type="button"
             onClick={retryFailedLocale}
-            className="mt-2 rounded-lg border border-red-400/35 px-3 py-1.5 text-[11px] font-black text-red-200 outline-none transition hover:bg-red-500/10 focus-visible:ring-2 focus-visible:ring-red-400"
+            className="mt-2 inline-flex min-h-11 items-center rounded-lg border border-red-400/35 px-3 py-1.5 text-[11px] font-black text-red-200 outline-none transition hover:bg-red-500/10 focus-visible:ring-2 focus-visible:ring-red-400"
           >
             {currentSelectorCopy.retry}
           </button>
@@ -1197,5 +1199,5 @@ export function LanguageSwitcher() {
         {activeLocale.label}
       </button>
     </div>
-  );
+  ));
 }

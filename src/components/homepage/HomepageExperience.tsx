@@ -36,6 +36,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { Footer } from "@/components/Footer";
+import { PublicUtilityBar } from "@/components/PublicUtilityBar";
 import { DeferredPerformanceTools } from "@/components/tools/DeferredPerformanceTools";
 import { VehicleIntelligence } from "@/components/homepage/VehicleIntelligence";
 import {
@@ -1000,6 +1001,7 @@ function HomepageHeader({
           </div>
         </details>
       </div>
+      <PublicUtilityBar wide />
       </header>
     </LocalizedHomepageTree>
   );

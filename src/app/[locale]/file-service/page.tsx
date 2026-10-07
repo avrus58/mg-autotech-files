@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { LocalizedSeoFooter } from "@/components/LocalizedSeoFooter";
 import { OnlineStatus } from "@/components/OnlineStatus";
+import { PublicUtilityBar } from "@/components/PublicUtilityBar";
 import { getFileServiceCopy, fileServiceJsonLd } from "@/lib/fileServiceI18n";
 import type { FileServiceHubCard } from "@/lib/fileServiceI18n";
 import { openGraphLocaleByCode, type LocaleCode } from "@/lib/i18nConfig";
@@ -183,7 +184,7 @@ export default async function LocalizedFileServicePage({
 
   return (
     <main className="min-h-screen bg-[#050505] text-white" lang={hreflangByLocale[locale]}>
-      <header className="border-b border-white/10 bg-[#050505]/95 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#050505]/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4">
           <Link href={localizedPath(locale, "/")} className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#b1121b] text-sm font-black text-white">
@@ -219,6 +220,7 @@ export default async function LocalizedFileServicePage({
             {copy.nav.services}
           </Link>
         </div>
+        <PublicUtilityBar />
       </header>
 
       <section className="relative overflow-hidden border-b border-white/10 bg-[linear-gradient(135deg,#050505,#101827_52%,#2b080d)]">

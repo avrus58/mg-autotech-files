@@ -35,6 +35,28 @@ body {
   box-sizing: border-box;
 }
 
+/* Header-owned neutral first paint; suppress only the redundant root placeholder.
+   Resolved controls on unhosted/private pages retain their existing placement. */
+body:has([data-public-utility-bar]) > [data-language-switcher-pending] {
+  display: none;
+}
+
+[data-public-utility-host="language"]:has([data-language-switcher]) > [data-public-utility-placeholder] {
+  display: none;
+}
+
+/* Horizontal clipping must not create an unbounded scroll ancestor that makes
+   the opted-in sticky header disappear when the document scrolls. */
+:where(body, main, .mg-homepage):has([data-public-utility-bar]) {
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+/* Existing in-page shortcuts land below the now-persistent public header. */
+:where(main, .mg-homepage):has([data-public-utility-bar]) [id] {
+  scroll-margin-top: 14rem;
+}
+
 /* Allow panel grid tracks to shrink around long labels and identifiers.
    Tables keep their own horizontal scrolling; content is never clipped here. */
 :where([data-admin-workspace], .mg-customer-density) .grid > * {

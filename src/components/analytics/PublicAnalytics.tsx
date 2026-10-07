@@ -71,6 +71,7 @@ import {
 } from "@/lib/analyticsConsentI18n";
 import { reportMeasurementHandoffFailure } from "@/components/PlatformReliabilityMonitor";
 import { useActiveLocale } from "@/lib/useActiveLocale";
+import { renderPublicUtilityControl, usePublicUtilityHost } from "@/components/PublicUtilityBar";
 import { parseSupportedLocale } from "@/lib/i18nConfig";
 import {
   dispatchLocaleChange,
@@ -111,6 +112,7 @@ export function PublicAnalytics({
   purchaseLabel,
 }: PublicAnalyticsProps) {
   const pathname = usePathname();
+  const utilityHost = usePublicUtilityHost("privacy");
   const activeLocale = useActiveLocale();
   const configuration = useMemo<GoogleAdsPublicConfiguration>(() => ({
     googleAnalyticsMeasurementId,
@@ -1024,7 +1026,7 @@ export function PublicAnalytics({
       !preferencesOpen &&
       !showAdClickConsentGate &&
       (!googleMeasurementRouteAllowed || publicRoute) ? (
-        <button
+        renderPublicUtilityControl(utilityHost, <button
           type="button"
           onClick={() => {
             setCustomizing(true);
@@ -1032,10 +1034,10 @@ export function PublicAnalytics({
           }}
           aria-label={consentCopy.openPreferences}
           title={consentCopy.preferencesTitle}
-          className="fixed bottom-4 right-20 z-40 grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-[#11151c]/95 text-zinc-400 shadow-lg transition hover:border-red-800/50 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+          className={`${utilityHost ? "relative h-11 w-11" : "fixed bottom-4 right-20 z-40 h-10 w-10"} grid place-items-center rounded-full border border-white/10 bg-[#11151c]/95 text-zinc-400 shadow-lg transition hover:border-red-800/50 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500`}
         >
           <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
-        </button>
+        </button>)
       ) : null}
 
       <span className="sr-only" aria-live="polite">

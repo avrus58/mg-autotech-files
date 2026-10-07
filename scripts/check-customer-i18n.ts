@@ -130,6 +130,7 @@ const customerSurfaceRoots = [
   "src/components/OnlineStatus.tsx",
   "src/components/PlatformReliabilityMonitor.tsx",
   "src/components/PublicSeoHeader.tsx",
+  "src/components/PublicUtilityBar.tsx",
   "src/components/PublicCoreServiceExperience.tsx",
   "src/components/RequestChat.tsx",
   "src/components/SeoGuidePage.tsx",
@@ -8244,7 +8245,7 @@ function allowedSupplementalLabelsForFile(file: string) {
   )
     add("public-core", "public-services", "service-intent");
   if (
-    /^src\/components\/(?:Footer|PublicSeoHeader|RuntimePublicFooter)\.tsx$/u.test(
+    /^src\/components\/(?:Footer|PublicSeoHeader|PublicUtilityBar|RuntimePublicFooter)\.tsx$/u.test(
       normalized,
     )
   )

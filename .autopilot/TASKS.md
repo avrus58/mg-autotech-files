@@ -24,6 +24,34 @@ Receipt: `docs/production-release-2026-10-01-address.md`.
 
 ## In Progress
 
+### MANUAL-20261007-PUBLIC-UTILITY-PLACEMENT [P2] Keep closed public utility controls out of the reading area
+
+Fingerprint: `public-chrome|shared-header-utility-controls|fixed-language-and-status-obstruct-arbitrary-scroll-content|normal-flow-header-owned-single-controls`
+
+Origin: current compiled d1794aa mobile guide scroll physically shows the language
+pill above the Stage1 hardware text; retained screenshot under runtime/utility-
+placement-before-d1794aa-20261007. Existing roadmap explicitly leaves arbitrary
+scroll obstruction open. No matching task/commit found in queue/history/roadmap.
+Business3/User4/Admin1/Strategic3/Confidence5/Effort3/Risk2; local manual cycle.
+
+Boundary: one shared public header utility row, exact-node portal host registry,
+the existing single root selector/compact consent trigger and existing status
+display, wired to PublicSeoHeader, ToolsHeader, HomepageHeader and the localized
+file-service header. Preserve all12 copy, locale transactions/native links,
+schedule facts, consent decisions/dialog logic, document/static routing and all
+existing page features. No root scroll rewrite, request reads, dependency, auth,
+payment, data, env, Ads or release action. Auth/customer and other unhosted
+headers retain their current fallback and remain explicitly OPEN; this is not a
+global overlay closure. Open menus/dialogs remain intentional overlays.
+
+Acceptance: neutral SSR host placeholder without a redundant floating pending
+globe; one actual selector after hydration; connected-host replacement/unmount
+falls back safely; >=44px header controls with no clipped text/overlap across
+EN/DE/TR/ZH mobile/compact laptop. Native menu/keyboard/history/resize/scroll and
+loading/error contracts retained. Exact i18n inventory, relevant behavioral
+regressions, full required gates/build/performance and immutable independent
+source/physical-GUI review required before this scoped task is Done. Local only.
+
 ### MANUAL-20261007-TOOLS-HUB-COPY-QUALITY [P2] Make public tool choices understandable in every supported language
 
 Fingerprint: `public-tools|hub-feature-copy|scoped-runtime-english-leak-and-literal-request-meaning|native-all-locale-tool-selection`

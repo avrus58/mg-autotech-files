@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { LocaleCode } from "@/lib/i18nConfig";
 import { useActiveLocale } from "@/lib/useActiveLocale";
+import { renderPublicUtilityControl, usePublicUtilityHost } from "@/components/PublicUtilityBar";
 
 const statusCopy: Record<
   LocaleCode,
@@ -196,6 +197,7 @@ function getStatusLabel(date: Date, online: boolean, locale: LocaleCode) {
 
 export function OnlineStatus() {
   const locale = useActiveLocale();
+  const utilityHost = usePublicUtilityHost("status");
   const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
@@ -235,9 +237,9 @@ export function OnlineStatus() {
     };
   }, [locale, now]);
 
-  return (
-    <div className="pointer-events-none fixed bottom-3 left-3 z-[60] max-w-[calc(100vw-5.5rem)] sm:bottom-4 sm:left-4">
-      <div className="rounded-xl border border-white/10 bg-black/90 px-3 py-2 text-white shadow-2xl shadow-black/40 backdrop-blur-xl sm:px-4 sm:py-3">
+  return renderPublicUtilityControl(utilityHost, (
+    <div data-online-status className={utilityHost ? "min-w-0" : "pointer-events-none mx-auto w-full max-w-7xl px-4 py-3"}>
+      <div className={utilityHost ? "min-w-0 py-1 text-white" : "rounded-xl border border-white/10 bg-black/90 px-3 py-2 text-white shadow-2xl shadow-black/40 backdrop-blur-xl sm:px-4 sm:py-3"}>
         <div className="flex items-center gap-2 sm:gap-3">
           <span
             className={`h-3 w-3 shrink-0 rounded-full sm:h-4 sm:w-4 ${
@@ -250,12 +252,12 @@ export function OnlineStatus() {
             <div className="hidden font-black sm:block">
               {status.time ? `${status.timePrefix} ${status.time}.` : status.title}
             </div>
-            <div className="max-w-24 truncate text-xs font-black text-zinc-200 sm:max-w-none sm:font-normal sm:text-zinc-300">
+            <div className={utilityHost ? "break-words text-xs font-black text-zinc-200 sm:font-normal sm:text-zinc-300" : "max-w-24 truncate text-xs font-black text-zinc-200 sm:max-w-none sm:font-normal sm:text-zinc-300"}>
               {status.label}
             </div>
           </div>
         </div>
       </div>
     </div>
-  );
+  ));
 }

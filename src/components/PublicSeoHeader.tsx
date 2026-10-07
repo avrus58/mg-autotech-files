@@ -4,6 +4,7 @@ import { RuntimePublicLocalization } from "@/components/RuntimePublicLocalizatio
 import type { LocaleCode } from "@/lib/i18nConfig";
 import { getLocalizedPublicHref } from "@/lib/i18nRoutes";
 import { seoLabels } from "@/lib/seo";
+import { PublicUtilityBar } from "@/components/PublicUtilityBar";
 
 export function PublicSeoHeader({ locale = "en" }: { locale?: LocaleCode }) {
   const href = (pathname: string) => getLocalizedPublicHref(pathname, locale);
@@ -51,6 +52,7 @@ export function PublicSeoHeader({ locale = "en" }: { locale?: LocaleCode }) {
           <Link href={href("/contact")} className="hover:text-white">Contact</Link>
         </nav>
       </div>
+      <PublicUtilityBar />
       </header>
     </RuntimePublicLocalization>
   );

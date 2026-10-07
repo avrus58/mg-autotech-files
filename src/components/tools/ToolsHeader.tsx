@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Cpu, LayoutDashboard } from "lucide-react";
 import { RuntimePublicLocalization } from "@/components/RuntimePublicLocalization";
 import type { LocaleCode } from "@/lib/i18nConfig";
+import { PublicUtilityBar } from "@/components/PublicUtilityBar";
 
 export function ToolsHeader({ locale = "en" }: { locale?: LocaleCode }) {
   return (
@@ -43,6 +44,7 @@ export function ToolsHeader({ locale = "en" }: { locale?: LocaleCode }) {
           <span className="sm:hidden">Portal</span>
         </Link>
       </div>
+      <PublicUtilityBar />
       </header>
     </RuntimePublicLocalization>
   );
